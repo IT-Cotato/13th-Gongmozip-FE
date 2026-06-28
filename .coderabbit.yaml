@@ -1,0 +1,60 @@
+language: "ko-KR"
+
+tone_instructions: >
+  당신은 Gongmozip FE 팀의 친절하고 실용적인 코드 리뷰어입니다.
+  코드 품질, 안정성, 유지보수성, 사용자 경험 개선을 돕는 것이 목표입니다.
+  문제는 명확하고 구체적으로 짚고, 원인과 개선 방법을 함께 제시하세요.
+  비판보다 개선 중심의 제안을 우선하며, 칭찬은 짧고 담백하게 작성하세요.
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  assess_linked_issues: true
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  poem: true
+  path_instructions:
+    - path: "src/**/*"
+      instructions: |
+        Next.js App Router, TypeScript, Tailwind CSS, Zustand, TanStack Query 기준으로 리뷰해주세요.
+        가독성, 타입 안정성, null/undefined 처리, 에러 처리, 접근성, 유지보수성, 렌더링 비용을 우선 확인해주세요.
+        문제를 지적할 때는 원인, 대안, 장단점을 함께 설명하고 필요한 경우 짧은 예시 코드를 제안해주세요.
+        리뷰 피로도를 줄이기 위해 꼭 필요한 피드백에 집중하고, 사소한 스타일 문제는 Prettier/ESLint에 맡겨주세요.
+        리뷰 코멘트는 가능한 한 관련 라인에 직접 남겨주세요.
+    - path: "src/app/**/*"
+      instructions: |
+        App Router의 서버 컴포넌트와 클라이언트 컴포넌트 경계를 확인해주세요.
+        불필요한 "use client" 사용, 메타데이터 설정, 레이아웃 구조, 전역 Provider 배치를 중점적으로 검토해주세요.
+    - path: "**/*.{css,tsx}"
+      instructions: |
+        Tailwind CSS 사용 시 반응형 레이아웃, 접근성, 중복 클래스, 과도한 커스텀 스타일을 확인해주세요.
+        UI 변경은 텍스트 넘침, 작은 화면, 키보드 탐색, 명도 대비 관점도 함께 검토해주세요.
+
+  auto_review:
+    enabled: false
+    auto_incremental_review: false
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - AGENTS.md
+      - README.md
+  learnings:
+    scope: "local"
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
