@@ -130,6 +130,11 @@ export default function SignupPage() {
     setSecondsLeft(RESEND_SECONDS);
   }
 
+  function goToStep(target: Step) {
+    setActiveField(null);
+    setStep(target);
+  }
+
   function appendChar(char: string) {
     if (activeField === "name") setName((v) => v + char);
     if (activeField === "email") setEmail((v) => v + char);
@@ -185,13 +190,18 @@ export default function SignupPage() {
           <h2 className="text-base font-semibold text-gray-900">회원가입</h2>
         </div>
 
-        <div className="px-4">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200">
-            <div
-              className="h-full rounded-full bg-[#FF7658] transition-all"
-              style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+        <div className="flex gap-1.5 px-4">
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => (i + 1) as Step).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => goToStep(s)}
+              aria-label={`${s}단계로 이동`}
+              className={`h-1 flex-1 rounded-full transition-colors ${
+                s <= step ? "bg-[#FF7658]" : "bg-gray-200"
+              }`}
             />
-          </div>
+          ))}
         </div>
 
         <div className="flex-1 px-6 pt-8">
