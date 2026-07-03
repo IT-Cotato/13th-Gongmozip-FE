@@ -27,6 +27,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_SECONDS = 300;
 // TODO(backend): 백엔드 인증 API 연동 전까지 프론트 테스트용으로 "111111" 입력 시 인증 성공 처리
 const DEV_BYPASS_CODE = "111111";
+// TODO(backend): 백엔드 중복 확인 API 연동 전까지 프론트 테스트용으로 지정한 이메일을 가입된 이메일로 처리
+const DEV_DUPLICATE_EMAILS = ["gongmozip@gongmo-zip.com"];
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -74,6 +76,7 @@ export default function SignupPage() {
 
   const isNameValid = name.trim().length > 0;
   const isEmailValid = EMAIL_REGEX.test(email);
+  const isEmailDuplicate = DEV_DUPLICATE_EMAILS.includes(email.trim().toLowerCase());
   const isCodeValid = code === DEV_BYPASS_CODE;
 
   const isPasswordValid =
@@ -93,7 +96,7 @@ export default function SignupPage() {
       case 1:
         return isNameValid;
       case 2:
-        return isEmailValid;
+        return isEmailValid && !isEmailDuplicate;
       case 3:
         return isCodeValid;
       case 4:
@@ -245,8 +248,15 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 onFocus={() => setActiveField("email")}
                 placeholder="gongmozip@university.ac.kr"
-                className="w-full rounded-xl bg-gray-100 px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
+                className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
+                  isEmailValid && isEmailDuplicate
+                    ? "border-[#FF5A5A] bg-white"
+                    : "border-transparent bg-gray-100"
+                }`}
               />
+              {isEmailValid && isEmailDuplicate && (
+                <p className="mt-2 text-xs text-[#FF5A5A]">이미 가입된 이메일입니다.</p>
+              )}
             </div>
           )}
 
@@ -347,7 +357,11 @@ export default function SignupPage() {
                 : "cursor-not-allowed bg-gray-100 text-gray-400"
             }`}
           >
-            {step === TOTAL_STEPS ? "동의하고 가입 완료하기" : "다음"}
+            {step === 2
+              ? "인증번호 전송"
+              : step === TOTAL_STEPS
+                ? "동의하고 가입 완료하기"
+                : "다음"}
           </button>
         </div>
 
