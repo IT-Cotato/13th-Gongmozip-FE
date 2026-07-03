@@ -1,4 +1,5 @@
 export type Gender = "male" | "female" | null;
+type BirthdateError = "format" | "age" | null;
 
 type InfoStepProps = {
   gender: Gender;
@@ -6,6 +7,7 @@ type InfoStepProps = {
   birthdateDisplay: string;
   onChangeBirthdate: (digits: string) => void;
   onFocusBirthdate: () => void;
+  birthdateError: BirthdateError;
 };
 
 function RadioOption({
@@ -37,6 +39,7 @@ export function InfoStep({
   birthdateDisplay,
   onChangeBirthdate,
   onFocusBirthdate,
+  birthdateError,
 }: InfoStepProps) {
   return (
     <div>
@@ -65,8 +68,17 @@ export function InfoStep({
         onChange={(e) => onChangeBirthdate(e.target.value.replace(/\D/g, "").slice(0, 8))}
         onFocus={onFocusBirthdate}
         placeholder="YYYY/MM/DD"
-        className="w-full rounded-xl bg-gray-100 px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
+        className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
+          birthdateError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
+        }`}
       />
+      {birthdateError && (
+        <p className="mt-2 text-xs text-[#FF5A5A]">
+          {birthdateError === "format"
+            ? "올바른 생년월일을 입력해주세요"
+            : "만 14세 이상만 가입할 수 있어요."}
+        </p>
+      )}
     </div>
   );
 }
