@@ -7,6 +7,7 @@ import { SignupKeyboard } from "./_components/SignupKeyboard";
 import { PasswordStep } from "./_components/PasswordStep";
 import { InfoStep, type Gender } from "./_components/InfoStep";
 import { TermsStep, type TermsState } from "./_components/TermsStep";
+import { ChevronLeftIcon } from "./_components/icons";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type ActiveField = "name" | "email" | "code" | "birthdate" | null;
@@ -38,20 +39,6 @@ function formatBirthdate(digits: string) {
   const m = digits.slice(4, 6);
   const d = digits.slice(6, 8);
   return [y, m, d].filter(Boolean).join("/");
-}
-
-function ChevronLeftIcon() {
-  return (
-    <svg width="10" height="18" viewBox="0 0 10 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M9 1L1 9L9 17"
-        stroke="#111827"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 export default function SignupPage() {
