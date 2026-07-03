@@ -11,6 +11,7 @@ import { ChevronLeftIcon } from "./_components/icons";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type ActiveField = "name" | "email" | "code" | "birthdate" | null;
+type CodeError = "mismatch" | "expired" | null;
 
 const TOTAL_STEPS = 6;
 
@@ -52,6 +53,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
+  const [codeError, setCodeError] = useState<CodeError>(null);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -78,6 +80,7 @@ export default function SignupPage() {
   const isEmailValid = EMAIL_REGEX.test(email);
   const isEmailDuplicate = DEV_DUPLICATE_EMAILS.includes(email.trim().toLowerCase());
   const isCodeValid = code === DEV_BYPASS_CODE;
+  const isCodeComplete = code.length === 6;
 
   const isPasswordValid =
     /[A-Za-z]/.test(password) &&
@@ -98,7 +101,7 @@ export default function SignupPage() {
       case 2:
         return isEmailValid && !isEmailDuplicate;
       case 3:
-        return isCodeValid;
+        return isCodeComplete;
       case 4:
         return isPasswordValid && isConfirmPasswordValid;
       case 5:
@@ -121,16 +124,28 @@ export default function SignupPage() {
 
   function handleNext() {
     if (!isCurrentStepValid) return;
+    if (step === 3) {
+      if (secondsLeft <= 0) {
+        setCodeError("expired");
+        return;
+      }
+      if (!isCodeValid) {
+        setCodeError("mismatch");
+        return;
+      }
+    }
     if (step === TOTAL_STEPS) {
       router.push("/");
       return;
     }
     setActiveField(null);
+    setCodeError(null);
     setStep((s) => (s + 1) as Step);
   }
 
   function handleResend() {
     setSecondsLeft(RESEND_SECONDS);
+    setCodeError(null);
   }
 
   function goToStep(target: Step) {
@@ -271,11 +286,14 @@ export default function SignupPage() {
                     onChange={(e) => {
                       const next = e.target.value.replace(/\D/g, "").slice(0, 6);
                       setCode(next);
+                      setCodeError(null);
                       if (next.length === 6) setActiveField(null);
                     }}
                     onFocus={() => setActiveField("code")}
                     placeholder="6자리 입력"
-                    className="w-full rounded-xl bg-gray-100 px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
+                    className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
+                      codeError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
+                    }`}
                   />
                   <span className="absolute top-1/2 right-4 -translate-y-1/2 text-xs text-gray-400">
                     {formatTime(secondsLeft)}
@@ -289,6 +307,14 @@ export default function SignupPage() {
                   인증번호 재전송
                 </button>
               </div>
+
+              {codeError && (
+                <p className="mt-2 text-xs text-[#FF5A5A]">
+                  {codeError === "mismatch"
+                    ? "인증번호가 일치하지 않습니다. 다시 확인 후 입력해 주세요."
+                    : "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요."}
+                </p>
+              )}
 
               <div className="mt-6 rounded-xl bg-gray-50 p-4">
                 <p className="mb-2 text-sm font-semibold text-gray-700">
