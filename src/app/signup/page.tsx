@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SignupKeyboard } from "./_components/SignupKeyboard";
 import { PasswordStep } from "./_components/PasswordStep";
@@ -62,8 +62,21 @@ function calculateAge(year: number, month: number, day: number) {
 }
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageInner />
+    </Suspense>
+  );
+}
+
+function SignupPageInner() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>(1);
+  const searchParams = useSearchParams();
+  const [step, setStep] = useState<Step>(() => {
+    const stepParam = Number(searchParams.get("step"));
+    return stepParam >= 1 && stepParam <= TOTAL_STEPS ? (stepParam as Step) : 1;
+  });
+  const contactHref = `/contact?returnTo=${encodeURIComponent(`/signup?step=${step}`)}`;
   const [activeField, setActiveField] = useState<ActiveField>(null);
 
   const [name, setName] = useState("");
@@ -261,7 +274,7 @@ export default function SignupPage() {
             </h1>
             {step === 3 && (
               <Link
-                href="/contact"
+                href={contactHref}
                 className="mt-1 shrink-0 text-xs text-gray-400 underline underline-offset-2"
               >
                 문의하기
@@ -362,7 +375,7 @@ export default function SignupPage() {
                 </ul>
                 <p className="mt-3 text-xs text-gray-400">
                   위 방법을 모두 시도했음에도 인증번호가 수신되지 않는 경우,{" "}
-                  <Link href="/contact" className="font-medium text-[#FF7658]">
+                  <Link href={contactHref} className="font-medium text-[#FF7658]">
                     [문의하기]
                   </Link>{" "}
                   버튼을 통해 문의해 주세요.
