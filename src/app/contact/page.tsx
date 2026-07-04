@@ -13,11 +13,11 @@ const PASSWORD_LENGTH = 4;
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
 
-function FieldLabel({ children }: { children: string }) {
+function FieldLabel({ children, required = true }: { children: string; required?: boolean }) {
   return (
     <div className="flex items-center px-1 text-[17px] leading-[1.25]">
       <span className="text-[#1F1F1F]">{children}</span>
-      <span className="text-[#FF7658]">*</span>
+      {required && <span className="text-[#FF7658]">*</span>}
     </div>
   );
 }
@@ -53,6 +53,8 @@ function ContactPageInner() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
+  const [activeTab, setActiveTab] = useState<"write" | "history">("write");
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [email, setEmail] = useState("");
@@ -62,12 +64,18 @@ function ContactPageInner() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
+  const [historyEmail, setHistoryEmail] = useState("");
+  const [historyPassword, setHistoryPassword] = useState("");
+
   const isFormValid =
     title.trim().length > 0 &&
     content.trim().length > 0 &&
     EMAIL_REGEX.test(email) &&
     password.length === PASSWORD_LENGTH &&
     agreePrivacy;
+
+  const isHistoryFormValid =
+    EMAIL_REGEX.test(historyEmail) && historyPassword.length === PASSWORD_LENGTH;
 
   const hasDraftContent =
     title.trim().length > 0 ||
@@ -115,6 +123,12 @@ function ContactPageInner() {
     setAgreePrivacy(false);
   }
 
+  function handleHistoryConfirm() {
+    if (!isHistoryFormValid) return;
+    // TODO(backend): 문의 내역 조회 API 연동 전까지 임시 안내만 표시
+    alert("문의 내역 조회 기능은 준비 중입니다.");
+  }
+
   return (
     <main className="flex min-h-screen justify-center bg-white">
       <div className="flex w-full max-w-sm flex-col">
@@ -133,119 +147,177 @@ function ContactPageInner() {
         <div className="flex items-center px-4">
           <button
             type="button"
-            className="flex-1 py-3 text-center text-[17px] leading-[1.35] font-medium text-[#1F1F1F]"
+            onClick={() => setActiveTab("write")}
+            className={`flex-1 py-3 text-center text-[17px] leading-[1.35] font-medium ${
+              activeTab === "write" ? "text-[#1F1F1F]" : "text-[#949494]"
+            }`}
           >
             문의하기
           </button>
           <button
             type="button"
-            onClick={() => alert("문의내역 기능은 준비 중입니다.")}
-            className="flex-1 py-3 text-center text-[17px] leading-[1.35] font-medium text-[#949494]"
+            onClick={() => setActiveTab("history")}
+            className={`flex-1 py-3 text-center text-[17px] leading-[1.35] font-medium ${
+              activeTab === "history" ? "text-[#1F1F1F]" : "text-[#949494]"
+            }`}
           >
             문의내역
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col">
-          <div className="flex flex-col gap-1 p-4">
-            <FieldLabel>제목</FieldLabel>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="문의 제목을 입력해주세요."
-              className={INPUT_CLASS}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 p-4">
-            <FieldLabel>문의내용</FieldLabel>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
-              placeholder="문의 내용을 상세하게 입력해주세요."
-              maxLength={CONTENT_MAX_LENGTH}
-              className={`h-56 resize-none ${INPUT_CLASS}`}
-            />
-            <div className="flex w-full justify-end">
-              <span className="text-[12px] leading-[1.35] text-[#616161]">
-                {content.length}/{CONTENT_MAX_LENGTH}자 제한
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1 p-4">
-            <FieldLabel>이메일</FieldLabel>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="gongmozip@gongmo-zip.com"
-              className={INPUT_CLASS}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 p-4">
-            <FieldLabel>문의 비밀번호</FieldLabel>
-            <input
-              type="password"
-              inputMode="numeric"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value.replace(/\D/g, "").slice(0, PASSWORD_LENGTH))
-              }
-              placeholder="비밀번호를 입력해 주세요.(4자리)"
-              className={INPUT_CLASS}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2.5 p-4">
-            <div className="flex w-full items-center gap-3 py-2">
-              <div className="flex flex-1 items-center gap-3">
-                <AgreeCheckbox checked={agreePrivacy} onToggle={() => setAgreePrivacy((v) => !v)} />
-                <div className="flex flex-1 items-center gap-1 text-[13px] leading-[1.5]">
-                  <span className="w-8 shrink-0 text-[#AC4A35]">[필수]</span>
-                  <span className="flex-1 text-[#1F1F1F]">개인정보 수집 및 이용 동의</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                aria-label="자세히 보기"
-                onClick={() => setIsDetailOpen((v) => !v)}
-                className="shrink-0 rounded-xl p-2"
-              >
-                <img
-                  src="/images/tabler_chevron-right.svg"
-                  alt=""
-                  className={`h-4 w-4 transition-transform ${isDetailOpen ? "rotate-90" : ""}`}
-                />
-              </button>
+        {activeTab === "write" ? (
+          <div className="flex flex-1 flex-col">
+            <div className="flex flex-col gap-1 p-4">
+              <FieldLabel>제목</FieldLabel>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="문의 제목을 입력해주세요."
+                className={INPUT_CLASS}
+              />
             </div>
 
-            {isDetailOpen && (
-              <div className="w-full rounded-[14px] bg-[#F5F5F5] px-4 py-2">
-                <div className="flex w-full flex-col gap-1.5 p-2 text-[13px] leading-[1.5] text-[#616161]">
-                  <p>수집 항목 : 이메일 주소</p>
-                  <p>수집 목적 : 문의 접수 및 답변 발송</p>
-                  <p>보유 기간 : 문의 처리 완료 후 3개월</p>
-                </div>
+            <div className="flex flex-col gap-1 p-4">
+              <FieldLabel>문의내용</FieldLabel>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value.slice(0, CONTENT_MAX_LENGTH))}
+                placeholder="문의 내용을 상세하게 입력해주세요."
+                maxLength={CONTENT_MAX_LENGTH}
+                className={`h-56 resize-none ${INPUT_CLASS}`}
+              />
+              <div className="flex w-full justify-end">
+                <span className="text-[12px] leading-[1.35] text-[#616161]">
+                  {content.length}/{CONTENT_MAX_LENGTH}자 제한
+                </span>
               </div>
-            )}
+            </div>
+
+            <div className="flex flex-col gap-1 p-4">
+              <FieldLabel>이메일</FieldLabel>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="gongmozip@gongmo-zip.com"
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1 p-4">
+              <FieldLabel>문의 비밀번호</FieldLabel>
+              <input
+                type="password"
+                inputMode="numeric"
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value.replace(/\D/g, "").slice(0, PASSWORD_LENGTH))
+                }
+                placeholder="비밀번호를 입력해 주세요.(4자리)"
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2.5 p-4">
+              <div className="flex w-full items-center gap-3 py-2">
+                <div className="flex flex-1 items-center gap-3">
+                  <AgreeCheckbox
+                    checked={agreePrivacy}
+                    onToggle={() => setAgreePrivacy((v) => !v)}
+                  />
+                  <div className="flex flex-1 items-center gap-1 text-[13px] leading-[1.5]">
+                    <span className="w-8 shrink-0 text-[#AC4A35]">[필수]</span>
+                    <span className="flex-1 text-[#1F1F1F]">개인정보 수집 및 이용 동의</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="자세히 보기"
+                  onClick={() => setIsDetailOpen((v) => !v)}
+                  className="shrink-0 rounded-xl p-2"
+                >
+                  <img
+                    src="/images/tabler_chevron-right.svg"
+                    alt=""
+                    className={`h-4 w-4 transition-transform ${isDetailOpen ? "rotate-90" : ""}`}
+                  />
+                </button>
+              </div>
+
+              {isDetailOpen && (
+                <div className="w-full rounded-[14px] bg-[#F5F5F5] px-4 py-2">
+                  <div className="flex w-full flex-col gap-1.5 p-2 text-[13px] leading-[1.5] text-[#616161]">
+                    <p>수집 항목 : 이메일 주소</p>
+                    <p>수집 목적 : 문의 접수 및 답변 발송</p>
+                    <p>보유 기간 : 문의 처리 완료 후 3개월</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-1 flex-col">
+            <h2 className="px-6 pt-8 pb-2 text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
+              문의할 때 작성했던
+              <br />
+              정보를 입력해주세요
+            </h2>
+
+            <div className="flex flex-col gap-1 p-4">
+              <FieldLabel required={false}>이메일</FieldLabel>
+              <input
+                type="email"
+                value={historyEmail}
+                onChange={(e) => setHistoryEmail(e.target.value)}
+                placeholder="gongmozip@gongmo-zip.com"
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1 p-4">
+              <FieldLabel required={false}>문의 비밀번호</FieldLabel>
+              <input
+                type="password"
+                inputMode="numeric"
+                value={historyPassword}
+                onChange={(e) =>
+                  setHistoryPassword(e.target.value.replace(/\D/g, "").slice(0, PASSWORD_LENGTH))
+                }
+                placeholder="비밀번호를 입력해 주세요.(4자리)"
+                className={INPUT_CLASS}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-          <button
-            type="button"
-            disabled={!isFormValid}
-            onClick={handleSubmit}
-            className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-              isFormValid
-                ? "bg-[#FF7658] text-white"
-                : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-            }`}
-          >
-            제출하기
-          </button>
+          {activeTab === "write" ? (
+            <button
+              type="button"
+              disabled={!isFormValid}
+              onClick={handleSubmit}
+              className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+                isFormValid
+                  ? "bg-[#FF7658] text-white"
+                  : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+              }`}
+            >
+              제출하기
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!isHistoryFormValid}
+              onClick={handleHistoryConfirm}
+              className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+                isHistoryFormValid
+                  ? "bg-[#FF7658] text-white"
+                  : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+              }`}
+            >
+              확인
+            </button>
+          )}
         </div>
       </div>
 

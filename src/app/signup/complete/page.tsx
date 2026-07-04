@@ -7,7 +7,8 @@ export default function SignupCompletePage() {
   const router = useRouter();
 
   function handleBack() {
-    // TODO: 실제 개발된 라우팅 주소로 변경 필요
+    // TOD
+    // O: 실제 개발된 라우팅 주소로 변경 필요
     router.push("/");
   }
 
