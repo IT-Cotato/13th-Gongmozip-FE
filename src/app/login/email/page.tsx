@@ -92,13 +92,12 @@ export default function EmailLoginPage() {
               회원가입
             </Link>
             <span className="text-gray-200">|</span>
-            <button
-              type="button"
-              onClick={() => alert("비밀번호 재설정 기능은 준비 중입니다.")}
+            <Link
+              href="/login/reset-password"
               className="text-[13px] leading-[1.25] font-semibold text-[#616161]"
             >
               비밀번호 재설정
-            </button>
+            </Link>
           </div>
         </div>
 
