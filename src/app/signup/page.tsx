@@ -167,7 +167,7 @@ export default function SignupPage() {
       }
     }
     if (step === TOTAL_STEPS) {
-      router.push("/");
+      router.push("/signup/complete");
       return;
     }
     setActiveField(null);
