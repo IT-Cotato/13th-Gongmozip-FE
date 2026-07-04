@@ -5,10 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon } from "./_components/icons";
 import { SuccessModal } from "./_components/SuccessModal";
 import { LeaveConfirmModal } from "./_components/LeaveConfirmModal";
+import { ContactHistoryCard } from "./_components/ContactHistoryCard";
+import { MOCK_CONTACT_HISTORY } from "./_data/mockHistory";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TITLE_MAX_LENGTH = 20;
 const CONTENT_MAX_LENGTH = 1000;
 const PASSWORD_LENGTH = 4;
+const HISTORY_LIST_RETURN_TO = "/contact?tab=history&step=list";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -53,7 +57,12 @@ function ContactPageInner() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
-  const [activeTab, setActiveTab] = useState<"write" | "history">("write");
+  const [activeTab, setActiveTab] = useState<"write" | "history">(() =>
+    searchParams.get("tab") === "history" ? "history" : "write",
+  );
+  const [historyStep, setHistoryStep] = useState<"verify" | "list">(() =>
+    searchParams.get("step") === "list" ? "list" : "verify",
+  );
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -125,8 +134,12 @@ function ContactPageInner() {
 
   function handleHistoryConfirm() {
     if (!isHistoryFormValid) return;
-    // TODO(backend): 문의 내역 조회 API 연동 전까지 임시 안내만 표시
-    alert("문의 내역 조회 기능은 준비 중입니다.");
+    // TODO(backend): 문의 내역 조회 API 연동 전까지 목데이터로 임시 표시
+    setHistoryStep("list");
+  }
+
+  function handleOpenHistoryDetail(id: string) {
+    router.push(`/contact/history/${id}?returnTo=${encodeURIComponent(HISTORY_LIST_RETURN_TO)}`);
   }
 
   return (
@@ -171,8 +184,9 @@ function ContactPageInner() {
               <FieldLabel>제목</FieldLabel>
               <input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX_LENGTH))}
                 placeholder="문의 제목을 입력해주세요."
+                maxLength={TITLE_MAX_LENGTH}
                 className={INPUT_CLASS}
               />
             </div>
@@ -255,7 +269,7 @@ function ContactPageInner() {
               )}
             </div>
           </div>
-        ) : (
+        ) : historyStep === "verify" ? (
           <div className="flex flex-1 flex-col">
             <h2 className="px-6 pt-8 pb-2 text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
               문의할 때 작성했던
@@ -288,37 +302,49 @@ function ContactPageInner() {
               />
             </div>
           </div>
+        ) : (
+          <div className="flex flex-1 flex-col gap-4 p-4">
+            {MOCK_CONTACT_HISTORY.map((item) => (
+              <ContactHistoryCard
+                key={item.id}
+                item={item}
+                onClick={() => handleOpenHistoryDetail(item.id)}
+              />
+            ))}
+          </div>
         )}
 
-        <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-          {activeTab === "write" ? (
-            <button
-              type="button"
-              disabled={!isFormValid}
-              onClick={handleSubmit}
-              className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-                isFormValid
-                  ? "bg-[#FF7658] text-white"
-                  : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-              }`}
-            >
-              제출하기
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!isHistoryFormValid}
-              onClick={handleHistoryConfirm}
-              className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-                isHistoryFormValid
-                  ? "bg-[#FF7658] text-white"
-                  : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-              }`}
-            >
-              확인
-            </button>
-          )}
-        </div>
+        {(activeTab === "write" || historyStep === "verify") && (
+          <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+            {activeTab === "write" ? (
+              <button
+                type="button"
+                disabled={!isFormValid}
+                onClick={handleSubmit}
+                className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+                  isFormValid
+                    ? "bg-[#FF7658] text-white"
+                    : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+                }`}
+              >
+                제출하기
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!isHistoryFormValid}
+                onClick={handleHistoryConfirm}
+                className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+                  isHistoryFormValid
+                    ? "bg-[#FF7658] text-white"
+                    : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+                }`}
+              >
+                확인
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showSuccessModal && <SuccessModal onClose={handleCloseSuccessModal} />}
