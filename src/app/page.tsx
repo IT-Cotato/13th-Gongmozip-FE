@@ -11,26 +11,18 @@ export default function Home() {
     <main className="flex min-h-screen justify-center bg-white">
       <div className="relative flex w-full max-w-sm flex-col">
         <section className="relative h-[320px] overflow-hidden bg-white">
-          <img
-            src="/images/Vector.svg"
-            alt=""
-            className="absolute -top-14 -left-10 w-44"
-          />
+          <img src="/images/Vector.svg" alt="" className="absolute top-0 left-0 w-[172px]" />
           <img
             src="/images/Vector%20(1).svg"
             alt=""
-            className="absolute top-0 -right-8 w-36"
+            className="absolute top-[19px] left-[252px] w-[138px]"
           />
           <img
             src="/images/Vector%20(2).svg"
             alt=""
-            className="absolute top-24 left-2 w-24"
+            className="absolute top-[101px] left-[92px] w-[121px]"
           />
-          <img
-            src="/images/Vector%20(3).svg"
-            alt=""
-            className="absolute -right-6 bottom-4 w-20"
-          />
+          <img src="/images/Vector%20(3).svg" alt="" className="absolute bottom-0 left-0 w-24" />
           <img
             src="/images/character.svg"
             alt="Gongmozip mascot"
