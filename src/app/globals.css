@@ -8,6 +8,174 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-color-static-black: #000000;
+  --color-color-static-white: #ffffff;
+
+  --color-color-blue-950: #061620;
+  --color-color-blue-900: #0c2737;
+  --color-color-blue-850: #12384f;
+  --color-color-blue-800: #184966;
+  --color-color-blue-700: #246a96;
+  --color-color-blue-600: #308cc5;
+  --color-color-blue-500: #3caff4;
+  --color-color-blue-400: #63bef6;
+  --color-color-blue-300: #8acbf8;
+  --color-color-blue-200: #b1dffb;
+  --color-color-blue-150: #cae7fc;
+  --color-color-blue-100: #d8effd;
+  --color-color-blue-50: #ebf7fe;
+
+  --color-color-green-950: #08170c;
+  --color-color-green-900: #102c18;
+  --color-color-green-850: #184224;
+  --color-color-green-800: #205730;
+  --color-color-green-700: #318249;
+  --color-color-green-600: #41ad61;
+  --color-color-green-500: #51d879;
+  --color-color-green-400: #74e094;
+  --color-color-green-300: #97e5af;
+  --color-color-green-200: #b9efc9;
+  --color-color-green-150: #cbf3d7;
+  --color-color-green-100: #dcf7e4;
+  --color-color-green-50: #eefbef;
+
+  --color-color-mauve-brown-950: #0c0809;
+  --color-color-mauve-brown-900: #191013;
+  --color-color-mauve-brown-850: #25181c;
+  --color-color-mauve-brown-800: #312025;
+  --color-color-mauve-brown-700: #443138;
+  --color-color-mauve-brown-600: #62414a;
+  --color-color-mauve-brown-500: #7b515d;
+  --color-color-mauve-brown-400: #95737c;
+  --color-color-mauve-brown-300: #ae949b;
+  --color-color-mauve-brown-200: #c8b6bb;
+  --color-color-mauve-brown-150: #d5c7ca;
+  --color-color-mauve-brown-100: #e1d7da;
+  --color-color-mauve-brown-50: #eee9eb;
+  --color-color-mauve-brown-10: #fbf9f9;
+
+  --color-color-khaki-950: #282a1d;
+  --color-color-khaki-900: #3c3a2a;
+  --color-color-khaki-850: #4c4a38;
+  --color-color-khaki-800: #5d5a45;
+  --color-color-khaki-700: #7d795f;
+  --color-color-khaki-600: #9e997a;
+  --color-color-khaki-500: #bfb994;
+  --color-color-khaki-400: #ccc7a9;
+  --color-color-khaki-300: #d9d5bf;
+  --color-color-khaki-200: #e5e3d4;
+  --color-color-khaki-150: #eceadf;
+  --color-color-khaki-100: #f2f1ea;
+  --color-color-khaki-50: #f9f8f4;
+
+  --color-color-orange-950: #4d2a04;
+  --color-color-orange-900: #613814;
+  --color-color-orange-850: #74471d;
+  --color-color-orange-800: #895527;
+  --color-color-orange-700: #b0733b;
+  --color-color-orange-600: #d7904f;
+  --color-color-orange-500: #f5ad62;
+  --color-color-orange-400: #febb81;
+  --color-color-orange-300: #fecca1;
+  --color-color-orange-200: #fedcc0;
+  --color-color-orange-150: #fee6d0;
+  --color-color-orange-100: #fef0e0;
+  --color-color-orange-50: #fef7ef;
+
+  --color-color-coral-950: #441309;
+  --color-color-coral-900: #591e12;
+  --color-color-coral-850: #6d291a;
+  --color-color-coral-800: #823423;
+  --color-color-coral-700: #ac4a35;
+  --color-color-coral-600: #d56046;
+  --color-color-coral-500: #ff7658;
+  --color-color-coral-400: #ff9179;
+  --color-color-coral-300: #ffad9b;
+  --color-color-coral-200: #ffc8bc;
+  --color-color-coral-150: #ffd6cd;
+  --color-color-coral-100: #ffe4de;
+  --color-color-coral-50: #fff1ee;
+
+  --color-color-pink-950: #6f0f1c;
+  --color-color-pink-900: #7a1d29;
+  --color-color-pink-850: #8a2a37;
+  --color-color-pink-800: #9a3745;
+  --color-color-pink-700: #bb5260;
+  --color-color-pink-600: #db6c7c;
+  --color-color-pink-500: #f68797;
+  --color-color-pink-400: #fd9fac;
+  --color-color-pink-300: #fdb7c1;
+  --color-color-pink-200: #fecfd5;
+  --color-color-pink-150: #fedbe0;
+  --color-color-pink-100: #fee7ea;
+  --color-color-pink-50: #fff3f5;
+
+  --color-color-yellow-950: #181704;
+  --color-color-yellow-900: #312f08;
+  --color-color-yellow-850: #49460c;
+  --color-color-yellow-800: #625e10;
+  --color-color-yellow-700: #928c18;
+  --color-color-yellow-600: #c3bb21;
+  --color-color-yellow-500: #f4ea29;
+  --color-color-yellow-400: #f6ee54;
+  --color-color-yellow-300: #f8f27f;
+  --color-color-yellow-200: #fbf7a9;
+  --color-color-yellow-150: #fcf9bf;
+  --color-color-yellow-100: #fdfbd4;
+  --color-color-yellow-50: #fefdea;
+
+  --color-color-gray-900: #111111;
+  --color-color-gray-850: #1f1f1f;
+  --color-color-gray-800: #2a2a2a;
+  --color-color-gray-750: #3f3f3f;
+  --color-color-gray-700: #555555;
+  --color-color-gray-650: #616161;
+  --color-color-gray-600: #777777;
+  --color-color-gray-500: #949494;
+  --color-color-gray-400: #b7b7b7;
+  --color-color-gray-350: #c8c8c8;
+  --color-color-gray-300: #dfdfdf;
+  --color-color-gray-250: #e8e8e8;
+  --color-color-gray-200: #efefef;
+  --color-color-gray-150: #f5f5f5;
+  --color-color-gray-100: #fcfcfc;
+
+  --color-semantic-label-normal: #1f1f1f;
+  --color-semantic-label-strong: #111111;
+  --color-semantic-label-neutral: #616161;
+  --color-semantic-label-alternative: #61616199;
+  --color-semantic-label-assistive: #c8c8c8;
+  --color-semantic-label-disabled: #e8e8e8;
+  --color-semantic-label-inverse: #ffffff;
+  --color-semantic-label-brand: #ac4a35;
+  --color-semantic-label-danger: #bb5260;
+  --color-semantic-label-warning: #625e10;
+  --color-semantic-label-success: #318249;
+
+  --color-semantic-fill-neutral: #616161;
+  --color-semantic-fill-neutral-subtle: #b7b7b7;
+  --color-semantic-fill-disabled: #efefef;
+  --color-semantic-fill-inactive: #ffffff;
+  --color-semantic-fill-transparent: #ffffff14;
+  --color-semantic-fill-brand: #ff7658;
+  --color-semantic-fill-brand-subtle: #ffe4de;
+
+  --color-semantic-line-disabled: #e8e8e8;
+  --color-semantic-line-danger: #bb5260;
+  --color-semantic-line-warning: #625e10;
+  --color-semantic-line-success: #318249;
+  --color-semantic-line-brand: #ac4a35;
+
+  --color-semantic-background-normal: #ffffff;
+  --color-semantic-background-transparent: #ffffff14;
+  --color-semantic-background-alternative: #f5f5f5;
+  --color-semantic-background-brand: #ff7658;
+  --color-semantic-background-brand-subtle: #ffd6cd;
+
+  --color-semantic-overlay-dimmer: #1f1f1f99;
+
+  --color-semantic-state-layer-pressed: #00000019;
+
   --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
