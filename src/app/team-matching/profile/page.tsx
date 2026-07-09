@@ -146,7 +146,7 @@ export default function TeamMatchingProfilePage() {
 
   return (
     <TeamMatchingStepLayout
-      actionHref="/team-matching/leader"
+      actionHref="/team-matching/collaboration-type"
       actionLabel="다음"
       currentStep={1}
     >
