@@ -16,7 +16,7 @@ export default function TeamMatchingActionBar({
   }`;
 
   return (
-    <div className="shrink-0 border-t border-[rgba(97,97,97,0.08)] bg-white px-4 pb-3 pt-2">
+    <div className="shrink-0 bg-white px-4 pb-3 pt-2">
       {disabled ? (
         <span aria-disabled="true" className={className}>
           {label}
