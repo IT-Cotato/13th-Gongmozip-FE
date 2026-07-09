@@ -8,10 +8,12 @@ import { PasswordStep } from "./_components/PasswordStep";
 import { InfoStep, type Gender } from "./_components/InfoStep";
 import { TermsStep, type TermsState } from "./_components/TermsStep";
 import { ChevronLeftIcon } from "./_components/icons";
+import { useSignupMutation } from "@/queries/useSignupMutation";
+import { ApiError } from "@/lib/http";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type ActiveField = "name" | "email" | "code" | "birthdate" | null;
-type CodeError = "mismatch" | "expired" | null;
+type CodeError = "mismatch" | "expired" | "unverified" | null;
 type BirthdateError = "format" | "age" | null;
 
 const TOTAL_STEPS = 6;
@@ -100,6 +102,10 @@ function SignupPageInner() {
     marketing: false,
   });
 
+  const [serverEmailDuplicate, setServerEmailDuplicate] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const signupMutation = useSignupMutation();
+
   useEffect(() => {
     if (step !== 3 || secondsLeft <= 0) return;
     const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
@@ -108,7 +114,8 @@ function SignupPageInner() {
 
   const isNameValid = name.trim().length > 0;
   const isEmailValid = EMAIL_REGEX.test(email);
-  const isEmailDuplicate = DEV_DUPLICATE_EMAILS.includes(email.trim().toLowerCase());
+  const isEmailDuplicate =
+    DEV_DUPLICATE_EMAILS.includes(email.trim().toLowerCase()) || serverEmailDuplicate;
   const isCodeValid = code === DEV_BYPASS_CODE;
   const isCodeComplete = code.length === 6;
 
@@ -180,7 +187,36 @@ function SignupPageInner() {
       }
     }
     if (step === TOTAL_STEPS) {
-      router.push("/signup/complete");
+      if (signupMutation.isPending) return;
+      setSubmitError(null);
+      signupMutation.mutate(
+        {
+          email,
+          password,
+          gender: gender === "male" ? "MALE" : "FEMALE",
+          birthDate: `${birthdate.slice(0, 4)}-${birthdate.slice(4, 6)}-${birthdate.slice(6, 8)}`,
+        },
+        {
+          onSuccess: () => router.push("/signup/complete"),
+          onError: (error) => {
+            if (error instanceof ApiError && error.status === 409) {
+              setServerEmailDuplicate(true);
+              setActiveField(null);
+              setStep(2);
+              return;
+            }
+            if (error instanceof ApiError && error.status === 400 && error.message.includes("인증")) {
+              setCodeError("unverified");
+              setActiveField(null);
+              setStep(3);
+              return;
+            }
+            setSubmitError(
+              error instanceof ApiError ? error.message : "회원가입에 실패했습니다. 다시 시도해주세요.",
+            );
+          },
+        },
+      );
       return;
     }
     setActiveField(null);
@@ -200,7 +236,10 @@ function SignupPageInner() {
 
   function appendChar(char: string) {
     if (activeField === "name") setName((v) => v + char);
-    if (activeField === "email") setEmail((v) => v + char);
+    if (activeField === "email") {
+      setEmail((v) => v + char);
+      setServerEmailDuplicate(false);
+    }
     if (activeField === "code" && /\d/.test(char)) {
       setCode((v) => {
         const next = (v + char).slice(0, 6);
@@ -219,7 +258,10 @@ function SignupPageInner() {
 
   function backspace() {
     if (activeField === "name") setName((v) => v.slice(0, -1));
-    if (activeField === "email") setEmail((v) => v.slice(0, -1));
+    if (activeField === "email") {
+      setEmail((v) => v.slice(0, -1));
+      setServerEmailDuplicate(false);
+    }
     if (activeField === "code") setCode((v) => v.slice(0, -1));
     if (activeField === "birthdate") setBirthdate((v) => v.slice(0, -1));
   }
@@ -305,7 +347,10 @@ function SignupPageInner() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setServerEmailDuplicate(false);
+                }}
                 onFocus={() => setActiveField("email")}
                 placeholder="gongmozip@university.ac.kr"
                 className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
@@ -357,7 +402,9 @@ function SignupPageInner() {
                 <p className="mt-2 text-xs text-[#FF5A5A]">
                   {codeError === "mismatch"
                     ? "인증번호가 일치하지 않습니다. 다시 확인 후 입력해 주세요."
-                    : "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요."}
+                    : codeError === "expired"
+                      ? "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요."
+                      : "이메일 인증이 완료되지 않았습니다. 인증번호를 다시 확인해 주세요."}
                 </p>
               )}
 
@@ -414,17 +461,20 @@ function SignupPageInner() {
           )}
 
           {step === 6 && (
-            <TermsStep terms={terms} onToggleAll={toggleTermsAll} onToggleItem={toggleTermsItem} />
+            <>
+              <TermsStep terms={terms} onToggleAll={toggleTermsAll} onToggleItem={toggleTermsItem} />
+              {submitError && <p className="mt-4 text-xs text-[#FF5A5A]">{submitError}</p>}
+            </>
           )}
         </div>
 
         <div className="px-6 pb-6">
           <button
             type="button"
-            disabled={!isCurrentStepValid}
+            disabled={!isCurrentStepValid || signupMutation.isPending}
             onClick={handleNext}
             className={`w-full rounded-xl py-3.5 text-sm font-medium transition-colors ${
-              isCurrentStepValid
+              isCurrentStepValid && !signupMutation.isPending
                 ? "bg-[#FF7658] text-white"
                 : "cursor-not-allowed bg-gray-100 text-gray-400"
             }`}
@@ -432,7 +482,9 @@ function SignupPageInner() {
             {step === 2
               ? "인증번호 전송"
               : step === TOTAL_STEPS
-                ? "동의하고 가입 완료하기"
+                ? signupMutation.isPending
+                  ? "가입 처리 중..."
+                  : "동의하고 가입 완료하기"
                 : "다음"}
           </button>
         </div>
