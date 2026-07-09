@@ -152,7 +152,7 @@ function FixedApplyButton() {
   return (
     <Link
       className="absolute bottom-20 left-1/2 z-10 flex h-12 w-[358px] max-w-[calc(100%-32px)] -translate-x-1/2 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
-      href="/team-matching/notice"
+      href="/team-matching/profile"
     >
       매칭 신청하기
     </Link>

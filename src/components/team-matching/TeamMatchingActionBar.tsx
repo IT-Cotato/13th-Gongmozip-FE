@@ -1,0 +1,31 @@
+import Link from "next/link";
+
+type TeamMatchingActionBarProps = {
+  href: string;
+  label: string;
+  disabled?: boolean;
+};
+
+export default function TeamMatchingActionBar({
+  disabled = false,
+  href,
+  label,
+}: TeamMatchingActionBarProps) {
+  const className = `flex h-[51px] w-full items-center justify-center rounded-[14px] px-8 py-[9px] text-[18px] font-bold leading-none text-white ${
+    disabled ? "bg-[#DFDFDF]" : "bg-[#FF7658]"
+  }`;
+
+  return (
+    <div className="shrink-0 border-t border-[rgba(97,97,97,0.08)] bg-white px-4 pb-3 pt-2">
+      {disabled ? (
+        <span aria-disabled="true" className={className}>
+          {label}
+        </span>
+      ) : (
+        <Link className={className} href={href}>
+          {label}
+        </Link>
+      )}
+    </div>
+  );
+}
