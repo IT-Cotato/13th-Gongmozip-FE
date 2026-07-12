@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { SignupKeyboard } from "./_components/SignupKeyboard";
 import { PasswordStep } from "./_components/PasswordStep";
 import { InfoStep, type Gender } from "./_components/InfoStep";
 import { TermsStep, type TermsState } from "./_components/TermsStep";
@@ -12,7 +11,6 @@ import { useSignupMutation } from "@/queries/useSignupMutation";
 import { ApiError } from "@/lib/http";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
-type ActiveField = "name" | "email" | "code" | "birthdate" | null;
 type CodeError = "mismatch" | "expired" | "unverified" | null;
 type BirthdateError = "format" | "age" | null;
 
@@ -79,7 +77,6 @@ function SignupPageInner() {
     return stepParam >= 1 && stepParam <= TOTAL_STEPS ? (stepParam as Step) : 1;
   });
   const contactHref = `/contact?returnTo=${encodeURIComponent(`/signup?step=${step}`)}`;
-  const [activeField, setActiveField] = useState<ActiveField>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -170,7 +167,6 @@ function SignupPageInner() {
       router.push("/");
       return;
     }
-    setActiveField(null);
     setStep((s) => (s - 1) as Step);
   }
 
@@ -201,13 +197,11 @@ function SignupPageInner() {
           onError: (error) => {
             if (error instanceof ApiError && error.status === 409) {
               setServerEmailDuplicate(true);
-              setActiveField(null);
               setStep(2);
               return;
             }
             if (error instanceof ApiError && error.status === 400 && error.message.includes("인증")) {
               setCodeError("unverified");
-              setActiveField(null);
               setStep(3);
               return;
             }
@@ -219,7 +213,6 @@ function SignupPageInner() {
       );
       return;
     }
-    setActiveField(null);
     setCodeError(null);
     setStep((s) => (s + 1) as Step);
   }
@@ -230,40 +223,7 @@ function SignupPageInner() {
   }
 
   function goToStep(target: Step) {
-    setActiveField(null);
     setStep(target);
-  }
-
-  function appendChar(char: string) {
-    if (activeField === "name") setName((v) => v + char);
-    if (activeField === "email") {
-      setEmail((v) => v + char);
-      setServerEmailDuplicate(false);
-    }
-    if (activeField === "code" && /\d/.test(char)) {
-      setCode((v) => {
-        const next = (v + char).slice(0, 6);
-        if (next.length === 6) setActiveField(null);
-        return next;
-      });
-    }
-    if (activeField === "birthdate" && /\d/.test(char)) {
-      setBirthdate((v) => {
-        const next = (v + char).slice(0, 8);
-        if (next.length === 8) setActiveField(null);
-        return next;
-      });
-    }
-  }
-
-  function backspace() {
-    if (activeField === "name") setName((v) => v.slice(0, -1));
-    if (activeField === "email") {
-      setEmail((v) => v.slice(0, -1));
-      setServerEmailDuplicate(false);
-    }
-    if (activeField === "code") setCode((v) => v.slice(0, -1));
-    if (activeField === "birthdate") setBirthdate((v) => v.slice(0, -1));
   }
 
   function toggleTermsAll() {
@@ -332,7 +292,6 @@ function SignupPageInner() {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onFocus={() => setActiveField("name")}
                 placeholder="이름을 입력해주세요"
                 className="w-full rounded-xl bg-gray-100 px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
               />
@@ -351,7 +310,6 @@ function SignupPageInner() {
                   setEmail(e.target.value);
                   setServerEmailDuplicate(false);
                 }}
-                onFocus={() => setActiveField("email")}
                 placeholder="gongmozip@university.ac.kr"
                 className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
                   isEmailValid && isEmailDuplicate
@@ -377,9 +335,7 @@ function SignupPageInner() {
                       const next = e.target.value.replace(/\D/g, "").slice(0, 6);
                       setCode(next);
                       setCodeError(null);
-                      if (next.length === 6) setActiveField(null);
                     }}
-                    onFocus={() => setActiveField("code")}
                     placeholder="6자리 입력"
                     className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
                       codeError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
@@ -451,11 +407,7 @@ function SignupPageInner() {
               gender={gender}
               onChangeGender={setGender}
               birthdateDisplay={formatBirthdate(birthdate)}
-              onChangeBirthdate={(digits) => {
-                setBirthdate(digits);
-                if (digits.length === 8) setActiveField(null);
-              }}
-              onFocusBirthdate={() => setActiveField("birthdate")}
+              onChangeBirthdate={setBirthdate}
               birthdateError={birthdateError}
             />
           )}
@@ -488,15 +440,6 @@ function SignupPageInner() {
                 : "다음"}
           </button>
         </div>
-
-        {activeField && (
-          <SignupKeyboard
-            mode={activeField === "code" || activeField === "birthdate" ? "numeric" : "qwerty"}
-            onKey={appendChar}
-            onBackspace={backspace}
-            onDone={() => setActiveField(null)}
-          />
-        )}
       </div>
     </main>
   );
