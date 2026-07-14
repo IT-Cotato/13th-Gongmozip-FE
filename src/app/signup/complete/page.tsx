@@ -25,8 +25,7 @@ export default function SignupCompletePage() {
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-white">
-      <div className="flex w-full max-w-sm flex-col">
+    <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
         <div className="relative flex items-center justify-center px-4 py-4">
           <button
             type="button"
@@ -88,7 +87,6 @@ export default function SignupCompletePage() {
             검사 건너뛰고 공모전 시작하기
           </button>
         </div>
-      </div>
     </main>
   );
 }

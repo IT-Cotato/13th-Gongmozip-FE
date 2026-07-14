@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import MobileFrame from "@/components/layout/MobileFrame";
 import { PwaServiceWorker } from "./PwaServiceWorker";
 import { Providers } from "./providers";
 
@@ -36,7 +37,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <PwaServiceWorker />
-        <Providers>{children}</Providers>
+        <MobileFrame>
+          <Providers>{children}</Providers>
+        </MobileFrame>
       </body>
     </html>
   );

@@ -239,8 +239,7 @@ function SignupPageInner() {
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-white">
-      <div className="flex w-full max-w-sm flex-col">
+    <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
         <div className="relative flex items-center justify-center px-4 py-4">
           <button
             type="button"
@@ -445,7 +444,6 @@ function SignupPageInner() {
             onDone={() => setActiveField(null)}
           />
         )}
-      </div>
     </main>
   );
 }

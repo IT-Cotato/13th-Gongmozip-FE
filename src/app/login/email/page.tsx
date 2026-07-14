@@ -34,8 +34,7 @@ export default function EmailLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-white">
-      <div className="flex w-full max-w-sm flex-col">
+    <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
         <div className="relative flex items-center justify-center px-4 py-1">
           <button
             type="button"
@@ -113,7 +112,6 @@ export default function EmailLoginPage() {
             로그인
           </button>
         </div>
-      </div>
     </main>
   );
 }
