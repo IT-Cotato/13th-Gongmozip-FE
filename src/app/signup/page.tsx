@@ -200,13 +200,19 @@ function SignupPageInner() {
               setStep(2);
               return;
             }
-            if (error instanceof ApiError && error.status === 400 && error.message.includes("인증")) {
+            if (
+              error instanceof ApiError &&
+              error.status === 400 &&
+              error.message.includes("인증")
+            ) {
               setCodeError("unverified");
               setStep(3);
               return;
             }
             setSubmitError(
-              error instanceof ApiError ? error.message : "회원가입에 실패했습니다. 다시 시도해주세요.",
+              error instanceof ApiError
+                ? error.message
+                : "회원가입에 실패했습니다. 다시 시도해주세요.",
             );
           },
         },
@@ -242,216 +248,202 @@ function SignupPageInner() {
 
   return (
     <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
-        <div className="relative flex items-center justify-center px-4 py-4">
+      <div className="relative flex items-center justify-center px-4 py-4">
+        <button
+          type="button"
+          onClick={handleBack}
+          aria-label="뒤로가기"
+          className="absolute left-4 flex h-6 w-6 items-center justify-center"
+        >
+          <ChevronLeftIcon />
+        </button>
+        <h2 className="text-base font-semibold text-gray-900">회원가입</h2>
+      </div>
+
+      <div className="flex gap-1.5 px-4">
+        {Array.from({ length: TOTAL_STEPS }, (_, i) => (i + 1) as Step).map((s) => (
           <button
+            key={s}
             type="button"
-            onClick={handleBack}
-            aria-label="뒤로가기"
-            className="absolute left-4 flex h-6 w-6 items-center justify-center"
-          >
-            <ChevronLeftIcon />
-          </button>
-          <h2 className="text-base font-semibold text-gray-900">회원가입</h2>
+            onClick={() => goToStep(s)}
+            aria-label={`${s}단계로 이동`}
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              s <= step ? "bg-[#FF7658]" : "bg-gray-200"
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="flex-1 px-6 pt-8">
+        <div className="mb-8 flex items-start justify-between gap-3">
+          <h1 className="text-xl leading-snug font-bold whitespace-pre-line text-gray-900">
+            {STEP_TITLE[step]}
+          </h1>
+          {step === 3 && (
+            <Link
+              href={contactHref}
+              className="mt-1 shrink-0 text-xs text-gray-400 underline underline-offset-2"
+            >
+              문의하기
+            </Link>
+          )}
         </div>
 
-        <div className="flex gap-1.5 px-4">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (i + 1) as Step).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => goToStep(s)}
-              aria-label={`${s}단계로 이동`}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                s <= step ? "bg-[#FF7658]" : "bg-gray-200"
+        {step === 1 && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-800">
+              이름<span className="text-[#FF7658]">*</span>
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="이름을 입력해주세요"
+              className="w-full rounded-xl bg-gray-100 px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
+            />
+          </div>
+        )}
+
+        {step === 2 && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-800">
+              이메일<span className="text-[#FF7658]">*</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setServerEmailDuplicate(false);
+              }}
+              placeholder="gongmozip@university.ac.kr"
+              className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
+                isEmailValid && isEmailDuplicate
+                  ? "border-[#FF5A5A] bg-white"
+                  : "border-transparent bg-gray-100"
               }`}
             />
-          ))}
-        </div>
-
-        <div className="flex-1 px-6 pt-8">
-          <div className="mb-8 flex items-start justify-between gap-3">
-            <h1 className="text-xl leading-snug font-bold whitespace-pre-line text-gray-900">
-              {STEP_TITLE[step]}
-            </h1>
-            {step === 3 && (
-              <Link
-                href={contactHref}
-                className="mt-1 shrink-0 text-xs text-gray-400 underline underline-offset-2"
-              >
-                문의하기
-              </Link>
+            {isEmailValid && isEmailDuplicate && (
+              <p className="mt-2 text-xs text-[#FF5A5A]">이미 가입된 이메일입니다.</p>
             )}
           </div>
+        )}
 
-          {step === 1 && (
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-800">
-                이름<span className="text-[#FF7658]">*</span>
-              </label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="이름을 입력해주세요"
-                className="w-full rounded-xl bg-gray-100 px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none"
-              />
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-800">
-                이메일<span className="text-[#FF7658]">*</span>
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setServerEmailDuplicate(false);
-                }}
-                placeholder="gongmozip@university.ac.kr"
-                className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
-                  isEmailValid && isEmailDuplicate
-                    ? "border-[#FF5A5A] bg-white"
-                    : "border-transparent bg-gray-100"
-                }`}
-              />
-              {isEmailValid && isEmailDuplicate && (
-                <p className="mt-2 text-xs text-[#FF5A5A]">이미 가입된 이메일입니다.</p>
-              )}
-            </div>
-          )}
-
-          {step === 3 && (
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-800">인증번호</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    inputMode="numeric"
-                    value={code}
-                    onChange={(e) => {
-                      const next = e.target.value.replace(/\D/g, "").slice(0, 6);
-                      setCode(next);
-                      setCodeError(null);
-                    }}
-                    placeholder="6자리 입력"
-                    className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
-                      codeError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
-                    }`}
-                  />
-                  <span className="absolute top-1/2 right-4 -translate-y-1/2 text-xs text-gray-400">
-                    {formatTime(secondsLeft)}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  className="shrink-0 rounded-xl bg-[#FF7658] px-4 text-sm font-medium text-white"
-                >
-                  인증번호 재전송
-                </button>
+        {step === 3 && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-800">인증번호</label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  inputMode="numeric"
+                  value={code}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setCode(next);
+                    setCodeError(null);
+                  }}
+                  placeholder="6자리 입력"
+                  className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
+                    codeError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
+                  }`}
+                />
+                <span className="absolute top-1/2 right-4 -translate-y-1/2 text-xs text-gray-400">
+                  {formatTime(secondsLeft)}
+                </span>
               </div>
-
-              {codeError && (
-                <p className="mt-2 text-xs text-[#FF5A5A]">
-                  {codeError === "mismatch"
-                    ? "인증번호가 일치하지 않습니다. 다시 확인 후 입력해 주세요."
-                    : codeError === "expired"
-                      ? "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요."
-                      : "이메일 인증이 완료되지 않았습니다. 인증번호를 다시 확인해 주세요."}
-                </p>
-              )}
-
-              <div className="mt-6 rounded-xl bg-gray-50 p-4">
-                <p className="mb-2 text-sm font-semibold text-gray-700">
-                  인증번호 발송에 문제가 있나요?
-                </p>
-                <ul className="space-y-1 text-xs leading-relaxed text-gray-500">
-                  <li>• 입력한 이메일 주소가 정확한지 확인해 주세요.</li>
-                  <li>• 인증번호 수신까지 최대 3분 정도 소요될 수 있습니다.</li>
-                  <li>
-                    • 스팸 메일함 또는 메일 차단 설정 여부를 확인한 후 인증번호를 다시 요청해
-                    주세요.
-                  </li>
-                </ul>
-                <p className="mt-3 text-xs text-gray-400">
-                  위 방법을 모두 시도했음에도 인증번호가 수신되지 않는 경우,{" "}
-                  <Link href={contactHref} className="font-medium text-[#FF7658]">
-                    [문의하기]
-                  </Link>{" "}
-                  버튼을 통해 문의해 주세요.
-                  <br />
-                  신속하게 도움을 드리겠습니다.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={handleResend}
+                className="shrink-0 rounded-xl bg-[#FF7658] px-4 text-sm font-medium text-white"
+              >
+                인증번호 재전송
+              </button>
             </div>
-          )}
 
-          {step === 4 && (
-            <PasswordStep
-              password={password}
-              confirmPassword={confirmPassword}
-              showPassword={showPassword}
-              showConfirmPassword={showConfirmPassword}
-              onChangePassword={setPassword}
-              onChangeConfirmPassword={setConfirmPassword}
-              onToggleShowPassword={() => setShowPassword((v) => !v)}
-              onToggleShowConfirmPassword={() => setShowConfirmPassword((v) => !v)}
-            />
-          )}
+            {codeError && (
+              <p className="mt-2 text-xs text-[#FF5A5A]">
+                {codeError === "mismatch"
+                  ? "인증번호가 일치하지 않습니다. 다시 확인 후 입력해 주세요."
+                  : codeError === "expired"
+                    ? "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요."
+                    : "이메일 인증이 완료되지 않았습니다. 인증번호를 다시 확인해 주세요."}
+              </p>
+            )}
 
-          {step === 5 && (
-            <InfoStep
-              gender={gender}
-              onChangeGender={setGender}
-              birthdateDisplay={formatBirthdate(birthdate)}
-              onChangeBirthdate={setBirthdate}
-              birthdateError={birthdateError}
-            />
-          )}
+            <div className="mt-6 rounded-xl bg-gray-50 p-4">
+              <p className="mb-2 text-sm font-semibold text-gray-700">
+                인증번호 발송에 문제가 있나요?
+              </p>
+              <ul className="space-y-1 text-xs leading-relaxed text-gray-500">
+                <li>• 입력한 이메일 주소가 정확한지 확인해 주세요.</li>
+                <li>• 인증번호 수신까지 최대 3분 정도 소요될 수 있습니다.</li>
+                <li>
+                  • 스팸 메일함 또는 메일 차단 설정 여부를 확인한 후 인증번호를 다시 요청해 주세요.
+                </li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-400">
+                위 방법을 모두 시도했음에도 인증번호가 수신되지 않는 경우,{" "}
+                <Link href={contactHref} className="font-medium text-[#FF7658]">
+                  [문의하기]
+                </Link>{" "}
+                버튼을 통해 문의해 주세요.
+                <br />
+                신속하게 도움을 드리겠습니다.
+              </p>
+            </div>
+          </div>
+        )}
 
-          {step === 6 && (
-            <>
-              <TermsStep terms={terms} onToggleAll={toggleTermsAll} onToggleItem={toggleTermsItem} />
-              {submitError && <p className="mt-4 text-xs text-[#FF5A5A]">{submitError}</p>}
-            </>
-          )}
-        </div>
-
-        <div className="px-6 pb-6">
-          <button
-            type="button"
-            disabled={!isCurrentStepValid || signupMutation.isPending}
-            onClick={handleNext}
-            className={`w-full rounded-xl py-3.5 text-sm font-medium transition-colors ${
-              isCurrentStepValid && !signupMutation.isPending
-                ? "bg-[#FF7658] text-white"
-                : "cursor-not-allowed bg-gray-100 text-gray-400"
-            }`}
-          >
-            {step === 2
-              ? "인증번호 전송"
-              : step === TOTAL_STEPS
-                ? signupMutation.isPending
-                  ? "가입 처리 중..."
-                  : "동의하고 가입 완료하기"
-                : "다음"}
-          </button>
-        </div>
-<<<<<<< HEAD
-      </div>
-=======
-
-        {activeField && (
-          <SignupKeyboard
-            mode={activeField === "code" || activeField === "birthdate" ? "numeric" : "qwerty"}
-            onKey={appendChar}
-            onBackspace={backspace}
-            onDone={() => setActiveField(null)}
+        {step === 4 && (
+          <PasswordStep
+            password={password}
+            confirmPassword={confirmPassword}
+            showPassword={showPassword}
+            showConfirmPassword={showConfirmPassword}
+            onChangePassword={setPassword}
+            onChangeConfirmPassword={setConfirmPassword}
+            onToggleShowPassword={() => setShowPassword((v) => !v)}
+            onToggleShowConfirmPassword={() => setShowConfirmPassword((v) => !v)}
           />
         )}
->>>>>>> origin/develop
+
+        {step === 5 && (
+          <InfoStep
+            gender={gender}
+            onChangeGender={setGender}
+            birthdateDisplay={formatBirthdate(birthdate)}
+            onChangeBirthdate={setBirthdate}
+            birthdateError={birthdateError}
+          />
+        )}
+
+        {step === 6 && (
+          <>
+            <TermsStep terms={terms} onToggleAll={toggleTermsAll} onToggleItem={toggleTermsItem} />
+            {submitError && <p className="mt-4 text-xs text-[#FF5A5A]">{submitError}</p>}
+          </>
+        )}
+      </div>
+
+      <div className="px-6 pb-6">
+        <button
+          type="button"
+          disabled={!isCurrentStepValid || signupMutation.isPending}
+          onClick={handleNext}
+          className={`w-full rounded-xl py-3.5 text-sm font-medium transition-colors ${
+            isCurrentStepValid && !signupMutation.isPending
+              ? "bg-[#FF7658] text-white"
+              : "cursor-not-allowed bg-gray-100 text-gray-400"
+          }`}
+        >
+          {step === 2
+            ? "인증번호 전송"
+            : step === TOTAL_STEPS
+              ? signupMutation.isPending
+                ? "가입 처리 중..."
+                : "동의하고 가입 완료하기"
+              : "다음"}
+        </button>
+      </div>
     </main>
   );
 }
