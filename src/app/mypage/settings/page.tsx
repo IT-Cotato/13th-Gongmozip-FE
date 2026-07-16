@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronLeftIcon } from "./_components/icons";
 import { Toggle } from "./_components/Toggle";
 
@@ -54,12 +55,12 @@ export default function SettingsPage() {
 
         <div className="flex w-full flex-col items-start border-b border-[rgba(97,97,97,0.16)] pt-6 pb-4">
           <div className="flex w-full flex-col items-start px-2">
-            <button
-              type="button"
+            <Link
+              href="/mypage/settings/withdraw"
               className="w-full text-left text-[15px] leading-[1.25] font-medium text-[#1F1F1F]"
             >
               회원 탈퇴
-            </button>
+            </Link>
           </div>
         </div>
       </div>
