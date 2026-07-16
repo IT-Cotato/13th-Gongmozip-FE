@@ -1,0 +1,48 @@
+[33mcommit b3fdb35d296440a16cedffdd9f8f7467c05df96c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/login-api-integration[m[33m, [m[1;31morigin/develop[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mdevelop[m[33m)[m
+Merge: 2347d74 d506827
+Author: KIM KISEONG <111440691+Kim-kiseong@users.noreply.github.com>
+Date:   Thu Jul 9 19:32:35 2026 +0900
+
+    Merge pull request #4 from IT-Cotato/feature/aftercertification-flow
+    
+    feat: login&&certification(API 연동 전 UI 구성
+
+[33mcommit 2347d74dff099373f9fd5f12be59181454554a8e[m
+Merge: b9cd6e6 26f2e7c
+Author: kimminseo6 <kimminseoab@gmail.com>
+Date:   Thu Jul 9 13:13:50 2026 +0900
+
+    Merge pull request #5 from IT-Cotato/codex/add-design-color-tokens
+    
+    style: add design color tokens
+
+[33mcommit 26f2e7c75209d9aa992edfd28066c27e4e6e93c0[m
+Author: 김민서 <kimminseo@gmail.com>
+Date:   Thu Jul 9 13:11:27 2026 +0900
+
+    style: add design color tokens
+
+ src/app/globals.css | 168 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ 1 file changed, 168 insertions(+)
+
+[33mcommit d506827011c61f7c8a9e5baa6954b6ddaa5e16e7[m[33m ([m[1;31morigin/feature/aftercertification-flow[m[33m, [m[1;32mfeature/aftercertification-flow[m[33m)[m
+Author: Kim-Kiseong <kiseong054241@gmail.com>
+Date:   Wed Jul 8 15:41:32 2026 +0900
+
+    feat : 로그인 화면 UI 컴포넌트 구현(API 미연동)
+
+ src/app/page.tsx | 16 [32m++++[m[31m------------[m
+ 1 file changed, 4 insertions(+), 12 deletions(-)
+
+[33mcommit 62770cb0d0a21ebfb68c804d19eb970bc7af0614[m
+Author: Kim-Kiseong <kiseong054241@gmail.com>
+Date:   Sat Jul 4 22:08:43 2026 +0900
+
+    feat: 비밀번호 재설정 화면 구현
+
+ public/images/passwordChangeCharacter.svg          |   9 [32m++[m
+ src/app/login/email/page.tsx                       |   7 [32m+[m[31m-[m
+ .../_components/NotRegisteredModal.tsx             |  37 [32m+++++[m
+ src/app/login/reset-password/_components/icons.tsx |  13 [32m++[m
+ src/app/login/reset-password/page.tsx              | 173 [32m+++++++++++++++++++++[m
+ 5 files changed, 235 insertions(+), 4 deletions(-)
