@@ -38,7 +38,7 @@ export default function TeamMatchingStepLayout({
       <TeamMatchingActionBar href={actionHref} label={actionLabel} />
 
       {isLeaveConfirmationOpen ? (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#6D6D6D] px-5">
+        <div className="absolute inset-0 z-50 flex h-[844px] w-[390px] items-center justify-center gap-[10px] bg-[rgba(31,31,31,0.60)] px-8">
           <section
             aria-labelledby="leave-confirmation-title"
             aria-modal="true"
