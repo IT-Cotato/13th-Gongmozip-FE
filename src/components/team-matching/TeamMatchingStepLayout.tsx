@@ -21,7 +21,7 @@ export default function TeamMatchingStepLayout({
     <main className="fixed left-1/2 top-0 flex h-[851px] max-h-dvh w-full max-w-[390px] -translate-x-1/2 flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader />
       <TeamMatchingProgress currentStep={currentStep} />
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-[21px]">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-[21px]">
         {children}
       </div>
       <TeamMatchingActionBar href={actionHref} label={actionLabel} />

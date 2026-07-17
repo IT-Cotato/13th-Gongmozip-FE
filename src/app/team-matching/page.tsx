@@ -1,35 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const navItems = [
-  {
-    label: "홈",
-    href: "/",
-    icon: "/icons/team-matching/_Asset/icon-5.svg",
-  },
-  {
-    label: "공모전",
-    href: "#",
-    icon: "/icons/team-matching/_Asset/icon-3.svg",
-  },
-  {
-    label: "팀원매칭",
-    href: "/team-matching",
-    icon: "/icons/team-matching/_Asset/icon-4.svg",
-    active: true,
-  },
-  {
-    label: "채팅방",
-    href: "#",
-    icon: "/icons/team-matching/_Asset/icon-2.svg",
-    badge: "9",
-  },
-  {
-    label: "마이페이지",
-    href: "#",
-    icon: "/icons/team-matching/_Asset/icon.svg",
-  },
-];
+import BottomNavigation from "@/components/layout/BottomNavigation";
 
 const countdownDigits = ["0", "1", "3", "0", "1", "0"];
 
@@ -47,9 +19,7 @@ function CountdownCard() {
               {digit}
             </span>
             {index === 1 || index === 3 ? (
-              <span className="text-[28px] font-bold leading-none text-[#DFDFDF]">
-                :
-              </span>
+              <span className="text-[28px] font-bold leading-none text-[#DFDFDF]">:</span>
             ) : null}
           </div>
         ))}
@@ -94,57 +64,8 @@ function InfoCard({
         </span>
       </span>
 
-      <Image
-        src="/icons/team-matching/Button/_Asset/icon-1.svg"
-        alt=""
-        width={20}
-        height={20}
-      />
+      <Image src="/icons/team-matching/Button/_Asset/icon-1.svg" alt="" width={20} height={20} />
     </Link>
-  );
-}
-
-function BottomNavigation() {
-  return (
-    <nav className="absolute bottom-0 left-0 right-0 z-10 flex h-16 items-center justify-center self-stretch border-t border-[rgba(97,97,97,0.08)] bg-white py-1">
-      <div className="grid w-full grid-cols-5">
-        {navItems.map((item) => (
-          <Link
-            aria-current={item.active ? "page" : undefined}
-            className="flex min-w-0 flex-col items-center justify-center gap-[2px]"
-            href={item.href}
-            key={item.label}
-          >
-            <span className="relative h-6 w-6">
-              {item.active ? (
-                <span
-                  className="block h-6 w-6 bg-[#1F1F1F]"
-                  style={{
-                    WebkitMask: `url("${item.icon}") center / contain no-repeat`,
-                    mask: `url("${item.icon}") center / contain no-repeat`,
-                  }}
-                />
-              ) : (
-                <Image src={item.icon} alt="" width={24} height={24} />
-              )}
-
-              {item.badge ? (
-                <span className="absolute -right-[6px] -top-[5px] flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-[#FF7658] px-[3px] text-[9px] font-bold leading-none text-white">
-                  {item.badge}
-                </span>
-              ) : null}
-            </span>
-            <span
-              className={`whitespace-nowrap text-[12px] font-bold leading-[16px] ${
-                item.active ? "text-[#1F1F1F]" : "text-[#949494]"
-              }`}
-            >
-              {item.label}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </nav>
   );
 }
 
@@ -171,15 +92,14 @@ export default function TeamMatchingPage() {
           <span className="h-6 w-6" aria-hidden="true" />
         </header>
 
-        <div className="flex-1 overflow-y-auto pb-[154px] pt-[46px]">
+        <div className="scrollbar-hidden flex-1 overflow-y-auto pb-[154px] pt-[46px]">
           <section className="pt-6 text-center">
             <div
               aria-label="팀원 매칭 캐릭터"
               className="mx-auto aspect-[357/139] h-[139px] w-[357px] max-w-[calc(100%-32px)]"
               role="img"
               style={{
-                backgroundImage:
-                  'url("/images/team-matching/teammatching.png")',
+                backgroundImage: 'url("/images/team-matching/teammatching.png")',
                 backgroundPosition: "0px -110.006px",
                 backgroundRepeat: "no-repeat",
                 backgroundSize: "100% 257.669%",
@@ -226,11 +146,12 @@ export default function TeamMatchingPage() {
               tone="gray"
             />
           </section>
-
         </div>
 
         <FixedApplyButton />
-        <BottomNavigation />
+        <div className="absolute bottom-0 left-0 right-0 z-10">
+          <BottomNavigation />
+        </div>
       </div>
     </main>
   );
