@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDownIcon, ChevronLeftIcon } from "./_components/icons";
@@ -18,7 +19,7 @@ function ConsentCheckbox({ checked, onToggle }: { checked: boolean; onToggle: ()
       className="shrink-0"
     >
       {checked ? (
-        <img src="/images/check-circle.svg" alt="" className="size-8" />
+        <Image alt="" className="size-8" height={32} src="/images/check-circle.svg" width={32} />
       ) : (
         <span className="block size-8 rounded-full border-2 border-gray-300" />
       )}
@@ -67,7 +68,13 @@ export default function WithdrawPage() {
         </div>
 
         <div className="flex justify-center py-2">
-          <img src="/images/goodByeCharacter.svg" alt="" className="size-[235px]" />
+          <Image
+            alt=""
+            className="size-[235px]"
+            height={235}
+            src="/images/goodByeCharacter.svg"
+            width={235}
+          />
         </div>
 
         <div className="px-4 pb-2">

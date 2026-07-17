@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon } from "../_components/icons";
 
@@ -47,15 +48,19 @@ export default function SignupCompletePage() {
           </p>
 
           <div className="relative mb-6 flex h-[190px] items-center justify-center">
-            <img
+            <Image
               src="/images/Vector%20(4).svg"
               alt=""
               className="absolute top-1/2 left-1/2 w-56 -translate-x-1/2 -translate-y-1/2"
+              height={224}
+              width={224}
             />
-            <img
+            <Image
               src="/images/finalScreenCharacter.svg"
               alt="가입을 축하하는 공모집 캐릭터들"
               className="relative w-full max-w-[260px]"
+              height={190}
+              width={260}
             />
           </div>
 

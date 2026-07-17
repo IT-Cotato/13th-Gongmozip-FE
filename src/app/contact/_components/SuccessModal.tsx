@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 type SuccessModalProps = {
   onClose: () => void;
 };
@@ -6,7 +8,7 @@ export function SuccessModal({ onClose }: SuccessModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
       <div className="flex w-full max-w-xs flex-col items-center gap-4 rounded-2xl bg-white px-6 py-8 text-center">
-        <img src="/images/check-circle.svg" alt="" className="h-10 w-10" />
+        <Image alt="" className="h-10 w-10" height={40} src="/images/check-circle.svg" width={40} />
         <p className="text-[15px] leading-[1.5] font-semibold text-[#1F1F1F]">
           문의가 성공적으로 접수되었어요!
         </p>
