@@ -6,7 +6,6 @@ type InfoStepProps = {
   onChangeGender: (gender: Gender) => void;
   birthdateDisplay: string;
   onChangeBirthdate: (digits: string) => void;
-  onFocusBirthdate: () => void;
   birthdateError: BirthdateError;
 };
 
@@ -38,7 +37,6 @@ export function InfoStep({
   onChangeGender,
   birthdateDisplay,
   onChangeBirthdate,
-  onFocusBirthdate,
   birthdateError,
 }: InfoStepProps) {
   return (
@@ -66,7 +64,6 @@ export function InfoStep({
         inputMode="numeric"
         value={birthdateDisplay}
         onChange={(e) => onChangeBirthdate(e.target.value.replace(/\D/g, "").slice(0, 8))}
-        onFocus={onFocusBirthdate}
         placeholder="YYYY/MM/DD"
         className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
           birthdateError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
