@@ -26,7 +26,10 @@ type MenuSection = { title?: string; items: MenuItem[] };
 const MENU_SECTIONS: MenuSection[] = [
   {
     title: "정보관리",
-    items: [{ label: "회원정보 수정", href: "/mypage/edit-profile" }, { label: "비밀번호 변경" }],
+    items: [
+      { label: "회원정보 수정", href: "/mypage/edit-profile" },
+      { label: "비밀번호 변경", href: "/mypage/change-password" },
+    ],
   },
   {
     title: "고객지원",
