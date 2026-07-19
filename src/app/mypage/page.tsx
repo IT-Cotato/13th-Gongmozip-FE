@@ -10,9 +10,9 @@ const MOCK_USER = {
   testStatus: "검사 전",
 };
 
-const MOCK_STATS = [
+const MOCK_STATS: { label: string; count: number; href?: string }[] = [
   { label: "프로필 관리", count: 4 },
-  { label: "프로젝트 관리", count: 2 },
+  { label: "프로젝트 관리", count: 2, href: "/mypage/projects" },
   { label: "스크랩", count: 34 },
 ];
 
@@ -97,18 +97,38 @@ export default function MyPage() {
         </section>
 
         <div className="flex w-full items-center justify-center py-2">
-          {MOCK_STATS.map((stat, index) => (
-            <Fragment key={stat.label}>
-              {index > 0 && <span className="h-5 w-px shrink-0 bg-[rgba(97,97,97,0.22)]" />}
-              <div
-                data-coachmark={index === 0 ? "profile-stat" : undefined}
-                className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl py-1"
-              >
+          {MOCK_STATS.map((stat, index) => {
+            const className =
+              "flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl py-1";
+            const content = (
+              <>
                 <span className="text-[13px] text-[#AC4A35]">{stat.count}</span>
                 <span className="text-xs text-[#1F1F1F]">{stat.label}</span>
-              </div>
-            </Fragment>
-          ))}
+              </>
+            );
+
+            return (
+              <Fragment key={stat.label}>
+                {index > 0 && <span className="h-5 w-px shrink-0 bg-[rgba(97,97,97,0.22)]" />}
+                {stat.href ? (
+                  <Link
+                    href={stat.href}
+                    data-coachmark={index === 0 ? "profile-stat" : undefined}
+                    className={className}
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div
+                    data-coachmark={index === 0 ? "profile-stat" : undefined}
+                    className={className}
+                  >
+                    {content}
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
         </div>
 
         <div className="flex flex-col items-center">
