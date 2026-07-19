@@ -57,13 +57,17 @@ export default function MyPage() {
 
   const statsItems = data
     ? [
-        { label: "프로필 관리", count: data.stats.profileManagementCount },
+        {
+          label: "프로필 관리",
+          count: data.stats.profileManagementCount,
+          href: "/mypage/profile-management",
+        },
         {
           label: "프로젝트 관리",
           count: data.stats.projectManagementCount,
           href: "/mypage/projects",
         },
-        { label: "스크랩", count: data.stats.scrapCount },
+        { label: "스크랩", count: data.stats.scrapCount, href: "/mypage/scrap" },
       ]
     : [];
 
