@@ -29,7 +29,7 @@ export default function TeamMatchingNoticePage() {
           주의사항을 확인해주세요.
         </h2>
 
-        <p className="mt-4 ml-2 w-[342px] font-[Roboto] text-[13px] font-normal leading-[150%] text-[#949494]">
+        <p className="mt-4 w-full max-w-[342px] font-[Roboto] text-[13px] font-normal leading-[150%] text-[#949494]">
           팀원 매칭 서비스는 각자의 강점을 살려
           <br />
           최적의 팀을 만드는 서비스입니다.
@@ -40,7 +40,7 @@ export default function TeamMatchingNoticePage() {
           향후 매칭에 불이익이 적용될 수 있습니다.
         </p>
 
-        <div className="mt-8 flex w-[358px] flex-col items-start gap-4 rounded-2xl bg-[#F5F5F5] px-6 py-4">
+        <div className="mt-8 flex w-full max-w-[358px] flex-col items-start gap-4 rounded-2xl bg-[#F5F5F5] px-6 py-4">
           <h3 className="font-[Roboto] text-[17px] font-semibold leading-[125%] text-[#1F1F1F]">
             이 세가지 행동은
             <br />

@@ -15,7 +15,7 @@ type TeamMatchingPoolViewProps = {
 
 function MatchingCountdown() {
   return (
-    <section className="relative mx-auto mt-9 flex w-[358px] flex-col items-start gap-4 overflow-hidden rounded-2xl bg-[#F9F8F4] px-5 py-4 shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]">
+    <section className="relative mx-auto mt-9 flex w-full max-w-[358px] flex-col items-start gap-4 overflow-hidden rounded-2xl bg-[#F9F8F4] px-5 py-4 shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]">
       <Image
         alt=""
         aria-hidden="true"
@@ -133,7 +133,7 @@ export default function TeamMatchingPoolView({
         <div className="relative z-10 mt-[78px]">
           <Image
             alt="팀원 매칭을 기다리는 캐릭터들"
-            className="mx-auto h-auto w-[358px]"
+            className="mx-auto h-auto w-full max-w-[358px]"
             height={146}
             priority
             src="/images/team-matching/matchingpool.png"
@@ -142,7 +142,7 @@ export default function TeamMatchingPoolView({
 
           <div
             aria-hidden="true"
-            className="mx-auto mt-8 flex h-[6px] w-[322px] flex-col items-start gap-[10px] overflow-hidden rounded-[90px] bg-[#D9D9D9]"
+            className="mx-auto mt-8 flex h-[6px] w-full max-w-[322px] flex-col items-start gap-[10px] overflow-hidden rounded-[90px] bg-[#D9D9D9]"
           >
             <div className="h-[6px] w-20 shrink-0 rounded-[90px] bg-[#FFAD62]" />
           </div>
