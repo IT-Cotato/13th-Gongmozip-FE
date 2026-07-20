@@ -18,24 +18,24 @@ export default function ChatPage() {
         </button>
       </header>
 
-      <section aria-label="채팅방 목록" className="flex flex-1 flex-col overflow-y-auto pt-4">
+      <section aria-label="채팅방 목록" className="flex flex-1 flex-col overflow-y-auto">
         {MOCK_CHAT_ROOMS.map((room) => (
           <Link
             key={room.id}
             href={`/chat/${room.id}`}
-            className="flex w-full items-center gap-2 bg-white p-4"
+            className="flex h-[92px] w-full shrink-0 items-center gap-2 overflow-hidden bg-white p-4"
           >
             <AvatarStack avatarSrcs={room.avatarSrcs} />
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <div className="flex items-center gap-4">
-                <h2 className="min-w-0 flex-1 truncate text-[17px] leading-[1.35] font-semibold text-color-gray-850">
+            <div className="flex w-[280px] shrink-0 flex-col items-center justify-center gap-1 text-left">
+              <div className="flex w-full items-center gap-4 leading-[1.35]">
+                <h2 className="min-w-0 flex-1 truncate text-[13px] leading-[1.5] font-semibold text-color-gray-850">
                   {room.title}
                 </h2>
                 <span className="shrink-0 text-[12px] leading-[1.35] text-color-gray-650">
                   {room.lastMessageAt}
                 </span>
               </div>
-              <p className="truncate text-[13px] leading-[1.25] font-medium text-color-gray-750">
+              <p className="h-7 w-full overflow-hidden text-[13px] leading-[1.25] font-medium text-ellipsis whitespace-nowrap text-color-gray-650">
                 {room.lastMessage}
               </p>
             </div>
