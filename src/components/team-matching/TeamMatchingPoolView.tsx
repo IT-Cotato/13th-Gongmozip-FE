@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import CancelConfirmationModal from "@/components/team-matching/CancelConfirmationModal";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 
 const countdownGroups = [
@@ -73,41 +74,6 @@ function MatchingCountdown() {
         </div>
       </div>
     </section>
-  );
-}
-
-function CancelConfirmationModal() {
-  return (
-    <div className="absolute inset-0 z-50 flex items-start justify-center bg-[rgba(31,31,31,0.60)] px-6 pt-[315px]">
-      <section
-        aria-labelledby="matching-cancel-title"
-        aria-modal="true"
-        className="flex max-h-[400px] w-[350px] shrink-0 flex-col items-center rounded-2xl bg-white px-4 pb-4 pt-2 shadow-[0_53px_15px_0_rgba(0,0,0,0),0_34px_14px_0_rgba(0,0,0,0.01),0_19px_12px_0_rgba(0,0,0,0.05),0_9px_9px_0_rgba(0,0,0,0.09),0_2px_5px_0_rgba(0,0,0,0.10)]"
-        role="dialog"
-      >
-        <h2
-          className="mt-4 w-[310px] text-center font-[Pretendard] text-[20px] font-medium leading-[135%] text-[#1F1F1F]"
-          id="matching-cancel-title"
-        >
-          팀원 매칭을 취소할까요?
-        </h2>
-
-        <div className="mt-5 flex h-[60px] self-stretch items-center gap-2 px-2 py-1">
-          <Link
-            className="flex flex-[1_0_0] items-center justify-center self-stretch rounded-xl border border-[rgba(97,97,97,0.50)] bg-white p-2 text-center font-[Roboto] text-[15px] font-semibold leading-[125%] text-[#616161]"
-            href="/team-matching/pool"
-          >
-            계속 기다리기
-          </Link>
-          <Link
-            className="flex flex-[1_0_0] items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
-            href="/team-matching"
-          >
-            매칭 취소하기
-          </Link>
-        </div>
-      </section>
-    </div>
   );
 }
 
