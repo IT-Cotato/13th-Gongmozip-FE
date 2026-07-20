@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 
 import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
@@ -136,12 +135,14 @@ function ProfileCard({
         </div>
       </div>
 
-      <Link
-        className="flex h-10 flex-1 flex-col items-stretch justify-center self-stretch border-t border-[#EFEFEF] text-center font-[Pretendard] text-[15px] font-medium leading-[125%] text-[#616161]"
-        href="#"
+      <button
+        aria-disabled="true"
+        className="flex h-10 flex-1 cursor-not-allowed flex-col items-stretch justify-center self-stretch border-t border-[#EFEFEF] text-center font-[Pretendard] text-[15px] font-medium leading-[125%] text-[#949494]"
+        disabled
+        type="button"
       >
         수정
-      </Link>
+      </button>
     </article>
   );
 }
