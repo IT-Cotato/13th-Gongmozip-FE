@@ -9,12 +9,17 @@ import { InfoStep, type Gender } from "./_components/InfoStep";
 import { TermsStep, type TermsState } from "./_components/TermsStep";
 import { ChevronLeftIcon } from "./_components/icons";
 import { useSignupMutation } from "@/queries/useSignupMutation";
+import { useSendVerificationCodeMutation } from "@/queries/useSendVerificationCodeMutation";
+import { useVerifyEmailCodeMutation } from "@/queries/useVerifyEmailCodeMutation";
 import { ApiError } from "@/lib/http";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type ActiveField = "name" | "email" | "code" | "birthdate" | null;
-type CodeError = "mismatch" | "expired" | "unverified" | null;
 type BirthdateError = "format" | "age" | null;
+
+const CODE_EXPIRED_MESSAGE = "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요.";
+const EMAIL_DUPLICATE_CODE = "MEMBER_409_1";
+const EMAIL_NOT_VERIFIED_CODE = "MEMBER_400_3";
 
 const TOTAL_STEPS = 6;
 const MIN_AGE = 14;
@@ -30,10 +35,6 @@ const STEP_TITLE: Record<Step, string> = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_SECONDS = 300;
-// TODO(backend): 백엔드 인증 API 연동 전까지 프론트 테스트용으로 "111111" 입력 시 인증 성공 처리
-const DEV_BYPASS_CODE = "111111";
-// TODO(backend): 백엔드 중복 확인 API 연동 전까지 프론트 테스트용으로 지정한 이메일을 가입된 이메일로 처리
-const DEV_DUPLICATE_EMAILS = ["gongmozip@gongmo-zip.com"];
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -85,7 +86,7 @@ function SignupPageInner() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
-  const [codeError, setCodeError] = useState<CodeError>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -103,8 +104,11 @@ function SignupPageInner() {
   });
 
   const [serverEmailDuplicate, setServerEmailDuplicate] = useState(false);
+  const [sendCodeError, setSendCodeError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const signupMutation = useSignupMutation();
+  const sendCodeMutation = useSendVerificationCodeMutation();
+  const verifyCodeMutation = useVerifyEmailCodeMutation();
 
   useEffect(() => {
     if (step !== 3 || secondsLeft <= 0) return;
@@ -114,9 +118,7 @@ function SignupPageInner() {
 
   const isNameValid = name.trim().length > 0;
   const isEmailValid = EMAIL_REGEX.test(email);
-  const isEmailDuplicate =
-    DEV_DUPLICATE_EMAILS.includes(email.trim().toLowerCase()) || serverEmailDuplicate;
-  const isCodeValid = code === DEV_BYPASS_CODE;
+  const isEmailDuplicate = serverEmailDuplicate;
   const isCodeComplete = code.length === 6;
 
   const isPasswordValid =
@@ -176,16 +178,58 @@ function SignupPageInner() {
 
   function handleNext() {
     if (!isCurrentStepValid) return;
+
+    if (step === 2) {
+      if (sendCodeMutation.isPending) return;
+      setSendCodeError(null);
+      sendCodeMutation.mutate(
+        { email },
+        {
+          onSuccess: () => {
+            setSecondsLeft(RESEND_SECONDS);
+            setCodeError(null);
+            setActiveField(null);
+            setStep(3);
+          },
+          onError: (error) => {
+            if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
+              setServerEmailDuplicate(true);
+              return;
+            }
+            setSendCodeError(
+              error instanceof ApiError ? error.message : "인증번호 전송에 실패했습니다.",
+            );
+          },
+        },
+      );
+      return;
+    }
+
     if (step === 3) {
       if (secondsLeft <= 0) {
-        setCodeError("expired");
+        setCodeError(CODE_EXPIRED_MESSAGE);
         return;
       }
-      if (!isCodeValid) {
-        setCodeError("mismatch");
-        return;
-      }
+      if (verifyCodeMutation.isPending) return;
+      setCodeError(null);
+      verifyCodeMutation.mutate(
+        { email, code },
+        {
+          onSuccess: () => {
+            setActiveField(null);
+            setCodeError(null);
+            setStep(4);
+          },
+          onError: (error) => {
+            setCodeError(
+              error instanceof ApiError ? error.message : "인증번호 확인에 실패했습니다.",
+            );
+          },
+        },
+      );
+      return;
     }
+
     if (step === TOTAL_STEPS) {
       if (signupMutation.isPending) return;
       setSubmitError(null);
@@ -199,14 +243,14 @@ function SignupPageInner() {
         {
           onSuccess: () => router.push("/signup/complete"),
           onError: (error) => {
-            if (error instanceof ApiError && error.status === 409) {
+            if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
               setServerEmailDuplicate(true);
               setActiveField(null);
               setStep(2);
               return;
             }
-            if (error instanceof ApiError && error.status === 400 && error.message.includes("인증")) {
-              setCodeError("unverified");
+            if (error instanceof ApiError && error.code === EMAIL_NOT_VERIFIED_CODE) {
+              setCodeError(error.message);
               setActiveField(null);
               setStep(3);
               return;
@@ -219,14 +263,33 @@ function SignupPageInner() {
       );
       return;
     }
+
     setActiveField(null);
     setCodeError(null);
     setStep((s) => (s + 1) as Step);
   }
 
   function handleResend() {
-    setSecondsLeft(RESEND_SECONDS);
-    setCodeError(null);
+    if (sendCodeMutation.isPending) return;
+    setSendCodeError(null);
+    sendCodeMutation.mutate(
+      { email },
+      {
+        onSuccess: () => {
+          setSecondsLeft(RESEND_SECONDS);
+          setCodeError(null);
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
+            setServerEmailDuplicate(true);
+            return;
+          }
+          setSendCodeError(
+            error instanceof ApiError ? error.message : "인증번호 전송에 실패했습니다.",
+          );
+        },
+      },
+    );
   }
 
   function goToStep(target: Step) {
@@ -239,6 +302,7 @@ function SignupPageInner() {
     if (activeField === "email") {
       setEmail((v) => v + char);
       setServerEmailDuplicate(false);
+      setSendCodeError(null);
     }
     if (activeField === "code" && /\d/.test(char)) {
       setCode((v) => {
@@ -261,6 +325,7 @@ function SignupPageInner() {
     if (activeField === "email") {
       setEmail((v) => v.slice(0, -1));
       setServerEmailDuplicate(false);
+      setSendCodeError(null);
     }
     if (activeField === "code") setCode((v) => v.slice(0, -1));
     if (activeField === "birthdate") setBirthdate((v) => v.slice(0, -1));
@@ -350,6 +415,7 @@ function SignupPageInner() {
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setServerEmailDuplicate(false);
+                  setSendCodeError(null);
                 }}
                 onFocus={() => setActiveField("email")}
                 placeholder="gongmozip@university.ac.kr"
@@ -362,6 +428,7 @@ function SignupPageInner() {
               {isEmailValid && isEmailDuplicate && (
                 <p className="mt-2 text-xs text-[#FF5A5A]">이미 가입된 이메일입니다.</p>
               )}
+              {sendCodeError && <p className="mt-2 text-xs text-[#FF5A5A]">{sendCodeError}</p>}
             </div>
           )}
 
@@ -392,21 +459,16 @@ function SignupPageInner() {
                 <button
                   type="button"
                   onClick={handleResend}
-                  className="shrink-0 rounded-xl bg-[#FF7658] px-4 text-sm font-medium text-white"
+                  disabled={sendCodeMutation.isPending}
+                  className="shrink-0 rounded-xl bg-[#FF7658] px-4 text-sm font-medium text-white disabled:opacity-50"
                 >
-                  인증번호 재전송
+                  {sendCodeMutation.isPending ? "전송 중..." : "인증번호 재전송"}
                 </button>
               </div>
 
-              {codeError && (
-                <p className="mt-2 text-xs text-[#FF5A5A]">
-                  {codeError === "mismatch"
-                    ? "인증번호가 일치하지 않습니다. 다시 확인 후 입력해 주세요."
-                    : codeError === "expired"
-                      ? "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요."
-                      : "이메일 인증이 완료되지 않았습니다. 인증번호를 다시 확인해 주세요."}
-                </p>
-              )}
+              {sendCodeError && <p className="mt-2 text-xs text-[#FF5A5A]">{sendCodeError}</p>}
+
+              {codeError && <p className="mt-2 text-xs text-[#FF5A5A]">{codeError}</p>}
 
               <div className="mt-6 rounded-xl bg-gray-50 p-4">
                 <p className="mb-2 text-sm font-semibold text-gray-700">
@@ -471,21 +533,35 @@ function SignupPageInner() {
         <div className="px-6 pb-6">
           <button
             type="button"
-            disabled={!isCurrentStepValid || signupMutation.isPending}
+            disabled={
+              !isCurrentStepValid ||
+              signupMutation.isPending ||
+              sendCodeMutation.isPending ||
+              verifyCodeMutation.isPending
+            }
             onClick={handleNext}
             className={`w-full rounded-xl py-3.5 text-sm font-medium transition-colors ${
-              isCurrentStepValid && !signupMutation.isPending
+              isCurrentStepValid &&
+              !signupMutation.isPending &&
+              !sendCodeMutation.isPending &&
+              !verifyCodeMutation.isPending
                 ? "bg-[#FF7658] text-white"
                 : "cursor-not-allowed bg-gray-100 text-gray-400"
             }`}
           >
             {step === 2
-              ? "인증번호 전송"
-              : step === TOTAL_STEPS
-                ? signupMutation.isPending
-                  ? "가입 처리 중..."
-                  : "동의하고 가입 완료하기"
-                : "다음"}
+              ? sendCodeMutation.isPending
+                ? "전송 중..."
+                : "인증번호 전송"
+              : step === 3
+                ? verifyCodeMutation.isPending
+                  ? "확인 중..."
+                  : "다음"
+                : step === TOTAL_STEPS
+                  ? signupMutation.isPending
+                    ? "가입 처리 중..."
+                    : "동의하고 가입 완료하기"
+                  : "다음"}
           </button>
         </div>
 
