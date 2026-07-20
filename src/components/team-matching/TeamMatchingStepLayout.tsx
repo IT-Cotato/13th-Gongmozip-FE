@@ -43,7 +43,7 @@ export default function TeamMatchingStepLayout({
 
       <Dialog
         aria-labelledby="leave-confirmation-title"
-        className="fixed left-1/2 top-0 z-50 m-0 hidden h-[844px] max-h-dvh w-full max-w-[390px] -translate-x-1/2 items-center justify-center gap-[10px] overflow-hidden bg-transparent px-8 backdrop:bg-[rgba(31,31,31,0.60)] open:flex"
+        className="fixed left-1/2 top-0 z-50 m-0 hidden h-full max-h-dvh w-full max-w-[390px] -translate-x-1/2 items-center justify-center gap-[10px] overflow-hidden bg-transparent px-8 backdrop:bg-[rgba(31,31,31,0.60)] open:flex"
         initialFocusRef={continueButtonRef}
         onOpenChange={setIsLeaveConfirmationOpen}
         open={isLeaveConfirmationOpen}
