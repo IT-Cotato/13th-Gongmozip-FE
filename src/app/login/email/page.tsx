@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sulphur_Point } from "next/font/google";
 import { ChevronLeftIcon } from "./_components/icons";
+import { useLoginMutation } from "@/queries/useLoginMutation";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { ApiError } from "@/lib/http";
 
 const sulphurPoint = Sulphur_Point({
   subsets: ["latin"],
@@ -18,8 +21,11 @@ const INPUT_CLASS =
 
 export default function EmailLoginPage() {
   const router = useRouter();
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const loginMutation = useLoginMutation();
 
   const isValid = EMAIL_REGEX.test(email) && password.length > 0;
 
@@ -28,9 +34,22 @@ export default function EmailLoginPage() {
   }
 
   function handleLogin() {
-    if (!isValid) return;
-    // TODO(backend): 로그인 API 연동 전까지 성공했다고 가정하고 홈으로 이동
-    router.push("/");
+    if (!isValid || loginMutation.isPending) return;
+    setLoginError(null);
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          setAccessToken(data.accessToken);
+          router.push("/");
+        },
+        onError: (error) => {
+          setLoginError(
+            error instanceof ApiError ? error.message : "로그인에 실패했습니다. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
   return (
@@ -67,7 +86,10 @@ export default function EmailLoginPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setLoginError(null);
+              }}
               placeholder="gongmozip@gongmo-zip.com"
               className={INPUT_CLASS}
             />
@@ -78,10 +100,14 @@ export default function EmailLoginPage() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setLoginError(null);
+              }}
               placeholder="비밀번호를 입력해 주세요."
               className={INPUT_CLASS}
             />
+            {loginError && <p className="px-1 text-xs text-[#FF5A5A]">{loginError}</p>}
           </div>
 
           <div className="flex items-center justify-center gap-3 pt-8">
@@ -104,13 +130,15 @@ export default function EmailLoginPage() {
         <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
           <button
             type="button"
-            disabled={!isValid}
+            disabled={!isValid || loginMutation.isPending}
             onClick={handleLogin}
             className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-              isValid ? "bg-[#FF7658] text-white" : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+              isValid && !loginMutation.isPending
+                ? "bg-[#FF7658] text-white"
+                : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
             }`}
           >
-            로그인
+            {loginMutation.isPending ? "로그인 중..." : "로그인"}
           </button>
         </div>
       </div>

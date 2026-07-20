@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/stores/useAuthStore";
+
 // 브라우저는 같은 origin의 /api/*로만 요청한다. 실제 백엔드로의 전달은
 // next.config.ts의 rewrites가 서버사이드에서 처리하므로 CORS가 발생하지 않는다.
 
@@ -34,11 +36,14 @@ function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
+  const accessToken = useAuthStore.getState().accessToken;
 
   const response = await fetch(path, {
     ...rest,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
