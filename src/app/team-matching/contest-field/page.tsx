@@ -42,6 +42,7 @@ export default function TeamMatchingContestFieldPage() {
                     : "bg-[rgba(97,97,97,0.10)] text-[#616161]"
                 }`}
                 key={field}
+                aria-pressed={isSelected}
                 onClick={() => setSelectedField(field)}
                 type="button"
               >

@@ -24,6 +24,7 @@ export default function TeamMatchingLeaderPage() {
             : "bg-[rgba(97,97,97,0.10)] text-[#616161]"
         }`}
         key={option}
+        aria-pressed={isSelected}
         onClick={() => setSelectedOption(option)}
         type="button"
       >
