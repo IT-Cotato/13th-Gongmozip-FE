@@ -32,25 +32,23 @@ function CountdownCard() {
   );
 }
 
-function InfoCard({
-  title,
-  description,
-  descriptionValue,
-  tone,
-}: {
+type InfoCardBaseProps = {
   title: string;
   description: string;
   descriptionValue?: string;
   tone: "coral" | "gray";
-}) {
-  return (
-    <Link
-      className={`mx-auto flex w-[358px] max-w-[calc(100%-32px)] items-center justify-between rounded-2xl px-5 py-4 ${
-        tone === "coral" ? "bg-[#FFF1EE]" : "bg-[#F5F5F5]"
-      } ${tone === "coral" ? "h-[74px]" : "h-[89px]"}`}
-      href="#"
-    >
-      <span className="text-left">
+};
+
+type InfoCardProps = InfoCardBaseProps & ({ href: string } | { href?: never });
+
+function InfoCard({ href, title, description, descriptionValue, tone }: InfoCardProps) {
+  const className = `mx-auto flex w-[358px] max-w-[calc(100%-32px)] items-center justify-between rounded-2xl px-5 py-4 ${
+    tone === "coral" ? "bg-[#FFF1EE]" : "bg-[#F5F5F5]"
+  } ${tone === "coral" ? "h-[74px]" : "h-[89px]"}`;
+
+  const content = (
+    <>
+      <span className="min-w-0 text-left">
         <strong className="block text-left font-[Pretendard] text-[17px] font-medium not-italic leading-[135%] text-black">
           {title}
         </strong>
@@ -64,9 +62,21 @@ function InfoCard({
         </span>
       </span>
 
-      <Image src="/icons/team-matching/Button/_Asset/icon-1.svg" alt="" width={20} height={20} />
-    </Link>
+      {href ? (
+        <Image src="/icons/team-matching/Button/_Asset/icon-1.svg" alt="" width={20} height={20} />
+      ) : null}
+    </>
   );
+
+  if (href) {
+    return (
+      <Link className={className} href={href}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }
 
 function FixedApplyButton() {
