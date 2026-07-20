@@ -8,6 +8,7 @@ import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepL
 
 type ProfileCard = {
   date: string;
+  id: string;
   isPublic: boolean;
   projects: number;
   summaries: string[];
@@ -16,12 +17,14 @@ type ProfileCard = {
 const initialProfiles: ProfileCard[] = [
   {
     date: "2026.06.26",
+    id: "profile-20260626",
     isPublic: true,
     projects: 3,
     summaries: ["마케팅 팀프로젝트", "Ai 활용 공모전", "코테이토 아이디어톤"],
   },
   {
     date: "2026.07.15",
+    id: "profile-20260715",
     isPublic: false,
     projects: 2,
     summaries: ["AI 챗봇 개발", "웹사이트 리디자인"],
@@ -69,16 +72,22 @@ function ProfileVisibilityToggle({
 
 function ProfileCard({
   date,
+  id,
   isPublic: initialIsPublic,
+  isSelected,
+  onSelect,
   projects,
   summaries,
-}: ProfileCard) {
+}: ProfileCard & {
+  isSelected: boolean;
+  onSelect: (profileId: string) => void;
+}) {
   const [isPublic, setIsPublic] = useState(initialIsPublic);
 
   return (
     <article
       className={`overflow-hidden rounded-2xl border bg-white ${
-        isPublic
+        isSelected
           ? "border-[#FF7658] shadow-[0_4px_8px_rgba(255,118,88,0.22)]"
           : "border-[#E8E8E8]"
       }`}
@@ -86,6 +95,14 @@ function ProfileCard({
       <div className="flex flex-col items-end gap-6 self-stretch p-5">
         <div className="flex w-full items-center justify-between gap-3">
           <p className="flex min-w-0 items-center gap-1">
+            <input
+              aria-label={`${date} 프로필 선택`}
+              checked={isSelected}
+              className="h-4 w-4 shrink-0 accent-[#FF7658]"
+              name="team-matching-profile"
+              onChange={() => onSelect(id)}
+              type="radio"
+            />
             <span className="line-clamp-2 overflow-hidden text-ellipsis font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#AC4A35]">
               {date}
             </span>
@@ -131,12 +148,16 @@ function ProfileCard({
 
 export default function TeamMatchingProfilePage() {
   const [profiles, setProfiles] = useState(initialProfiles);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
+    null,
+  );
 
   const handleAddProfile = () => {
     setProfiles((currentProfiles) => [
       ...currentProfiles,
       {
         date: `2026.08.${String(currentProfiles.length + 1).padStart(2, "0")}`,
+        id: `profile-${Date.now()}`,
         isPublic: false,
         projects: 1,
         summaries: ["신규 프로젝트"],
@@ -146,6 +167,7 @@ export default function TeamMatchingProfilePage() {
 
   return (
     <TeamMatchingStepLayout
+      actionDisabled={selectedProfileId === null}
       actionHref="/team-matching/collaboration-type"
       actionLabel="다음"
       currentStep={1}
@@ -178,7 +200,12 @@ export default function TeamMatchingProfilePage() {
 
       <section className="mt-5 space-y-5">
         {profiles.map((profile) => (
-          <ProfileCard key={profile.date} {...profile} />
+          <ProfileCard
+            key={profile.id}
+            {...profile}
+            isSelected={selectedProfileId === profile.id}
+            onSelect={setSelectedProfileId}
+          />
         ))}
       </section>
     </TeamMatchingStepLayout>

@@ -9,6 +9,7 @@ import TeamMatchingHeader from "./TeamMatchingHeader";
 import TeamMatchingProgress from "./TeamMatchingProgress";
 
 type TeamMatchingStepLayoutProps = {
+  actionDisabled?: boolean;
   actionHref: string;
   actionLabel: string;
   backHref?: string;
@@ -17,6 +18,7 @@ type TeamMatchingStepLayoutProps = {
 };
 
 export default function TeamMatchingStepLayout({
+  actionDisabled = false,
   actionHref,
   actionLabel,
   backHref = "/team-matching",
@@ -35,7 +37,11 @@ export default function TeamMatchingStepLayout({
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-[21px]">
         {children}
       </div>
-      <TeamMatchingActionBar href={actionHref} label={actionLabel} />
+      <TeamMatchingActionBar
+        disabled={actionDisabled}
+        href={actionHref}
+        label={actionLabel}
+      />
 
       {isLeaveConfirmationOpen ? (
         <div className="absolute inset-0 z-50 flex h-[844px] w-[390px] items-center justify-center gap-[10px] bg-[rgba(31,31,31,0.60)] px-8">
