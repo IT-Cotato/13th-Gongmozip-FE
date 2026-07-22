@@ -58,8 +58,8 @@ function ProfileVisibilityToggle({
             height={12}
             src={
               isPublic
-                ? "/icons/team-matching/_Asset/icon-6.svg"
-                : "/icons/team-matching/_Asset/icon-7.svg"
+                ? "/icons/team-matching/icon-6.svg"
+                : "/icons/team-matching/icon-7.svg"
             }
             width={12}
           />
@@ -205,7 +205,7 @@ export default function TeamMatchingProfilePage() {
           <Image
             alt=""
             height={24}
-            src="/icons/team-matching/Button/_Asset/tabler_plus.svg"
+            src="/icons/team-matching/tabler_plus.svg"
             width={24}
           />
           프로필 추가
