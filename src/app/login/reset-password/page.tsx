@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
 
             <div className="flex justify-center py-6">
               <Image
-                src="/images/passwordChangeCharacter.svg"
+                src="/images/login/passwordChangeCharacter.svg"
                 alt=""
                 height={274}
                 width={274}

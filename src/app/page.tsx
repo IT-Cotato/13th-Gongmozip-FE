@@ -12,35 +12,35 @@ export default function Home() {
     <main className="relative flex h-full w-full flex-col overflow-y-auto bg-white">
         <section className="relative h-[320px] overflow-hidden bg-white">
           <Image
-            src="/images/Vector.svg"
+            src="/images/home/Vector.svg"
             alt=""
             className="absolute top-0 left-0 w-[172px]"
             height={172}
             width={172}
           />
           <Image
-            src="/images/Vector%20(1).svg"
+            src="/images/home/Vector%20(1).svg"
             alt=""
             className="absolute top-[19px] left-[252px] w-[138px]"
             height={138}
             width={138}
           />
           <Image
-            src="/images/Vector%20(2).svg"
+            src="/images/home/Vector%20(2).svg"
             alt=""
             className="absolute top-[101px] left-[92px] w-[121px]"
             height={121}
             width={121}
           />
           <Image
-            src="/images/Vector%20(3).svg"
+            src="/images/home/Vector%20(3).svg"
             alt=""
             className="absolute bottom-0 left-0 w-24"
             height={96}
             width={96}
           />
           <Image
-            src="/images/character.svg"
+            src="/images/home/character.svg"
             alt="Gongmozip mascot"
             className="absolute top-1/2 left-1/2 w-52 -translate-x-1/2 -translate-y-1/2"
             height={208}
@@ -67,7 +67,7 @@ export default function Home() {
                 alt=""
                 className="absolute left-4 h-4 w-auto"
                 height={16}
-                src="/images/icons/kakao.svg"
+                src="/icons/auth/kakao.svg"
                 width={16}
               />
               <span>카카오 로그인</span>
@@ -81,7 +81,7 @@ export default function Home() {
                 alt=""
                 className="absolute left-4 h-5 w-auto"
                 height={20}
-                src="/images/icons/Google.svg"
+                src="/icons/auth/Google.svg"
                 width={20}
               />
               <span>Google 계정으로 로그인</span>

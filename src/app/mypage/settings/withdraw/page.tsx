@@ -19,7 +19,7 @@ function ConsentCheckbox({ checked, onToggle }: { checked: boolean; onToggle: ()
       className="shrink-0"
     >
       {checked ? (
-        <Image alt="" className="size-8" height={32} src="/images/check-circle.svg" width={32} />
+        <Image alt="" className="size-8" height={32} src="/icons/common/check-circle.svg" width={32} />
       ) : (
         <span className="block size-8 rounded-full border-2 border-gray-300" />
       )}
@@ -72,7 +72,7 @@ export default function WithdrawPage() {
             alt=""
             className="size-[235px]"
             height={235}
-            src="/images/goodByeCharacter.svg"
+            src="/images/mypage/goodByeCharacter.svg"
             width={235}
           />
         </div>

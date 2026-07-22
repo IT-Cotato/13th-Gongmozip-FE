@@ -37,7 +37,7 @@ const TERMS_ITEMS: {
 function CheckIcon({ checked }: { checked: boolean }) {
   return (
     <Image
-      src={checked ? "/images/clickedcheck.svg" : "/images/check.svg"}
+      src={checked ? "/icons/common/clickedcheck.svg" : "/icons/common/check.svg"}
       alt=""
       height={20}
       width={20}
@@ -364,7 +364,7 @@ export function TermsStep({ terms, onToggleAll, onToggleItem }: TermsStepProps) 
                   alt=""
                   className="h-4 w-4"
                   height={16}
-                  src="/images/tabler_chevron-right.svg"
+                  src="/icons/common/tabler_chevron-right.svg"
                   width={16}
                 />
               </button>

@@ -79,7 +79,7 @@ function ContactHistoryDetailPageInner() {
               <div className="flex w-full flex-col gap-3 p-4">
                 <div className="flex items-center gap-4">
                   <Image
-                    src="/images/customorCenterRobot.svg"
+                    src="/images/contact/customorCenterRobot.svg"
                     alt=""
                     height={60}
                     width={60}
