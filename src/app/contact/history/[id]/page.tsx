@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon } from "../../_components/icons";
@@ -77,9 +78,11 @@ function ContactHistoryDetailPageInner() {
             {item.answer && (
               <div className="flex w-full flex-col gap-3 p-4">
                 <div className="flex items-center gap-4">
-                  <img
+                  <Image
                     src="/images/customorCenterRobot.svg"
                     alt=""
+                    height={60}
+                    width={60}
                     className="size-[60px] shrink-0 rounded-full bg-[#EBF7FE]"
                   />
                   <div className="flex flex-col gap-2">

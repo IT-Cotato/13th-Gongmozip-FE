@@ -195,3 +195,12 @@ body {
   font-family: var(--font-sans);
   min-height: 100vh;
 }
+
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}

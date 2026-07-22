@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon } from "./_components/icons";
@@ -36,7 +37,7 @@ function AgreeCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () =
       className="shrink-0"
     >
       {checked ? (
-        <img src="/images/check-circle.svg" alt="" className="h-8 w-8" />
+        <Image alt="" className="h-8 w-8" height={32} src="/images/check-circle.svg" width={32} />
       ) : (
         <span className="block h-8 w-8 rounded-full border-2 border-gray-300" />
       )}
@@ -249,9 +250,11 @@ function ContactPageInner() {
                   onClick={() => setIsDetailOpen((v) => !v)}
                   className="shrink-0 rounded-xl p-2"
                 >
-                  <img
+                  <Image
                     src="/images/tabler_chevron-right.svg"
                     alt=""
+                    height={16}
+                    width={16}
                     className={`h-4 w-4 transition-transform ${isDetailOpen ? "rotate-90" : ""}`}
                   />
                 </button>

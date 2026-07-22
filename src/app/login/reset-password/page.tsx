@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -118,9 +119,11 @@ export default function ResetPasswordPage() {
             </p>
 
             <div className="flex justify-center py-6">
-              <img
+              <Image
                 src="/images/passwordChangeCharacter.svg"
                 alt=""
+                height={274}
+                width={274}
                 className="w-[274px] max-w-full"
               />
             </div>
