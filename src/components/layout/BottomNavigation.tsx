@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -10,7 +11,7 @@ type NavItem = {
   id: NavItemId;
   label: string;
   href: string;
-  renderIcon: () => ReactNode;
+  renderIcon: (isActive: boolean) => ReactNode;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -48,7 +49,7 @@ export default function BottomNavigation({ unreadChatCount = 0 }: BottomNavigati
             }`}
           >
             <span className="relative block size-6">
-              {item.renderIcon()}
+              {item.renderIcon(isActive)}
               {item.id === "chat" && unreadChatCount > 0 && (
                 <span className="absolute -top-[5px] -right-[7.62px] flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-color-coral-500 px-1 text-[8px] font-semibold text-white">
                   {unreadChatCount > 99 ? "99+" : unreadChatCount}
@@ -82,7 +83,11 @@ function HomeIcon() {
   );
 }
 
-function ContestIcon() {
+function ContestIcon(isActive: boolean) {
+  if (isActive) {
+    return <Image src="/icons/contests/icon.svg" alt="" width={24} height={24} className="size-6 shrink-0" />;
+  }
+
   return (
     <svg viewBox="0 0 24 24" fill="none" className="size-6" aria-hidden="true">
       <path
