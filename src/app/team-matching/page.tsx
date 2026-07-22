@@ -63,7 +63,7 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
       </span>
 
       {href ? (
-        <Image src="/icons/team-matching/Button/_Asset/icon-1.svg" alt="" width={20} height={20} />
+        <Image src="/icons/team-matching/icon-1.svg" alt="" width={20} height={20} />
       ) : null}
     </>
   );
@@ -82,7 +82,7 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
 function FixedApplyButton() {
   return (
     <Link
-      className="absolute bottom-20 left-1/2 z-10 flex h-12 w-[358px] max-w-[calc(100%-32px)] -translate-x-1/2 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
+      className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
       href="/team-matching/profile"
     >
       매칭 신청하기
@@ -92,9 +92,9 @@ function FixedApplyButton() {
 
 export default function TeamMatchingPage() {
   return (
-    <main className="fixed left-1/2 top-0 h-[851px] max-h-dvh w-full max-w-[390px] -translate-x-1/2 overflow-hidden bg-white text-[#1F1F1F]">
-      <div className="relative flex h-full flex-col overflow-hidden bg-white">
-        <header className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between self-stretch bg-white px-4 py-1">
+    <main className="flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+        <header className="z-10 flex h-[46px] shrink-0 items-center justify-between self-stretch bg-white px-4 py-1">
           <span className="h-6 w-6" aria-hidden="true" />
           <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center font-[Roboto] text-[17px] font-semibold not-italic leading-[135%] text-[#111111]">
             팀원 매칭
@@ -102,7 +102,7 @@ export default function TeamMatchingPage() {
           <span className="h-6 w-6" aria-hidden="true" />
         </header>
 
-        <div className="scrollbar-hidden flex-1 overflow-y-auto pb-[154px] pt-[46px]">
+        <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto pb-6">
           <section className="pt-6 text-center">
             <div
               aria-label="팀원 매칭 캐릭터"
@@ -158,11 +158,11 @@ export default function TeamMatchingPage() {
           </section>
         </div>
 
-        <FixedApplyButton />
-        <div className="absolute bottom-0 left-0 right-0 z-10">
-          <BottomNavigation />
+        <div className="shrink-0 bg-white px-4 pb-3 pt-2">
+          <FixedApplyButton />
         </div>
       </div>
+      <BottomNavigation />
     </main>
   );
 }

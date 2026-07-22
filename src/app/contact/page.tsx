@@ -37,7 +37,7 @@ function AgreeCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () =
       className="shrink-0"
     >
       {checked ? (
-        <Image alt="" className="h-8 w-8" height={32} src="/images/check-circle.svg" width={32} />
+        <Image alt="" className="h-8 w-8" height={32} src="/icons/common/check-circle.svg" width={32} />
       ) : (
         <span className="block h-8 w-8 rounded-full border-2 border-gray-300" />
       )}
@@ -251,7 +251,7 @@ function ContactPageInner() {
                   className="shrink-0 rounded-xl p-2"
                 >
                   <Image
-                    src="/images/tabler_chevron-right.svg"
+                    src="/icons/common/tabler_chevron-right.svg"
                     alt=""
                     height={16}
                     width={16}

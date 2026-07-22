@@ -44,7 +44,7 @@ export function ArrowUpIcon() {
 export function SettingsIcon() {
   return (
     <Image
-      src="/images/chat/tabler_settings.svg"
+      src="/icons/chat/tabler_settings.svg"
       alt=""
       width={20}
       height={20}

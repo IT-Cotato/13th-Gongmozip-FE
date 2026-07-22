@@ -81,7 +81,7 @@ export default function TeamMatchingPoolView({
   showCancelModal = false,
 }: TeamMatchingPoolViewProps) {
   return (
-    <main className="fixed left-1/2 top-0 flex h-[851px] max-h-dvh w-full max-w-[390px] -translate-x-1/2 flex-col overflow-hidden bg-white text-[#1F1F1F]">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader backHref="/team-matching" />
 
       <div className="scrollbar-hidden relative min-h-0 flex-1 overflow-y-auto px-4 pb-6">
