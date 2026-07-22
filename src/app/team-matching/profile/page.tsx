@@ -82,22 +82,37 @@ function ProfileCard({
   onSelect: (profileId: string) => void;
 }) {
   const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const inputId = `${id}-input`;
 
   return (
     <article
+      aria-checked={isSelected}
       className={`overflow-hidden rounded-2xl border bg-white ${
         isSelected
-          ? "border-[#FF7658] shadow-[0_4px_8px_rgba(255,118,88,0.22)]"
+          ? "border-[#FF7658] shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]"
           : "border-[#E8E8E8]"
       }`}
+      onClick={() => onSelect(id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(id);
+        }
+      }}
+      role="radio"
+      tabIndex={0}
     >
       <div className="flex flex-col items-end gap-6 self-stretch p-5">
         <div className="flex w-full items-center justify-between gap-3">
-          <p className="flex min-w-0 items-center gap-1">
+          <label
+            className="flex min-w-0 cursor-pointer items-center gap-1"
+            htmlFor={inputId}
+          >
             <input
               aria-label={`${date} 프로필 선택`}
               checked={isSelected}
-              className="h-4 w-4 shrink-0 accent-[#FF7658]"
+              className="sr-only"
+              id={inputId}
               name="team-matching-profile"
               onChange={() => onSelect(id)}
               type="radio"
@@ -108,7 +123,7 @@ function ProfileCard({
             <span className="line-clamp-2 overflow-hidden text-ellipsis font-[Pretendard] text-[13px] font-medium leading-[125%] text-[#616161]">
               수정
             </span>
-          </p>
+          </label>
           <ProfileVisibilityToggle
             isPublic={isPublic}
             onToggle={() => setIsPublic((currentIsPublic) => !currentIsPublic)}
@@ -136,9 +151,7 @@ function ProfileCard({
       </div>
 
       <button
-        aria-disabled="true"
-        className="flex h-10 flex-1 cursor-not-allowed flex-col items-stretch justify-center self-stretch border-t border-[#EFEFEF] text-center font-[Pretendard] text-[15px] font-medium leading-[125%] text-[#949494]"
-        disabled
+        className="flex h-10 w-full items-center justify-center border-t border-[#EFEFEF] bg-white text-center font-[Pretendard] text-[13px] font-medium leading-[125%] text-[#616161]"
         type="button"
       >
         수정

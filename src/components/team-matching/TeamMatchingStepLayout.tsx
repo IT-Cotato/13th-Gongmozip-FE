@@ -76,7 +76,7 @@ export default function TeamMatchingStepLayout({
               신청 계속하기
             </button>
             <Link
-              className="flex flex-1 self-stretch items-center justify-center rounded-[14px] bg-color-coral-700 px-[10px] py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
+              className="flex flex-1 self-stretch items-center justify-center rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
               href={backHref}
             >
               나가기

@@ -11,9 +11,9 @@ export default function TeamMatchingActionBar({
   href,
   label,
 }: TeamMatchingActionBarProps) {
-  const className = `flex h-[51px] w-full items-center justify-center rounded-[14px] px-8 py-[9px] text-[18px] font-bold leading-none text-white ${
-    disabled ? "bg-[#DFDFDF]" : "bg-color-coral-700"
-  }`;
+  const className = disabled
+    ? "flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#DFDFDF] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
+    : "flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white";
 
   return (
     <div className="shrink-0 bg-white px-4 pb-3 pt-2">
