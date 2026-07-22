@@ -43,9 +43,7 @@ export default function ChatPage() {
         ))}
       </section>
 
-      <div className="pb-[env(safe-area-inset-bottom)]">
-        <BottomNavigation unreadChatCount={9} />
-      </div>
+      <BottomNavigation unreadChatCount={9} />
     </main>
   );
 }

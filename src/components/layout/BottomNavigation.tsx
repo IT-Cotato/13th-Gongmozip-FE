@@ -32,7 +32,7 @@ export default function BottomNavigation({ unreadChatCount = 0 }: BottomNavigati
   return (
     <nav
       aria-label="하단 내비게이션"
-      className="flex w-full items-center justify-center border-t border-[rgba(97,97,97,0.08)] bg-white py-1"
+      className="flex w-full items-center justify-center border-t border-[rgba(97,97,97,0.08)] bg-white pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))]"
     >
       {NAV_ITEMS.map((item) => {
         const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
