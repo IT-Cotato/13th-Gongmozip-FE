@@ -71,19 +71,19 @@ After a branch's PR is merged, **delete the branch immediately** — don't leave
 
 Commit messages are prefixed with a type (capitalized):
 
-| Type       | Use for                                                              |
-| ---------- | --------------------------------------------------------------------- |
-| `Feat`     | New feature                                                          |
-| `Fix`      | Bug fix                                                              |
-| `Build`    | Build-related file changes                                          |
-| `Util`     | Config file changes                                                  |
-| `Ci`       | CI configuration changes                                             |
-| `Docs`     | Documentation (add/edit/remove)                                     |
-| `Style`    | Code formatting, semicolons, etc. — no business logic change        |
-| `Design`   | UI changes (CSS)                                                    |
-| `Refactor` | Code refactoring                                                    |
-| `Test`     | Test code (add/edit/remove) — no business logic change              |
-| `Chore`    | Other changes (e.g. build scripts)                                  |
+| Type       | Use for                                                      |
+| ---------- | ------------------------------------------------------------ |
+| `Feat`     | New feature                                                  |
+| `Fix`      | Bug fix                                                      |
+| `Build`    | Build-related file changes                                   |
+| `Util`     | Config file changes                                          |
+| `Ci`       | CI configuration changes                                     |
+| `Docs`     | Documentation (add/edit/remove)                              |
+| `Style`    | Code formatting, semicolons, etc. — no business logic change |
+| `Design`   | UI changes (CSS)                                             |
+| `Refactor` | Code refactoring                                             |
+| `Test`     | Test code (add/edit/remove) — no business logic change       |
+| `Chore`    | Other changes (e.g. build scripts)                           |
 
 ## Negative Rules (do NOT do these)
 
@@ -91,3 +91,14 @@ Commit messages are prefixed with a type (capitalized):
 - Do not use the `any` type — keep TypeScript strict mode intact.
 - Do not push directly to `main` (or `develop` — see Git Workflow above).
 - Do not submit code that fails required scripts (`pnpm build`, `pnpm lint`).
+
+reviews:
+path*instructions: - path: "src/\*\*/\*"
+instructions: |
+가독성, 타입 안정성, null/undefined 처리, 에러 처리, 접근성, 유지보수성, 렌더링 비용을 확인 후 코드를 작성해.
+instructions: |
+App Router의 서버 컴포넌트와 클라이언트 컴포넌트 경계를 확인해주세요.
+불필요한 "use client" 사용, 메타데이터 설정, 레이아웃 구조, 전역 Provider 배치를 중점적으로 검토하고 사용하지 마. - path: "\*\*/*.{css,tsx}"
+instructions: |
+Tailwind CSS 사용 시 반응형 레이아웃, 접근성, 중복 클래스, 과도한 커스텀 스타일을 사용하지 마.
+UI 변경은 텍스트 넘침, 작은 화면, 키보드 탐색, 명도 대비 관점을 사용하지 마.

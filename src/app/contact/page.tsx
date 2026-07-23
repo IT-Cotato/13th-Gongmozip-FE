@@ -143,8 +143,7 @@ function ContactPageInner() {
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-white">
-      <div className="flex w-full max-w-sm flex-col">
+    <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
         <div className="relative flex items-center justify-center px-4 py-1">
           <button
             type="button"
@@ -345,8 +344,6 @@ function ContactPageInner() {
             )}
           </div>
         )}
-      </div>
-
       {showSuccessModal && <SuccessModal onClose={handleCloseSuccessModal} />}
       {showLeaveConfirm && (
         <LeaveConfirmModal onContinue={handleContinueWriting} onLeave={handleLeave} />

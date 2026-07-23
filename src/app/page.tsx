@@ -8,8 +8,7 @@ const sulphurPoint = Sulphur_Point({
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen justify-center bg-white">
-      <div className="relative flex w-full max-w-sm flex-col">
+    <main className="relative flex h-full w-full flex-col overflow-y-auto bg-white">
         <section className="relative h-[320px] overflow-hidden bg-white">
           <img src="/images/Vector.svg" alt="" className="absolute top-0 left-0 w-[172px]" />
           <img
@@ -66,7 +65,6 @@ export default function Home() {
             <Link href="/contact">문의하기</Link>
           </div>
         </section>
-      </div>
     </main>
   );
 }
