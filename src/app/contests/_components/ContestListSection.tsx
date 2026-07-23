@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import type { ContestSummary } from "../_types";
+import type { ContestCategory, ContestSummary } from "../_types";
+import { ContestCategorySheet } from "./ContestCategorySheet";
 import { ContestList } from "./ContestList";
 
 type SortOption = "최신순" | "조회순" | "마감순";
@@ -16,15 +17,20 @@ const SORT_OPTIONS: SortOption[] = ["최신순", "조회순", "마감순"];
 
 export function ContestListSection({ contests }: ContestListSectionProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<ContestCategory>("전체");
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
   const [isSortOpen, setIsSortOpen] = useState(false);
 
   const filteredAndSortedContests = useMemo(() => {
     const trimmedKeyword = searchKeyword.trim().toLowerCase();
-    const filteredContests =
-      trimmedKeyword.length > 0
-        ? contests.filter((contest) => contest.title.toLowerCase().includes(trimmedKeyword))
-        : contests;
+    const filteredContests = contests.filter((contest) => {
+      const matchesKeyword =
+        trimmedKeyword.length === 0 || contest.title.toLowerCase().includes(trimmedKeyword);
+      const matchesCategory = selectedCategory === "전체" || contest.category === selectedCategory;
+
+      return matchesKeyword && matchesCategory;
+    });
     const copiedContests = [...filteredContests];
 
     if (selectedSort === "조회순") {
@@ -36,7 +42,7 @@ export function ContestListSection({ contests }: ContestListSectionProps) {
     }
 
     return copiedContests;
-  }, [contests, searchKeyword, selectedSort]);
+  }, [contests, searchKeyword, selectedCategory, selectedSort]);
 
   return (
     <>
@@ -67,7 +73,10 @@ export function ContestListSection({ contests }: ContestListSectionProps) {
         <div className="relative flex w-full items-start justify-between">
           <button
             type="button"
+            aria-expanded={isCategorySheetOpen}
+            aria-haspopup="dialog"
             className="flex h-[30px] items-center gap-1 rounded-[10px] border border-[rgba(97,97,97,0.16)] bg-white py-[3px] pr-[3px] pl-2.5 text-xs leading-[135%] font-semibold text-color-gray-650"
+            onClick={() => setIsCategorySheetOpen(true)}
           >
             공모전 분야
             <span className="flex size-[18px] items-center justify-center">
@@ -89,7 +98,9 @@ export function ContestListSection({ contests }: ContestListSectionProps) {
               className="flex items-center bg-white pl-2"
               onClick={() => setIsSortOpen((current) => !current)}
             >
-              <span className="text-[15px] leading-[125%] font-medium text-color-gray-850">{selectedSort}</span>
+              <span className="text-[15px] leading-[125%] font-medium text-color-gray-850">
+                {selectedSort}
+              </span>
               <span className="-ml-1 flex flex-col items-center rounded-[10px] p-[7px]">
                 <Image
                   src="/icons/contests/button-asset-icon.svg"
@@ -124,7 +135,38 @@ export function ContestListSection({ contests }: ContestListSectionProps) {
             )}
           </div>
         </div>
+
+        {selectedCategory !== "전체" && (
+          <button
+            type="button"
+            aria-label={`${selectedCategory} 분야 필터 삭제`}
+            className="mt-2 flex h-7 items-center justify-center rounded-full bg-[rgba(97,97,97,0.10)] p-2 text-center text-[13px] leading-[125%] font-medium text-color-gray-650"
+            onClick={() => setSelectedCategory("전체")}
+          >
+            {selectedCategory}
+            <span className="flex size-5 aspect-square items-center justify-center">
+              <Image
+                src="/icons/contests/x.svg"
+                alt=""
+                width={20}
+                height={20}
+                className="size-5 shrink-0"
+              />
+            </span>
+          </button>
+        )}
       </section>
+
+      {isCategorySheetOpen && (
+        <ContestCategorySheet
+          selectedCategory={selectedCategory}
+          onSelect={(category) => {
+            setSelectedCategory(category);
+            setIsCategorySheetOpen(false);
+          }}
+          onClose={() => setIsCategorySheetOpen(false)}
+        />
+      )}
 
       <ContestList contests={filteredAndSortedContests} />
     </>
