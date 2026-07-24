@@ -15,19 +15,19 @@ export function ScrapList({ contests }: ScrapListProps) {
           스크랩한 공모전
         </h2>
 
-        <div className="absolute top-[47px] left-1/2 flex w-full -translate-x-1/2 flex-col items-center text-center">
-          <p className="text-[15px] leading-[125%] font-normal text-color-gray-900">
+        <div className="absolute top-[88px] left-1/2 flex w-full -translate-x-1/2 flex-col items-center text-center">
+          <p className="text-center font-[Roboto] text-[17px] leading-[150%] font-normal text-semantic-label-normal">
             아직 스크랩한 항목이 없어요.
           </p>
-          <p className="mt-2 text-[12px] leading-[135%] font-normal text-color-gray-500">
-            관심 있는 공모전을 스크랩하고 공유해보세요.
+          <p className="mt-[4px] text-center font-[Pretendard] text-[13px] leading-[150%] font-normal text-semantic-label-neutral">
+            관심 있는 공모전을 저장하고 공유해보세요.
           </p>
           <Image
             src="/icons/contests/Button/_Asset/tabler_bookmark-filled.svg"
             alt=""
-            width={48}
-            height={48}
-            className="mt-[14px] size-12 opacity-10 grayscale"
+            width={80}
+            height={80}
+            className="mt-[20px] flex aspect-square size-20 shrink-0 items-center justify-center opacity-10 grayscale"
           />
         </div>
       </section>
