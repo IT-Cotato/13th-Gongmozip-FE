@@ -1,12 +1,18 @@
+"use client";
+
+import { useParams } from "next/navigation";
+
 import { ChatInputBar } from "../_components/ChatInputBar";
 import { ChatMessageBubble } from "../_components/ChatMessageBubble";
 import { ChatTopBar } from "../_components/ChatTopBar";
 import { MOCK_CHAT_MESSAGES } from "../_data/mockMessages";
 
 export default function ChatRoomPage() {
+  const params = useParams<{ roomId: string }>();
+
   return (
     <main className="flex h-full w-full flex-col bg-white pt-[env(safe-area-inset-top)]">
-      <ChatTopBar />
+      <ChatTopBar roomId={params.roomId} />
 
       <div className="flex h-8 items-center justify-between">
         <span className="h-px w-[121px] bg-color-gray-300" />
