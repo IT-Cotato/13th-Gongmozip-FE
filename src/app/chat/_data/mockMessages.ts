@@ -120,6 +120,7 @@ export const MOCK_CHATBOT_MEMBER: ChatMember = {
   name: "챗봇",
   isChatbot: true,
   avatarTone: "robot",
+  avatarSrc: "/icons/chat/chat_bot.svg",
   introduction: "팀 대화 정리, 역할 제안, 일정 리마인드를 도와줘요.",
   strengths: ["대화 요약", "역할 추천", "일정 리마인드"],
 };
@@ -132,7 +133,7 @@ export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     sentAt: "오후 8:28",
     direction: "incoming",
     avatarTone: "robot",
-    avatarSrc: undefined,
+    avatarSrc: "/icons/chat/chat_bot.svg",
   },
   {
     id: "minjeong-intro",
