@@ -1,5 +1,6 @@
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import Image from "next/image";
+import Link from "next/link";
 
 import { ContestListSection } from "./_components/ContestListSection";
 import { MOCK_CONTESTS } from "./_data/mockContests";
@@ -14,7 +15,7 @@ export default function ContestsPage() {
         <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center text-[17px] leading-[135%] font-semibold text-color-gray-900">
           공모전 정보
         </h1>
-        <button type="button" aria-label="스크랩한 공모전" className="flex size-8 items-center justify-center">
+        <Link href="/contests/scraps" aria-label="스크랩한 공모전" className="flex size-8 items-center justify-center">
           <Image
             src="/icons/contests/Button/_Asset/tabler_bookmark-filled.svg"
             alt=""
@@ -22,7 +23,7 @@ export default function ContestsPage() {
             height={24}
             className="size-6 shrink-0"
           />
-        </button>
+        </Link>
       </header>
 
       <div className="flex-1 overflow-y-auto pb-8">
