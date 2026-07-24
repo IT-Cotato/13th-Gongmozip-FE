@@ -10,9 +10,9 @@ export default function ContestScrapsPage() {
 
       <header className="relative z-10 flex w-full max-w-[390px] shrink-0 items-center justify-between bg-white px-4 py-1">
         <Link href="/contests" aria-label="공모전 목록으로 돌아가기" className="flex size-8 items-center justify-center">
-          <Image src="/icons/contests/left.svg" alt="" width={20} height={20} className="size-5 shrink-0" />
+          <span className="block h-2.5 w-2.5 rotate-45 border-b-2 border-l-2 border-color-gray-850" />
         </Link>
-        <h1 className="flex h-[38px] items-center justify-center text-center text-[15px] leading-[125%] font-semibold text-color-gray-900">
+        <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center text-[17px] leading-[135%] font-semibold text-color-gray-900">
           스크랩
         </h1>
         <div aria-hidden="true" className="size-8" />

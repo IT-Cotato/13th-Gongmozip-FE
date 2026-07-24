@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { ContestInfo } from "../_components/ContestInfo";
@@ -27,7 +26,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
           aria-label="공모전 목록으로 돌아가기"
           className="flex size-8 items-center justify-center"
         >
-          <Image src="/icons/contests/left.svg" alt="" width={20} height={20} className="size-5 shrink-0" />
+          <span className="block h-2.5 w-2.5 rotate-45 border-b-2 border-l-2 border-color-gray-850" />
         </Link>
         <h1 className="flex h-[38px] items-center justify-center text-center text-[17px] leading-[135%] font-semibold text-color-gray-900">
           상세정보

@@ -10,8 +10,10 @@ type ScrapListProps = {
 export function ScrapList({ contests }: ScrapListProps) {
   if (contests.length === 0) {
     return (
-      <section aria-label="스크랩한 공모전" className="relative min-h-[560px]">
-        <h2 className="text-[12px] leading-[135%] font-semibold text-color-gray-900">스크랩한 공모전</h2>
+      <section aria-label="스크랩한 공모전" className="relative min-h-[560px] pt-4">
+        <h2 className="h-[18px] w-[107px] text-[15px] leading-[125%] font-bold text-color-gray-850">
+          스크랩한 공모전
+        </h2>
 
         <div className="absolute top-[47px] left-1/2 flex w-full -translate-x-1/2 flex-col items-center text-center">
           <p className="text-[15px] leading-[125%] font-normal text-color-gray-900">
@@ -33,8 +35,10 @@ export function ScrapList({ contests }: ScrapListProps) {
   }
 
   return (
-    <section aria-label="스크랩한 공모전" className="relative">
-      <h2 className="text-[12px] leading-[135%] font-semibold text-color-gray-900">스크랩한 공모전</h2>
+    <section aria-label="스크랩한 공모전" className="relative pt-4">
+      <h2 className="h-[18px] w-[107px] text-[15px] leading-[125%] font-bold text-color-gray-850">
+        스크랩한 공모전
+      </h2>
       <div className="mt-4 flex flex-col gap-3">
         {contests.map((contest) => (
           <Link
