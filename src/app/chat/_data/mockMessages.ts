@@ -25,6 +25,7 @@ export type ChatMember = {
   isMe?: boolean;
   isChatbot?: boolean;
   avatarTone: NonNullable<ChatMessage["avatarTone"]>;
+  avatarSrc?: string;
   school?: string;
   major?: string;
   grade?: string;
@@ -44,7 +45,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "요즘 날씨 너무 좋아서 야외 활동하기 딱이야!",
     lastMessageAt: "15시간 전",
     unreadCount: 9,
-    avatarSrcs: [],
+    avatarSrcs: ["/icons/chat/character1.svg", "/icons/chat/character2.svg", "/icons/chat/character3.svg"],
   },
   {
     id: "team-brand-02",
@@ -53,7 +54,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "요즘 날씨 너무 좋아서 야외 활동하기 딱이야!",
     lastMessageAt: "15시간 전",
     unreadCount: 0,
-    avatarSrcs: [],
+    avatarSrcs: ["/icons/chat/character1.svg", "/icons/chat/character2.svg", "/icons/chat/character3.svg"],
   },
   {
     id: "team-service-03",
@@ -62,7 +63,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "요즘 날씨 너무 좋아서 야외 활동하기 딱이야!",
     lastMessageAt: "15시간 전",
     unreadCount: 0,
-    avatarSrcs: [],
+    avatarSrcs: ["/icons/chat/character1.svg", "/icons/chat/character2.svg", "/icons/chat/character3.svg"],
   },
 ];
 
@@ -72,6 +73,7 @@ export const MOCK_CHAT_MEMBERS: ChatMember[] = [
     name: "김철수",
     isMe: true,
     avatarTone: "blue",
+    avatarSrc: "/icons/chat/character1.svg",
     school: "서울대학교",
     major: "경영학과",
     grade: "4학년",
@@ -82,6 +84,7 @@ export const MOCK_CHAT_MEMBERS: ChatMember[] = [
     id: "haeeun",
     name: "이해은",
     avatarTone: "coral",
+    avatarSrc: "/icons/chat/character2.svg",
     school: "서울대학교",
     major: "경영학과",
     grade: "4학년",
@@ -92,6 +95,7 @@ export const MOCK_CHAT_MEMBERS: ChatMember[] = [
     id: "minjeong",
     name: "김민정",
     avatarTone: "green",
+    avatarSrc: "/icons/chat/character3.svg",
     school: "서울대학교",
     major: "경영학과",
     grade: "4학년",
@@ -102,6 +106,7 @@ export const MOCK_CHAT_MEMBERS: ChatMember[] = [
     id: "junsu",
     name: "박준수",
     avatarTone: "blue",
+    avatarSrc: "/icons/chat/character1.svg",
     school: "서울대학교",
     major: "경영학과",
     grade: "4학년",
@@ -136,7 +141,7 @@ export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     sentAt: "오후 8:28",
     direction: "incoming",
     avatarTone: "green",
-    avatarSrc: undefined,
+    avatarSrc: "/icons/chat/character3.svg",
   },
   {
     id: "haeeun-intro",
@@ -145,7 +150,7 @@ export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     sentAt: "오후 8:28",
     direction: "incoming",
     avatarTone: "blue",
-    avatarSrc: undefined,
+    avatarSrc: "/icons/chat/character2.svg",
   },
   {
     id: "me-intro",

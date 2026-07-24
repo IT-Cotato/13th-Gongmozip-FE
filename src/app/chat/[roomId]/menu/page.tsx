@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -297,7 +298,9 @@ function MenuAvatar({
     <div
       className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white ${avatarToneClass[member.avatarTone]} ${sizeClassName}`}
     >
-      {member.isChatbot ? (
+      {member.avatarSrc ? (
+        <Image src={member.avatarSrc} alt="" fill sizes="67px" className="object-cover" />
+      ) : member.isChatbot ? (
         <div className="flex h-[34px] w-[38px] items-center justify-center rounded-[10px] border border-color-blue-200 bg-color-gray-850 text-[9px] font-semibold text-white">
           {initials}
         </div>
