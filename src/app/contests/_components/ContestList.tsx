@@ -46,7 +46,7 @@ export function ContestList({ contests }: ContestListProps) {
                   이미지 {index + 1}
                 </div>
 
-                <div className="min-w-0 pt-2">
+                <div className="min-w-0">
                   <span className="flex w-fit items-center justify-center rounded-[85px] bg-color-coral-100 px-2 py-1 text-center text-[8px] leading-[135%] font-semibold text-semantic-line-brand">
                     {contest.category}
                   </span>
