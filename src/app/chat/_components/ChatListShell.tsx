@@ -171,7 +171,7 @@ function ChatRoomRow({ room }: { room: ChatRoom }) {
   return (
     <Link
       href={`/chat/${room.id}`}
-      className="flex h-[72px] w-full shrink-0 items-center gap-2 overflow-hidden bg-white px-4 py-2"
+      className="flex h-[72px] w-full shrink-0 items-center gap-2 overflow-hidden bg-white p-2"
     >
       <AvatarStack avatarSrcs={room.avatarSrcs} />
       <ChatRoomRowText room={room} showTime />
