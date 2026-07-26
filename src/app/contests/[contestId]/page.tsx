@@ -1,9 +1,6 @@
 import Link from "next/link";
 
 import { ContestInfo } from "../_components/ContestInfo";
-import { SendCandidateSheet } from "../_components/SendCandidateSheet";
-import { ShareContestModal } from "../_components/ShareContestModal";
-import { ScrapContestModal } from "../_components/ScrapContestModal";
 import { MOCK_CONTESTS } from "../_data/mockContests";
 
 type ContestDetailPageProps = {
@@ -37,10 +34,6 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
       <div className="flex-1 overflow-y-auto">
         <ContestInfo contest={contest} posterIndex={posterIndex} />
       </div>
-
-      <ShareContestModal />
-      <ScrapContestModal />
-      <SendCandidateSheet />
     </main>
   );
 }

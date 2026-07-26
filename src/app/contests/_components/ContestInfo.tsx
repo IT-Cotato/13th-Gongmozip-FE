@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { ContestDetail } from "../_types";
+import { ShareContestModal } from "./ShareContestModal";
 
 type ContestInfoProps = {
   contest: ContestDetail;
@@ -21,13 +22,20 @@ const detailRows = [
 
 export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const [isScrapped, setIsScrapped] = useState(contest.isScrapped);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showScrapToast, setShowScrapToast] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
+  const shareToastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (scrapToastTimerRef.current !== null) {
         window.clearTimeout(scrapToastTimerRef.current);
+      }
+
+      if (shareToastTimerRef.current !== null) {
+        window.clearTimeout(shareToastTimerRef.current);
       }
     };
   }, []);
@@ -53,6 +61,18 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
       return nextIsScrapped;
     });
+  };
+
+  const handleShareComplete = () => {
+    if (shareToastTimerRef.current !== null) {
+      window.clearTimeout(shareToastTimerRef.current);
+    }
+
+    setShowShareToast(true);
+    shareToastTimerRef.current = window.setTimeout(() => {
+      setShowShareToast(false);
+      shareToastTimerRef.current = null;
+    }, 2000);
   };
 
   return (
@@ -128,28 +148,39 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
           ))}
         </dl>
 
-        <Link
-          href={contest.websiteUrl || "#"}
-          target={contest.websiteUrl ? "_blank" : undefined}
-          rel={contest.websiteUrl ? "noreferrer" : undefined}
-          aria-disabled={!contest.websiteUrl}
-          className="mt-8 flex h-7 w-full max-w-[358px] items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand"
-        >
-          <Image
-            src="/icons/contests/Button/tabler_external-link.svg"
-            alt=""
-            width={16}
-            height={16}
-            className="size-4 shrink-0"
-          />
-          웹사이트
-        </Link>
+        <div className="relative mt-8 w-full max-w-[358px]">
+          {showShareToast ? (
+            <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
+          ) : null}
+
+          {showScrapToast ? (
+            <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
+          ) : null}
+
+          <Link
+            href={contest.websiteUrl || "#"}
+            target={contest.websiteUrl ? "_blank" : undefined}
+            rel={contest.websiteUrl ? "noreferrer" : undefined}
+            aria-disabled={!contest.websiteUrl}
+            className="flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand"
+          >
+            <Image
+              src="/icons/contests/Button/tabler_external-link.svg"
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 shrink-0"
+            />
+            웹사이트
+          </Link>
+        </div>
 
         <div className="mt-[18px] flex w-full items-start gap-[13px] self-stretch bg-white">
           <button
             type="button"
             aria-label="공모전 공유하기"
             className="relative flex h-[47px] w-12 shrink-0 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)] aspect-[48/47]"
+            onClick={() => setIsShareModalOpen(true)}
           >
             <Image
               src="/icons/contests/Button/Button/Button/_Asset/share.svg"
@@ -162,28 +193,38 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
           <button
             type="button"
             className="flex h-[50px] min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-center text-[17px] leading-[125%] font-semibold whitespace-nowrap text-white"
+            onClick={() => setIsShareModalOpen(true)}
           >
             채팅방에 공유하기
           </button>
         </div>
       </div>
 
-      {showScrapToast ? (
-        <div
-          role="status"
-          className="fixed bottom-[154px] left-1/2 z-50 flex w-[350px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.60)] py-2 pr-4 pl-5"
-        >
-          <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">
-            이 공모전을 스크랩하였습니다.
-          </p>
-          <Link
-            href="/contests/scraps"
-            className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
-          >
-            바로가기
-          </Link>
-        </div>
-      ) : null}
+      <ShareContestModal
+        onOpenChange={setIsShareModalOpen}
+        onShareComplete={handleShareComplete}
+        open={isShareModalOpen}
+      />
+
     </section>
+  );
+}
+
+function ContestActionToast({ href, message }: { href: string; message: string }) {
+  return (
+    <div
+      role="status"
+      className="absolute bottom-[calc(100%+11px)] left-1/2 z-50 flex w-[350px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.60)] py-2 pr-4 pl-5"
+    >
+      <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">
+        {message}
+      </p>
+      <Link
+        href={href}
+        className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
+      >
+        바로가기
+      </Link>
+    </div>
   );
 }
