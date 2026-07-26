@@ -1,26 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
-import { ContestInfo } from "../_components/ContestInfo";
-import { MOCK_CONTESTS } from "../_data/mockContests";
-
-type ContestDetailPageProps = {
-  params: Promise<{
-    contestId: string;
-  }>;
-};
-
-export default async function ContestDetailPage({ params }: ContestDetailPageProps) {
-  const { contestId } = await params;
-  const contestIndex = MOCK_CONTESTS.findIndex((item) => item.id === contestId);
-
-  if (contestIndex < 0) {
-    notFound();
-  }
-
-  const contest = MOCK_CONTESTS[contestIndex];
-  const posterIndex = contestIndex + 1;
-
+export default function ContestNotFound() {
   return (
     <main className="flex h-full w-full flex-col bg-white text-color-gray-850">
       <header className="flex w-full max-w-[390px] shrink-0 items-center justify-between bg-white px-4 py-1">
@@ -32,14 +12,21 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
           <span className="block h-2.5 w-2.5 rotate-45 border-b-2 border-l-2 border-color-gray-850" />
         </Link>
         <h1 className="flex h-[38px] items-center justify-center text-center text-[17px] leading-[135%] font-semibold text-color-gray-900">
-          상세정보
+          공모전 정보
         </h1>
         <div aria-hidden="true" className="size-8" />
       </header>
 
-      <div className="scrollbar-hidden flex-1 overflow-y-auto">
-        <ContestInfo contest={contest} posterIndex={posterIndex} />
-      </div>
+      <section className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+        <h2 className="text-xl leading-[135%] font-semibold text-color-gray-900">공모전을 찾을 수 없어요</h2>
+        <p className="text-sm leading-[150%] text-color-gray-500">삭제되었거나 존재하지 않는 공모전입니다.</p>
+        <Link
+          href="/contests"
+          className="mt-3 rounded-full bg-color-gray-900 px-5 py-3 text-sm font-semibold text-white"
+        >
+          목록으로 돌아가기
+        </Link>
+      </section>
     </main>
   );
 }
