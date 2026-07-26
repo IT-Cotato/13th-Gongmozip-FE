@@ -56,7 +56,7 @@ export default async function CollaborationTypeQuestionPage({
           <div className="flex flex-1 items-start justify-center gap-[10px]" />
         </div>
         <Link
-          className="mt-5 flex h-[38px] items-center justify-center gap-[5px] self-end rounded-[14px] bg-[#FF7658] px-[11px] py-2 font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
+          className="mt-5 inline-flex h-8 items-center justify-center gap-[5px] self-end rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
           href={nextHref}
         >
           <span className="relative h-4 w-[17px]" aria-hidden="true">
