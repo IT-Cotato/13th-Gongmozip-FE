@@ -41,26 +41,24 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   }, []);
 
   const handleScrapClick = () => {
-    setIsScrapped((current) => {
-      const nextIsScrapped = !current;
+    const nextIsScrapped = !isScrapped;
 
-      if (scrapToastTimerRef.current !== null) {
-        window.clearTimeout(scrapToastTimerRef.current);
-      }
+    setIsScrapped(nextIsScrapped);
 
-      if (nextIsScrapped) {
-        setShowScrapToast(true);
-        scrapToastTimerRef.current = window.setTimeout(() => {
-          setShowScrapToast(false);
-          scrapToastTimerRef.current = null;
-        }, 2000);
-      } else {
+    if (scrapToastTimerRef.current !== null) {
+      window.clearTimeout(scrapToastTimerRef.current);
+    }
+
+    if (nextIsScrapped) {
+      setShowScrapToast(true);
+      scrapToastTimerRef.current = window.setTimeout(() => {
         setShowScrapToast(false);
         scrapToastTimerRef.current = null;
-      }
-
-      return nextIsScrapped;
-    });
+      }, 2000);
+    } else {
+      setShowScrapToast(false);
+      scrapToastTimerRef.current = null;
+    }
   };
 
   const handleShareComplete = () => {
