@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const connectSrc = ["'self'", apiBaseUrl].filter(Boolean).join(" ");
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
@@ -16,7 +19,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self'; worker-src 'self'",
+            value: `default-src 'self'; script-src 'self'; worker-src 'self'; connect-src ${connectSrc}`,
           },
         ],
       },
