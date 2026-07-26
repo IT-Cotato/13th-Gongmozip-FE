@@ -20,6 +20,9 @@ const detailRows = [
   { label: "공모전 내용", key: "description" },
 ] as const;
 
+const websiteLinkClassName =
+  "flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand";
+
 export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const [isScrapped, setIsScrapped] = useState(contest.isScrapped);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -155,22 +158,34 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
           ) : null}
 
-          <Link
-            href={contest.websiteUrl || "#"}
-            target={contest.websiteUrl ? "_blank" : undefined}
-            rel={contest.websiteUrl ? "noreferrer" : undefined}
-            aria-disabled={!contest.websiteUrl}
-            className="flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand"
-          >
-            <Image
-              src="/icons/contests/Button/tabler_external-link.svg"
-              alt=""
-              width={16}
-              height={16}
-              className="size-4 shrink-0"
-            />
-            웹사이트
-          </Link>
+          {contest.websiteUrl ? (
+            <Link
+              href={contest.websiteUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={websiteLinkClassName}
+            >
+              <Image
+                src="/icons/contests/Button/tabler_external-link.svg"
+                alt=""
+                width={16}
+                height={16}
+                className="size-4 shrink-0"
+              />
+              웹사이트
+            </Link>
+          ) : (
+            <span role="link" aria-disabled="true" className={websiteLinkClassName}>
+              <Image
+                src="/icons/contests/Button/tabler_external-link.svg"
+                alt=""
+                width={16}
+                height={16}
+                className="size-4 shrink-0"
+              />
+              웹사이트
+            </span>
+          )}
         </div>
 
         <div className="mt-[18px] flex w-full items-start gap-[13px] self-stretch bg-white">

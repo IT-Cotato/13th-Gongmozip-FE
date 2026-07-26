@@ -31,7 +31,7 @@ export default async function ContestDetailPage({ params }: ContestDetailPagePro
         <div aria-hidden="true" className="size-8" />
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="scrollbar-hidden flex-1 overflow-y-auto">
         <ContestInfo contest={contest} posterIndex={posterIndex} />
       </div>
     </main>
