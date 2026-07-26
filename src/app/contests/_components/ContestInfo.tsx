@@ -28,8 +28,11 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showScrapToast, setShowScrapToast] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
+  const [isWebSharePending, setIsWebSharePending] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
   const shareToastTimerRef = useRef<number | null>(null);
+  const linkCopiedToastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -39,6 +42,10 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
       if (shareToastTimerRef.current !== null) {
         window.clearTimeout(shareToastTimerRef.current);
+      }
+
+      if (linkCopiedToastTimerRef.current !== null) {
+        window.clearTimeout(linkCopiedToastTimerRef.current);
       }
     };
   }, []);
@@ -74,6 +81,73 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       setShowShareToast(false);
       shareToastTimerRef.current = null;
     }, 2000);
+  };
+
+  const showLinkCopiedMessage = () => {
+    if (linkCopiedToastTimerRef.current !== null) {
+      window.clearTimeout(linkCopiedToastTimerRef.current);
+    }
+
+    setShowLinkCopiedToast(true);
+    linkCopiedToastTimerRef.current = window.setTimeout(() => {
+      setShowLinkCopiedToast(false);
+      linkCopiedToastTimerRef.current = null;
+    }, 2000);
+  };
+
+  const copyShareUrlToClipboard = async (shareUrl: string) => {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        return;
+      } catch {
+        // Fall back to the textarea copy path below.
+      }
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = shareUrl;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.top = "0";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  };
+
+  const handleWebShareClick = async () => {
+    if (isWebSharePending) {
+      return;
+    }
+
+    const shareUrl = window.location.href;
+    const shareData: ShareData = {
+      title: contest.title,
+      text: contest.description || `${contest.organizer} ${contest.category} 공모전`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      setIsWebSharePending(true);
+
+      try {
+        await navigator.share(shareData);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      } finally {
+        setIsWebSharePending(false);
+      }
+
+      return;
+    }
+
+    await copyShareUrlToClipboard(shareUrl);
+    showLinkCopiedMessage();
   };
 
   return (
@@ -158,6 +232,8 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
           ) : null}
 
+          {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
+
           {contest.websiteUrl ? (
             <Link
               href={contest.websiteUrl}
@@ -193,7 +269,10 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             type="button"
             aria-label="공모전 공유하기"
             className="relative flex h-[47px] w-12 shrink-0 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)] aspect-[48/47]"
-            onClick={() => setIsShareModalOpen(true)}
+            disabled={isWebSharePending}
+            onClick={() => {
+              void handleWebShareClick();
+            }}
           >
             <Image
               src="/icons/contests/Button/Button/Button/_Asset/share.svg"
@@ -218,26 +297,25 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
         onShareComplete={handleShareComplete}
         open={isShareModalOpen}
       />
-
     </section>
   );
 }
 
-function ContestActionToast({ href, message }: { href: string; message: string }) {
+function ContestActionToast({ href, message }: { href?: string; message: string }) {
   return (
     <div
       role="status"
       className="absolute bottom-[calc(100%+11px)] left-1/2 z-50 flex w-[350px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.60)] py-2 pr-4 pl-5"
     >
-      <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">
-        {message}
-      </p>
-      <Link
-        href={href}
-        className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
-      >
-        바로가기
-      </Link>
+      <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">{message}</p>
+      {href ? (
+        <Link
+          href={href}
+          className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
+        >
+          바로가기
+        </Link>
+      ) : null}
     </div>
   );
 }
