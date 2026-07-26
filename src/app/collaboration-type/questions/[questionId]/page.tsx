@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 
+import CollaborationQuestionForm from "../../_components/CollaborationQuestionForm";
 import {
   COLLABORATION_TEST_QUESTIONS,
   COLLABORATION_TEST_TOTAL_QUESTION_COUNT,
@@ -52,24 +52,12 @@ export default async function CollaborationTypeQuestionPage({
       </div>
 
       <section className="mt-[36px] flex flex-col px-[18px]">
-        <div className="flex h-[531px] flex-col self-stretch rounded-2xl bg-white px-11 pb-[14px] pt-[22px]">
-          <p className="h-[17px] self-stretch text-center font-[Pretendard] text-[17px] font-bold leading-[135%] text-semantic-fill-brand">
-            Q{currentQuestionId}
-          </p>
-          <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal">
-            {question.title}
-          </p>
-        </div>
-        <Link
-          className="mt-5 inline-flex h-8 items-center justify-center gap-[5px] self-end rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
-          href={nextHref}
-        >
-          <span className="relative h-4 w-[17px]" aria-hidden="true">
-            <span className="absolute left-[2px] top-[3px] h-[9px] w-[9px] rotate-[-45deg] border-b-2 border-r-2 border-white" />
-            <span className="absolute left-[8px] top-[3px] h-[9px] w-[9px] rotate-[-45deg] border-b-2 border-r-2 border-white" />
-          </span>
-          다음
-        </Link>
+        <CollaborationQuestionForm
+          currentQuestionId={currentQuestionId}
+          nextHref={nextHref}
+          options={question.options}
+          title={question.title}
+        />
       </section>
     </main>
   );
