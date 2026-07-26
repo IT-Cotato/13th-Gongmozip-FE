@@ -161,9 +161,19 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
         </span>
 
         <div className="mt-[14px] flex justify-center">
-          <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
-            이미지 {posterIndex}
-          </div>
+          {contest.posterImageUrl ? (
+            <Image
+              src={contest.posterImageUrl}
+              alt={`${contest.title} 포스터`}
+              width={159}
+              height={222}
+              className="h-[222px] w-[159px] object-cover"
+            />
+          ) : (
+            <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
+              이미지 {posterIndex}
+            </div>
+          )}
         </div>
       </div>
 

@@ -41,9 +41,19 @@ export function ContestList({ contests }: ContestListProps) {
                 aria-label={`${contest.title} 상세정보 보기`}
                 className="contents"
               >
-                <div className="flex h-[113px] w-[85px] items-center justify-center bg-color-gray-300 text-sm font-semibold text-color-gray-650">
-                  이미지 {index + 1}
-                </div>
+                {contest.posterImageUrl ? (
+                  <Image
+                    src={contest.posterImageUrl}
+                    alt={`${contest.title} 포스터`}
+                    width={85}
+                    height={113}
+                    className="h-[113px] w-[85px] object-cover"
+                  />
+                ) : (
+                  <div className="flex h-[113px] w-[85px] items-center justify-center bg-color-gray-300 text-sm font-semibold text-color-gray-650">
+                    이미지 {index + 1}
+                  </div>
+                )}
 
                 <div className="min-w-0">
                   <span className="flex w-fit items-center justify-center rounded-[85px] bg-color-coral-100 px-2 py-1 text-center text-[8px] leading-[135%] font-semibold text-semantic-line-brand">
