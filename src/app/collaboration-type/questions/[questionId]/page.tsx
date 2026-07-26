@@ -52,8 +52,13 @@ export default async function CollaborationTypeQuestionPage({
       </div>
 
       <section className="mt-[36px] flex flex-col px-[18px]">
-        <div className="flex h-[531px] self-stretch rounded-2xl bg-white px-11 pb-[14px] pt-[22px]">
-          <div className="flex flex-1 items-start justify-center gap-[10px]" />
+        <div className="flex h-[531px] flex-col self-stretch rounded-2xl bg-white px-11 pb-[14px] pt-[22px]">
+          <p className="h-[17px] self-stretch text-center font-[Pretendard] text-[17px] font-bold leading-[135%] text-semantic-fill-brand">
+            Q{currentQuestionId}
+          </p>
+          <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal">
+            {question.title}
+          </p>
         </div>
         <Link
           className="mt-5 inline-flex h-8 items-center justify-center gap-[5px] self-end rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
