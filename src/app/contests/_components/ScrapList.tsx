@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useState } from "react";
 
+import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
 
 type ScrapListProps = {
@@ -12,11 +12,16 @@ type ScrapListProps = {
 };
 
 export function ScrapList({ contests }: ScrapListProps) {
-  const [scrappedContests, setScrappedContests] = useState(contests);
+  const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
+  const removeScrap = useContestScrapStore((state) => state.removeScrap);
+  const scrappedContests = contests.filter((contest) => scrappedContestIds.includes(contest.id));
 
   if (scrappedContests.length === 0) {
     return (
-      <section aria-label="스크랩한 공모전" className="relative -mx-4 min-h-full overflow-hidden px-4 pt-4">
+      <section
+        aria-label="스크랩한 공모전"
+        className="relative -mx-4 min-h-full overflow-hidden px-4 pt-4"
+      >
         <Image
           src="/icons/contests/Frame.svg"
           alt=""
@@ -98,12 +103,16 @@ export function ScrapList({ contests }: ScrapListProps) {
                 aria-label={`${contest.title} 스크랩 해제`}
                 className="flex justify-center pt-[11px]"
                 onClick={() => {
-                  setScrappedContests((currentContests) =>
-                    currentContests.filter((currentContest) => currentContest.id !== contest.id),
-                  );
+                  removeScrap(contest.id);
                 }}
               >
-                <Image src="/icons/contests/x.svg" alt="" width={24} height={24} className="size-6 shrink-0" />
+                <Image
+                  src="/icons/contests/x.svg"
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="size-6 shrink-0"
+                />
               </button>
             </div>
           </article>

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
+import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
 
 type ContestListProps = {
@@ -11,9 +11,8 @@ type ContestListProps = {
 };
 
 export function ContestList({ contests }: ContestListProps) {
-  const [scrappedContestIds, setScrappedContestIds] = useState(() =>
-    new Set(contests.filter((contest) => contest.isScrapped).map((contest) => contest.id)),
-  );
+  const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
+  const toggleScrap = useContestScrapStore((state) => state.toggleScrap);
 
   if (contests.length === 0) {
     return (
@@ -29,7 +28,7 @@ export function ContestList({ contests }: ContestListProps) {
   return (
     <section aria-label="공모전 목록" className="-mt-0.5">
       {contests.map((contest, index) => {
-        const isScrapped = scrappedContestIds.has(contest.id);
+        const isScrapped = scrappedContestIds.includes(contest.id);
 
         return (
           <article
@@ -74,17 +73,7 @@ export function ContestList({ contests }: ContestListProps) {
                 aria-pressed={isScrapped}
                 className="flex justify-center pt-1"
                 onClick={() => {
-                  setScrappedContestIds((currentIds) => {
-                    const nextIds = new Set(currentIds);
-
-                    if (nextIds.has(contest.id)) {
-                      nextIds.delete(contest.id);
-                    } else {
-                      nextIds.add(contest.id);
-                    }
-
-                    return nextIds;
-                  });
+                  toggleScrap(contest.id);
                 }}
               >
                 <Image

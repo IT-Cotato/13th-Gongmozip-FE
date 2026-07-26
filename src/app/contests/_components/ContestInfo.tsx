@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestDetail } from "../_types";
 import { ShareContestModal } from "./ShareContestModal";
 
@@ -24,7 +25,8 @@ const websiteLinkClassName =
   "flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand";
 
 export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
-  const [isScrapped, setIsScrapped] = useState(contest.isScrapped);
+  const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
+  const toggleScrap = useContestScrapStore((state) => state.toggleScrap);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showScrapToast, setShowScrapToast] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
@@ -33,6 +35,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const scrapToastTimerRef = useRef<number | null>(null);
   const shareToastTimerRef = useRef<number | null>(null);
   const linkCopiedToastTimerRef = useRef<number | null>(null);
+  const isScrapped = scrappedContestIds.includes(contest.id);
 
   useEffect(() => {
     return () => {
@@ -53,7 +56,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const handleScrapClick = () => {
     const nextIsScrapped = !isScrapped;
 
-    setIsScrapped(nextIsScrapped);
+    toggleScrap(contest.id);
 
     if (scrapToastTimerRef.current !== null) {
       window.clearTimeout(scrapToastTimerRef.current);
