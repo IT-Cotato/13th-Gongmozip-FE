@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { ChevronLeftIcon } from "../../_components/icons";
@@ -16,6 +16,7 @@ import {
 
 const memberNameClass = "text-[15px] leading-[1.25] font-semibold text-color-gray-850";
 const reportReasons = ["무임승차", "잠수, 연락두절", "욕설, 비하발언", "스팸", "허위 프로필", "기타(직접 입력)"];
+const customReportReason = "기타(직접 입력)";
 
 const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
   robot: "bg-color-blue-50",
@@ -26,15 +27,19 @@ const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
 
 export default function ChatRoomMenuPage() {
   const params = useParams<{ roomId: string }>();
+  const router = useRouter();
   const [isChatbotEnabled, setIsChatbotEnabled] = useState(true);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [reportedMemberIds, setReportedMemberIds] = useState<string[]>([]);
+  const [reportNotice, setReportNotice] = useState("");
   const [selectedMember, setSelectedMember] = useState<ChatMember | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatMember | null>(null);
 
-  const submitReport = (memberId: string) => {
+  const submitReport = (member: ChatMember) => {
     setReportedMemberIds((currentIds) =>
-      currentIds.includes(memberId) ? currentIds : [...currentIds, memberId],
+      currentIds.includes(member.id) ? currentIds : [...currentIds, member.id],
     );
+    setReportNotice(`${member.name}님 신고가 접수되었습니다.`);
     setReportTarget(null);
   };
 
@@ -81,12 +86,18 @@ export default function ChatRoomMenuPage() {
       </section>
 
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex flex-col bg-gradient-to-t from-white via-white to-white/0 px-4 pt-8 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <Link
-          href="/chat"
+        {reportNotice && (
+          <p className="pointer-events-auto mb-3 rounded-[12px] bg-color-gray-850/80 px-4 py-2 text-center text-[13px] leading-[1.5] font-medium text-white">
+            {reportNotice}
+          </p>
+        )}
+        <button
+          type="button"
           className="pointer-events-auto flex h-[51px] w-full items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
+          onClick={() => setIsLeaveDialogOpen(true)}
         >
           채팅방 나가기
-        </Link>
+        </button>
       </div>
 
       {selectedMember && (
@@ -97,7 +108,14 @@ export default function ChatRoomMenuPage() {
         <ReportDialog
           member={reportTarget}
           onClose={() => setReportTarget(null)}
-          onSubmit={() => submitReport(reportTarget.id)}
+          onSubmit={() => submitReport(reportTarget)}
+        />
+      )}
+
+      {isLeaveDialogOpen && (
+        <LeaveChatRoomDialog
+          onClose={() => setIsLeaveDialogOpen(false)}
+          onConfirm={() => router.push("/chat")}
         />
       )}
     </main>
@@ -133,6 +151,7 @@ function MemberRow({
             isReported ? "text-color-coral-700" : "text-color-gray-650"
           }`}
           aria-pressed={isReported}
+          disabled={isReported}
           onClick={onOpenReport}
         >
           <span className="flex size-5 items-center justify-center rounded-[7px] bg-[#BB5260] text-[15px] leading-none font-bold text-white">
@@ -157,7 +176,10 @@ function ReportDialog({
   onSubmit: () => void;
 }) {
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [customReason, setCustomReason] = useState("");
   const [isReasonOpen, setIsReasonOpen] = useState(false);
+  const isCustomReason = selectedReason === customReportReason;
+  const canSubmit = selectedReason !== null && (!isCustomReason || customReason.trim().length > 0);
 
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-color-gray-850/60 p-2.5">
@@ -179,7 +201,7 @@ function ReportDialog({
             </label>
             <button
               type="button"
-              className="flex h-11 w-full items-center rounded-[12px] border border-[rgba(97,97,97,0.08)] bg-white/10 px-5 py-3 text-left"
+              className="flex h-11 w-full items-center rounded-[12px] border border-[rgba(97,97,97,0.08)] bg-[rgba(255,255,255,0.80)] px-5 py-3 text-left"
               onClick={() => setIsReasonOpen((currentValue) => !currentValue)}
               aria-expanded={isReasonOpen}
             >
@@ -205,16 +227,30 @@ function ReportDialog({
                           ? "font-semibold text-color-coral-700"
                           : "font-medium text-color-gray-650"
                       }`}
-                      onClick={() => {
-                        setSelectedReason(reason);
-                        setIsReasonOpen(false);
-                      }}
+                        onClick={() => {
+                          setSelectedReason(reason);
+                          if (reason !== customReportReason) {
+                            setCustomReason("");
+                          }
+                          setIsReasonOpen(false);
+                        }}
                     >
                       {reason}
                     </button>
                   ))}
                 </div>
               </div>
+            )}
+
+            {isCustomReason && (
+              <input
+                type="text"
+                value={customReason}
+                onChange={(event) => setCustomReason(event.target.value)}
+                placeholder="구체적인 신고 사유를 직접 작성해주세요."
+                className="mt-2 h-11 w-full rounded-[12px] border border-[rgba(97,97,97,0.08)] bg-[rgba(97,97,97,0.10)] px-5 py-3 text-[13px] leading-[1.5] font-normal text-color-gray-850 outline-none placeholder:text-semantic-label-assistive"
+                maxLength={200}
+              />
             )}
           </div>
         </div>
@@ -229,7 +265,10 @@ function ReportDialog({
           </button>
           <button
             type="button"
-            className="flex h-full flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
+            disabled={!canSubmit}
+            className={`flex h-full flex-1 items-center justify-center rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold ${
+              canSubmit ? "bg-color-coral-500 text-white" : "bg-color-gray-200 text-color-gray-350"
+            }`}
             onClick={onSubmit}
           >
             제출
@@ -281,6 +320,53 @@ function ChatbotRow({
       >
         {isEnabled ? "삭제" : "추가"}
       </button>
+    </div>
+  );
+}
+
+function LeaveChatRoomDialog({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-color-gray-850/60 p-4">
+      <section
+        aria-label="채팅방 나가기 확인"
+        className="flex w-full max-w-[326px] flex-col rounded-[16px] bg-white px-4 pt-6 pb-4 shadow-[0_53px_15px_rgba(0,0,0,0),0_34px_14px_rgba(0,0,0,0.01),0_19px_12px_rgba(0,0,0,0.05),0_9px_9px_rgba(0,0,0,0.09),0_2px_5px_rgba(0,0,0,0.1)]"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="px-1">
+          <h2 className="text-center text-[20px] leading-[1.35] font-medium text-color-gray-850">
+            채팅방을 정말 나가시나요?
+          </h2>
+          <p className="text-center mt-3 text-[13px] leading-[1.5] text-color-gray-650">
+            중도로 채팅방을 나갈경우
+            <br />
+            협업거리가 10m 줄어들어요.
+          </p>
+        </div>
+
+        <div className="mt-8 flex h-[52px] w-full gap-2">
+          <button
+            type="button"
+            className="flex h-full flex-1 items-center justify-center rounded-[12px] border border-[rgba(97,97,97,0.5)] p-2 text-[15px] leading-[1.25] font-semibold text-color-gray-650"
+            onClick={onClose}
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            className="flex h-full flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
+            onClick={onConfirm}
+          >
+            나가기
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
