@@ -1,11 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpIcon } from "./icons";
+
+const MAX_TEXTAREA_HEIGHT = 128;
 
 export function ChatInputBar() {
   const [message, setMessage] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const canSend = message.trim().length > 0;
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+  }, [message]);
 
   return (
     <form
@@ -18,12 +32,14 @@ export function ChatInputBar() {
       <label htmlFor="chat-message" className="sr-only">
         메시지 입력
       </label>
-      <input
+      <textarea
+        ref={textareaRef}
         id="chat-message"
+        rows={1}
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         placeholder="메시지를 입력해주세요."
-        className="min-w-0 flex-1 rounded-[16px] bg-[rgba(97,97,97,0.1)] px-4 py-3.5 text-[13px] leading-[1.5] text-color-gray-850 outline-none placeholder:text-color-gray-500"
+        className="max-h-32 min-h-12 min-w-0 flex-1 resize-none rounded-[16px] bg-[rgba(97,97,97,0.1)] px-4 py-3.5 text-[13px] leading-[1.5] text-color-gray-850 outline-none placeholder:text-color-gray-500"
       />
       <button
         type="submit"
