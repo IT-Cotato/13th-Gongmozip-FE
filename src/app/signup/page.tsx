@@ -275,6 +275,7 @@ function SignupPageInner() {
         onError: (error) => {
           if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
             setServerEmailDuplicate(true);
+            setStep(2);
             return;
           }
           setSendCodeError(
