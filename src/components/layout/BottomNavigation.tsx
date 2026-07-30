@@ -11,7 +11,7 @@ type NavItem = {
   id: NavItemId;
   label: string;
   href: string;
-  renderIcon: () => ReactNode;
+  renderIcon: (isActive: boolean) => ReactNode;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -33,7 +33,7 @@ export default function BottomNavigation({ unreadChatCount = 0 }: BottomNavigati
   return (
     <nav
       aria-label="하단 내비게이션"
-      className="flex w-full items-center justify-center border-t border-[rgba(97,97,97,0.08)] bg-white py-1"
+      className="flex h-[64px] w-full shrink-0 items-center justify-center border-t border-[rgba(97,97,97,0.08)] bg-white py-1"
     >
       {NAV_ITEMS.map((item) => {
         const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -44,14 +44,14 @@ export default function BottomNavigation({ unreadChatCount = 0 }: BottomNavigati
             href={item.href}
             data-nav-item={item.id}
             aria-current={isActive ? "page" : undefined}
-            className={`flex min-w-0 flex-1 flex-col items-center py-2 ${
+            className={`flex h-full min-w-0 flex-1 flex-col items-center py-2 ${
               isActive ? "text-color-gray-850" : "text-color-gray-500"
             }`}
           >
             <span className="relative block size-6">
-              {item.renderIcon()}
+              {item.renderIcon(isActive)}
               {item.id === "chat" && unreadChatCount > 0 && (
-                <span className="absolute -top-[5px] -right-[7.62px] flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-color-coral-500 px-1 text-[8px] font-semibold text-white">
+                <span className="absolute -top-[5px] -right-[7.62px] flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-color-coral-500 px-1 text-[8px] leading-[1.35] font-semibold text-white">
                   {unreadChatCount > 99 ? "99+" : unreadChatCount}
                 </span>
               )}

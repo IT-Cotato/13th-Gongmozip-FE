@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" className="size-6" aria-hidden="true">
@@ -17,7 +19,19 @@ export function HomeIcon() {
   );
 }
 
-export function ContestIcon() {
+export function ContestIcon(isActive: boolean) {
+  if (isActive) {
+    return (
+      <Image
+        src="/icons/contests/icon.svg"
+        alt=""
+        width={24}
+        height={24}
+        className="size-6 shrink-0"
+      />
+    );
+  }
+
   return (
     <svg viewBox="0 0 24 24" fill="none" className="size-6" aria-hidden="true">
       <path

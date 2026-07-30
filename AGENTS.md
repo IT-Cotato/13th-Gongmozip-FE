@@ -38,6 +38,7 @@ Gongmozip FE는 Next.js App Router 기반 PWA 프론트엔드 프로젝트입니
 - 기능 작업은 `develop`에서 `feature/기능명` 브랜치를 생성해 진행합니다.
 - 기능 구현이 완료되면 `develop` 브랜치로 PR을 생성합니다.
 - `develop`에서 통합 테스트 후 문제가 없으면 `main`으로 반영합니다.
+- 커밋 메시지는 한글로 작성합니다.
 
 ## 명령어
 

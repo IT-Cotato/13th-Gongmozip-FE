@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { EffectiveDateAccordion } from "@/components/legal/EffectiveDateAccordion";
 import { TermsArticles } from "@/components/legal/TermsArticles";
@@ -38,9 +39,11 @@ const TERMS_ITEMS: {
 
 function CheckIcon({ checked }: { checked: boolean }) {
   return (
-    <img
-      src={checked ? "/images/clickedcheck.svg" : "/images/check.svg"}
+    <Image
+      src={checked ? "/icons/common/clickedcheck.svg" : "/icons/common/check.svg"}
       alt=""
+      height={20}
+      width={20}
       className="h-5 w-5 shrink-0"
     />
   );
@@ -166,7 +169,13 @@ export function TermsStep({ terms, onToggleAll, onToggleItem }: TermsStepProps) 
                   if (item.key === "privacy") setIsPrivacyDetailOpen(true);
                 }}
               >
-                <img src="/images/tabler_chevron-right.svg" alt="" className="h-4 w-4" />
+                <Image
+                  alt=""
+                  className="h-4 w-4"
+                  height={16}
+                  src="/icons/common/tabler_chevron-right.svg"
+                  width={16}
+                />
               </button>
             )}
           </li>
