@@ -19,7 +19,7 @@ export default function CollaborationTypeStartPage() {
         />
 
         <section className="relative z-10 pt-[52px] text-center">
-          <h1 className="mx-auto w-[330px] text-center font-[Pretendard] text-[22px] font-bold leading-[135%] text-[#2A2A2A]">
+          <h1 className="mx-auto w-full max-w-[330px] text-center font-[Pretendard] text-[22px] font-bold leading-[135%] text-[#2A2A2A]">
             나의 성격과 팀 내에서
             <br />
             협업 유형을 알아보는 검사를
