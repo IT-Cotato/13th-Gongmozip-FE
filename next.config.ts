@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-const connectSrc = ["'self'", apiBaseUrl].filter(Boolean).join(" ");
+const apiOrigin = (() => {
+  try {
+    return process.env.NEXT_PUBLIC_API_BASE_URL
+      ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin
+      : undefined;
+  } catch {
+    return undefined;
+  }
+})();
+const connectSrc = ["'self'", apiOrigin].filter(Boolean).join(" ");
 
 const nextConfig: NextConfig = {
   async headers() {
