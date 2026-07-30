@@ -111,9 +111,9 @@ export default function CollaborationQuestionForm({
             {nextButtonContent}
           </Link>
         ) : (
-          <span aria-disabled="true" className={nextButtonClassName}>
+          <button className={nextButtonClassName} disabled type="button">
             {nextButtonContent}
-          </span>
+          </button>
         )}
       </div>
     </>
