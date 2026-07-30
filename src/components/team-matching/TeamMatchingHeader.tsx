@@ -1,24 +1,27 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 
 type TeamMatchingHeaderProps = {
   backHref?: string;
+  className?: string;
   onBackClick?: () => void;
   title?: string;
 };
 
 export default function TeamMatchingHeader({
   backHref = "/team-matching",
+  className = "bg-white",
   onBackClick,
   title = "팀원 매칭",
 }: TeamMatchingHeaderProps) {
-  const backIcon = (
-    <span className="block h-[10px] w-[10px] rotate-45 border-b-2 border-l-2 border-[#1F1F1F]" />
-  );
+  const backIcon = <Image alt="" height={20} priority src="/icons/contests/left.svg" width={20} />;
 
   return (
-    <header className="flex h-[46px] shrink-0 items-center justify-between bg-white px-4 py-1">
+    <header
+      className={`flex h-[46px] shrink-0 items-center justify-between px-4 py-1 ${className}`}
+    >
       {onBackClick ? (
         <button
           aria-label="뒤로가기"
