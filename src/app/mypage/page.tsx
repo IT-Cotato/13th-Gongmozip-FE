@@ -13,7 +13,7 @@ import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 const COLLABORATIVE_DISTANCE_MAX = 500;
 const COLLABORATIVE_DISTANCE_STEP = 100;
 
-type MenuItem = { label: string; href?: string };
+type MenuItem = { label: string; href?: string; disabled?: boolean };
 type MenuSection = { title?: string; items: MenuItem[] };
 
 const MENU_SECTIONS: MenuSection[] = [
@@ -36,7 +36,7 @@ const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    items: [{ label: "로그아웃" }],
+    items: [{ label: "로그아웃", disabled: true }],
   },
 ];
 
@@ -231,7 +231,7 @@ export default function MyPage() {
   );
 }
 
-function MenuRow({ label, href }: MenuItem) {
+function MenuRow({ label, href, disabled }: MenuItem) {
   const className = "w-full text-left text-[15px] leading-[1.25] font-medium text-[#1F1F1F]";
 
   if (href) {
@@ -239,6 +239,22 @@ function MenuRow({ label, href }: MenuItem) {
       <Link href={href} className={className}>
         {label}
       </Link>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <div className="flex w-full flex-col gap-1">
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          className={`${className} cursor-not-allowed text-[#C8C8C8]`}
+        >
+          {label}
+        </button>
+        <p className="text-xs text-[#949494]">준비 중인 기능이에요.</p>
+      </div>
     );
   }
 
