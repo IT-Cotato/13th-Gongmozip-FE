@@ -1,9 +1,15 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+
+import CollaborationResultPendingLeaveModal from "../_components/CollaborationResultPendingLeaveModal";
 
 export default function CollaborationTypeResultLoadingPage() {
   // TODO: 백엔드 API 연동 시 저장된 검사 응답을 요청 payload로 전달하고,
   // 응답으로 받은 단일 resultType으로 /collaboration-type/results/[resultType] 경로에 이동합니다.
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -12,13 +18,14 @@ export default function CollaborationTypeResultLoadingPage() {
         <h1 className="flex h-[38px] flex-col justify-center text-center font-[Roboto] text-[17px] font-semibold leading-[135%] text-[#111111]">
           협업 유형 검사
         </h1>
-        <Link
+        <button
           aria-label="협업 유형 검사 닫기"
           className="flex h-6 w-6 items-center justify-center"
-          href="/collaboration-type"
+          onClick={() => setIsLeaveModalOpen(true)}
+          type="button"
         >
           <Image alt="" height={24} priority src="/icons/contests/x.svg" width={24} />
-        </Link>
+        </button>
       </header>
 
       <div className="scrollbar-hidden relative min-h-0 flex-1 overflow-y-auto px-4 pb-6">
@@ -60,6 +67,11 @@ export default function CollaborationTypeResultLoadingPage() {
           검사 결과 확인하기
         </Link>
       </div>
+
+      <CollaborationResultPendingLeaveModal
+        onOpenChange={setIsLeaveModalOpen}
+        open={isLeaveModalOpen}
+      />
     </main>
   );
 }
