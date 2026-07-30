@@ -27,7 +27,7 @@ export default async function CollaborationTypeQuestionPage({
 
   const nextHref =
     currentQuestionId >= COLLABORATION_TEST_TOTAL_QUESTION_COUNT
-      ? "/collaboration-type/complete"
+      ? "/collaboration-type/result-loading"
       : `/collaboration-type/questions/${currentQuestionId + 1}`;
   const previousHref =
     currentQuestionId <= 1

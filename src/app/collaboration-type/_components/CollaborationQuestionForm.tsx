@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
+import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
 
 type CollaborationQuestionFormProps = {
   currentQuestionId: number;
@@ -18,7 +19,10 @@ export default function CollaborationQuestionForm({
   previousHref,
   title,
 }: CollaborationQuestionFormProps) {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const selectedOption = useCollaborationTestStore(
+    (state) => state.responses[currentQuestionId] ?? null,
+  );
+  const setResponse = useCollaborationTestStore((state) => state.setResponse);
   const isLikertScaleQuestion = currentQuestionId >= 4;
   const optionGapClassName = isLikertScaleQuestion ? "gap-5" : "gap-[21px]";
   const optionMarginClassName = isLikertScaleQuestion ? "mt-5" : "mt-[21px]";
@@ -79,7 +83,7 @@ export default function CollaborationQuestionForm({
                 aria-pressed={isSelected}
                 className="flex w-full justify-center"
                 key={option}
-                onClick={() => setSelectedOption(option)}
+                onClick={() => setResponse(currentQuestionId, option)}
                 type="button"
               >
                 <span
