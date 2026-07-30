@@ -7,6 +7,7 @@ type CollaborationQuestionFormProps = {
   currentQuestionId: number;
   nextHref: string;
   options: string[];
+  previousHref: string;
   title: string;
 };
 
@@ -14,6 +15,7 @@ export default function CollaborationQuestionForm({
   currentQuestionId,
   nextHref,
   options,
+  previousHref,
   title,
 }: CollaborationQuestionFormProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -22,17 +24,37 @@ export default function CollaborationQuestionForm({
   const optionMarginClassName = isLikertScaleQuestion ? "mt-5" : "mt-[21px]";
   const optionTextClassName = isLikertScaleQuestion
     ? "h-[60px] text-[15px] leading-[125%]"
-    : "h-[101px] text-[16px] leading-[150%]";
+    : "h-[101px] text-[15px] leading-[125%]";
   const nextButtonClassName = selectedOption
-    ? "mt-5 inline-flex h-8 items-center justify-center gap-[5px] self-end rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
-    : "mt-5 inline-flex h-8 items-center justify-center gap-[5px] self-end rounded-[14px] bg-[#DFDFDF] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white";
+    ? "inline-flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
+    : "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#EFEFEF] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#C8C8C8]";
+  const previousButtonClassName =
+    "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white";
+
+  const previousButtonContent = (
+    <>
+      <span
+        aria-hidden="true"
+        className="h-6 w-6 shrink-0 bg-current"
+        style={{
+          mask: "url('/itest/button-icon.svg') center / contain no-repeat",
+          WebkitMask: "url('/itest/button-icon.svg') center / contain no-repeat",
+        }}
+      />
+      이전
+    </>
+  );
 
   const nextButtonContent = (
     <>
-      <span className="relative h-4 w-[17px]" aria-hidden="true">
-        <span className="absolute left-[2px] top-[3px] h-[9px] w-[9px] rotate-[-45deg] border-b-2 border-r-2 border-white" />
-        <span className="absolute left-[8px] top-[3px] h-[9px] w-[9px] rotate-[-45deg] border-b-2 border-r-2 border-white" />
-      </span>
+      <span
+        aria-hidden="true"
+        className="h-6 w-6 shrink-0 bg-current"
+        style={{
+          mask: "url('/images/button-tabler-chevrons-right.svg') center / contain no-repeat",
+          WebkitMask: "url('/images/button-tabler-chevrons-right.svg') center / contain no-repeat",
+        }}
+      />
       다음
     </>
   );
@@ -75,15 +97,21 @@ export default function CollaborationQuestionForm({
         </div>
       </div>
 
-      {selectedOption ? (
-        <Link className={nextButtonClassName} href={nextHref}>
-          {nextButtonContent}
+      <div className="mt-5 flex w-full items-center justify-between">
+        <Link className={previousButtonClassName} href={previousHref}>
+          {previousButtonContent}
         </Link>
-      ) : (
-        <span aria-disabled="true" className={nextButtonClassName}>
-          {nextButtonContent}
-        </span>
-      )}
+
+        {selectedOption ? (
+          <Link className={nextButtonClassName} href={nextHref}>
+            {nextButtonContent}
+          </Link>
+        ) : (
+          <span aria-disabled="true" className={nextButtonClassName}>
+            {nextButtonContent}
+          </span>
+        )}
+      </div>
     </>
   );
 }

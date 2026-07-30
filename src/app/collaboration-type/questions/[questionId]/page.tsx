@@ -29,6 +29,10 @@ export default async function CollaborationTypeQuestionPage({
     currentQuestionId >= COLLABORATION_TEST_TOTAL_QUESTION_COUNT
       ? "/collaboration-type/complete"
       : `/collaboration-type/questions/${currentQuestionId + 1}`;
+  const previousHref =
+    currentQuestionId <= 1
+      ? "/collaboration-type"
+      : `/collaboration-type/questions/${currentQuestionId - 1}`;
   const progressWidth =
     currentQuestionId >= COLLABORATION_TEST_TOTAL_QUESTION_COUNT ? 322 : currentQuestionId * 21;
 
@@ -56,6 +60,7 @@ export default async function CollaborationTypeQuestionPage({
           currentQuestionId={currentQuestionId}
           nextHref={nextHref}
           options={question.options}
+          previousHref={previousHref}
           title={question.title}
         />
       </section>
