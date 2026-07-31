@@ -44,11 +44,11 @@ export default async function CollaborationTypeResultPage({
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-7 pt-[38px]">
         <section
           className="mx-auto flex w-[318px] max-w-full flex-col items-center justify-center rounded-[12px] border-2 bg-white py-4"
-          style={{ borderColor: result.themeColor }}
+          style={{ borderColor: result.borderColor }}
         >
           <h2
             className="flex h-[39px] self-stretch items-center justify-center text-center font-[Pretendard] text-[30px] font-bold leading-[135%]"
-            style={{ color: result.titleColor }}
+            style={{ color: result.nameColor }}
           >
             {result.name}
           </h2>
@@ -60,28 +60,33 @@ export default async function CollaborationTypeResultPage({
             {result.quote}
           </p>
 
-          <Image
-            alt={`${result.name} 캐릭터`}
-            className="mt-[11px] h-[142px] w-[142px] object-contain"
-            height={142}
-            priority
-            src={result.imageSrc}
-            width={142}
-          />
+          <div className="mt-2 flex aspect-square h-[140px] w-[140px] items-center justify-center">
+            <Image
+              alt={`${result.name} 캐릭터`}
+              className="h-full w-full object-contain"
+              height={140}
+              priority
+              src={result.imageSrc}
+              width={140}
+            />
+          </div>
 
           <p
-            className="mt-[3px] w-[286px] max-w-[calc(100%-24px)] text-center font-[Pretendard] text-[12px] font-semibold leading-[135%]"
-            style={{ color: result.titleColor }}
+            className="mt-2 w-[286px] max-w-[calc(100%-24px)] text-center font-[Pretendard] text-[12px] font-semibold leading-[135%]"
+            style={{ color: result.hashtagColor }}
           >
             {result.hashtags.join(" ")}
           </p>
 
-          <div className="mt-[21px] w-[286px] max-w-[calc(100%-24px)] rounded-[8px] bg-[#F9F8F4] px-[13px] py-[13px]">
-            <h3 className="font-[Pretendard] text-[12px] font-bold leading-[135%] text-[#1F1F1F]">
+          <div className="mt-2 flex w-[286px] max-w-[calc(100%-24px)] flex-col items-start justify-center gap-[8px] rounded-[8px] bg-[#F9F8F4] px-[14px] py-4">
+            <h3
+              className="h-4 self-stretch font-[Pretendard] text-[13px] font-semibold leading-[125%]"
+              style={{ color: result.featureTitleColor }}
+            >
               당신의 협업스타일의 특징은?
             </h3>
 
-            <div className="mt-[9px] flex flex-col gap-[8px]">
+            <div className="flex w-full flex-col gap-[8px]">
               {result.traits.map((trait) => (
                 <div
                   className="grid grid-cols-[40px_1fr_40px] items-center gap-[8px]"
@@ -89,27 +94,33 @@ export default async function CollaborationTypeResultPage({
                 >
                   <span
                     className="font-[Pretendard] text-[12px] font-semibold leading-[135%]"
-                    style={{ color: result.titleColor }}
+                    style={{ color: result.traitLabelColor }}
                   >
                     {trait.left}
                   </span>
-                  <div className="h-[5px] rounded-[90px] bg-[#E8E8E8]">
-                    <div
-                      className="h-full rounded-[90px]"
-                      style={{
-                        width: `${trait.percentage}%`,
-                        backgroundColor: result.themeColor,
-                      }}
-                    />
+                  <div
+                    aria-hidden="true"
+                    className="relative top-[3px] flex h-[7px] shrink-0 self-stretch overflow-hidden rounded-[90px] bg-[rgba(97,97,97,0.1)]"
+                  >
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <span
+                        className="h-full flex-1 border-r border-[#F9F8F4] last:border-r-0"
+                        key={index}
+                        style={{
+                          backgroundColor:
+                            index < 4 ? result.traitBarColor : "rgba(97, 97, 97, 0.1)",
+                        }}
+                      />
+                    ))}
                   </div>
-                  <span className="text-right font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#C8C8C8]">
+                  <span className="text-right font-['42dot_Sans'] text-[13px] font-medium leading-[125%] text-[#949494]">
                     {trait.right}
                   </span>
                 </div>
               ))}
             </div>
 
-            <ul className="mt-[9px] flex flex-col gap-[3px] font-[Pretendard] text-[12px] font-normal leading-[150%] text-[#616161]">
+            <ul className="w-[258px] max-w-full font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#555555]">
               {result.descriptions.map((description) => (
                 <li key={description}>· {description}</li>
               ))}
