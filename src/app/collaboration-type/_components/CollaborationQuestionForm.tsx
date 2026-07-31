@@ -23,6 +23,7 @@ export default function CollaborationQuestionForm({
     (state) => state.responses[currentQuestionId] ?? null,
   );
   const setResponse = useCollaborationTestStore((state) => state.setResponse);
+  const isFirstQuestion = currentQuestionId === 1;
   const isLikertScaleQuestion = currentQuestionId >= 4;
   const optionGapClassName = isLikertScaleQuestion ? "gap-5" : "gap-[21px]";
   const optionMarginClassName = isLikertScaleQuestion ? "mt-5" : "mt-[21px]";
@@ -102,9 +103,13 @@ export default function CollaborationQuestionForm({
       </div>
 
       <div className="mt-5 flex w-full items-center justify-between">
-        <Link className={previousButtonClassName} href={previousHref}>
-          {previousButtonContent}
-        </Link>
+        {isFirstQuestion ? (
+          <span aria-hidden="true" className="h-8" />
+        ) : (
+          <Link className={previousButtonClassName} href={previousHref}>
+            {previousButtonContent}
+          </Link>
+        )}
 
         {selectedOption ? (
           <Link className={nextButtonClassName} href={nextHref}>
