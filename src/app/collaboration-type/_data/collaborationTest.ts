@@ -147,8 +147,8 @@ export const COLLABORATION_RESULT_TYPES = [
     nameColor: "#318249",
     hashtagColor: "#41AD61",
     featureTitleColor: "#184224",
-    traitLabelColor: "#205730",
-    traitBarColor: "#205730",
+    traitLabelColor: "#41AD61",
+    traitBarColor: "#51D879",
     borderColor: "#74E094",
     traits: [
       { left: "배려형", right: "주장형", percentage: 78 },
