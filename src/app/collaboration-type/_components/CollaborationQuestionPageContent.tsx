@@ -1,32 +1,37 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { useSurveyQuestionsQuery } from "@/queries/useSurveyQuestionsQuery";
 
 import CollaborationQuestionForm from "./CollaborationQuestionForm";
 import CollaborationTestLeaveModal from "./CollaborationTestLeaveModal";
 
 type CollaborationQuestionPageContentProps = {
-  currentQuestionId: number;
-  nextHref: string;
-  options: string[];
-  previousHref: string;
-  progressWidth: number;
-  title: string;
-  totalQuestionCount: number;
+  currentQuestionOrder: number;
 };
 
 export default function CollaborationQuestionPageContent({
-  currentQuestionId,
-  nextHref,
-  options,
-  previousHref,
-  progressWidth,
-  title,
-  totalQuestionCount,
+  currentQuestionOrder,
 }: CollaborationQuestionPageContentProps) {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const { data: questions = [], isError, isPending, refetch } = useSurveyQuestionsQuery();
+  const totalQuestionCount = questions.length;
+  const question = questions[currentQuestionOrder - 1];
+  const nextHref =
+    currentQuestionOrder >= totalQuestionCount
+      ? "/collaboration-type/result-loading"
+      : `/collaboration-type/questions/${currentQuestionOrder + 1}`;
+  const previousHref =
+    currentQuestionOrder <= 1
+      ? "/collaboration-type"
+      : `/collaboration-type/questions/${currentQuestionOrder - 1}`;
+  const progressWidth =
+    totalQuestionCount > 0
+      ? Math.min(322, Math.round((currentQuestionOrder / totalQuestionCount) * 322))
+      : 0;
 
   return (
     <>
@@ -42,19 +47,53 @@ export default function CollaborationQuestionPageContent({
           style={{ width: `${progressWidth}px` }}
         />
         <p className="absolute bottom-[-16px] right-0 text-right font-[Pretendard] text-[12px] font-semibold leading-[135%]">
-          <span className="text-[#FF7658]">{currentQuestionId}</span>
-          <span className="text-[#C8C8C8]">/{totalQuestionCount}</span>
+          <span className="text-[#FF7658]">{currentQuestionOrder}</span>
+          <span className="text-[#C8C8C8]">/{totalQuestionCount || 15}</span>
         </p>
       </div>
 
       <section className="mt-[36px] flex flex-col px-[18px]">
-        <CollaborationQuestionForm
-          currentQuestionId={currentQuestionId}
-          nextHref={nextHref}
-          options={options}
-          previousHref={previousHref}
-          title={title}
-        />
+        {isPending && (
+          <div className="flex h-[531px] items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
+            질문을 불러오는 중입니다.
+          </div>
+        )}
+
+        {isError && (
+          <div className="flex h-[531px] flex-col items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
+            <p>질문을 불러오지 못했습니다.</p>
+            <button
+              className="mt-5 h-10 rounded-[14px] bg-[#FF7658] px-5 text-[15px] font-semibold text-white"
+              onClick={() => refetch()}
+              type="button"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {!isPending && !isError && question && (
+          <CollaborationQuestionForm
+            currentQuestionOrder={currentQuestionOrder}
+            nextHref={nextHref}
+            options={question.options}
+            previousHref={previousHref}
+            questionId={question.questionId}
+            title={question.questionText}
+          />
+        )}
+
+        {!isPending && !isError && !question && (
+          <div className="flex h-[531px] flex-col items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
+            <p>질문을 찾을 수 없습니다.</p>
+            <Link
+              className="mt-5 flex h-10 items-center rounded-[14px] bg-[#FF7658] px-5 text-[15px] font-semibold text-white"
+              href="/collaboration-type"
+            >
+              처음으로
+            </Link>
+          </div>
+        )}
       </section>
 
       <CollaborationTestLeaveModal

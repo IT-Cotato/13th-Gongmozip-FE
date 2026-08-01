@@ -3,12 +3,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type CollaborationTestResponses = Record<number, string>;
+export type CollaborationTestResponse = {
+  optionId: number;
+  questionId: number;
+};
+
+type CollaborationTestResponses = Record<number, CollaborationTestResponse>;
 
 type CollaborationTestState = {
   responses: CollaborationTestResponses;
   resetResponses: () => void;
-  setResponse: (questionId: number, option: string) => void;
+  setResponse: (questionId: number, optionId: number) => void;
 };
 
 export const useCollaborationTestStore = create<CollaborationTestState>()(
@@ -16,11 +21,14 @@ export const useCollaborationTestStore = create<CollaborationTestState>()(
     (set) => ({
       responses: {},
       resetResponses: () => set({ responses: {} }),
-      setResponse: (questionId, option) =>
+      setResponse: (questionId, optionId) =>
         set((state) => ({
           responses: {
             ...state.responses,
-            [questionId]: option,
+            [questionId]: {
+              optionId,
+              questionId,
+            },
           },
         })),
     }),
