@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
-import { useSurveyQuestionsQuery } from "@/queries/useSurveyQuestionsQuery";
 
+import { COLLABORATION_TEST_QUESTIONS } from "../_data/collaborationTest";
 import CollaborationQuestionForm from "./CollaborationQuestionForm";
 import CollaborationTestLeaveModal from "./CollaborationTestLeaveModal";
 
@@ -17,7 +17,7 @@ export default function CollaborationQuestionPageContent({
   currentQuestionOrder,
 }: CollaborationQuestionPageContentProps) {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const { data: questions = [], isError, isPending, refetch } = useSurveyQuestionsQuery();
+  const questions = COLLABORATION_TEST_QUESTIONS;
   const totalQuestionCount = questions.length;
   const question = questions[currentQuestionOrder - 1];
   const nextHref =
@@ -53,37 +53,24 @@ export default function CollaborationQuestionPageContent({
       </div>
 
       <section className="mt-[36px] flex flex-col px-[18px]">
-        {isPending && (
-          <div className="flex h-[531px] items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
-            질문을 불러오는 중입니다.
-          </div>
-        )}
-
-        {isError && (
-          <div className="flex h-[531px] flex-col items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
-            <p>질문을 불러오지 못했습니다.</p>
-            <button
-              className="mt-5 h-10 rounded-[14px] bg-[#FF7658] px-5 text-[15px] font-semibold text-white"
-              onClick={() => refetch()}
-              type="button"
-            >
-              다시 시도
-            </button>
-          </div>
-        )}
-
-        {!isPending && !isError && question && (
+        {question && (
           <CollaborationQuestionForm
             currentQuestionOrder={currentQuestionOrder}
             nextHref={nextHref}
-            options={question.options}
+            options={question.options.map((option, index) => ({
+              displayOrder: index + 1,
+              optionId: question.id * 100 + index + 1,
+              optionKey: `Q${question.id}_OPTION_${index + 1}`,
+              optionLabel: option,
+              optionValue: option,
+            }))}
             previousHref={previousHref}
-            questionId={question.questionId}
-            title={question.questionText}
+            questionId={question.id}
+            title={question.title}
           />
         )}
 
-        {!isPending && !isError && !question && (
+        {!question && (
           <div className="flex h-[531px] flex-col items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
             <p>질문을 찾을 수 없습니다.</p>
             <Link

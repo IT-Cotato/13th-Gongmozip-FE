@@ -4,7 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { COLLABORATION_RESULT_TYPES } from "../_data/collaborationTest";
 import CollaborationResultPendingLeaveModal from "../_components/CollaborationResultPendingLeaveModal";
+
+const DEFAULT_RESULT_TYPE = COLLABORATION_RESULT_TYPES[0].id;
+const DEFAULT_RESULT_HREF = `/collaboration-type/results/${DEFAULT_RESULT_TYPE}`;
 
 export default function CollaborationTypeResultLoadingPage() {
   // TODO: 백엔드 API 연동 시 저장된 검사 응답을 요청 payload로 전달하고,
@@ -62,7 +66,7 @@ export default function CollaborationTypeResultLoadingPage() {
       <div className="shrink-0 bg-white px-4 pb-3 pt-2">
         <Link
           className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white"
-          href="/collaboration-type/results/planner"
+          href={DEFAULT_RESULT_HREF}
         >
           검사 결과 확인하기
         </Link>
@@ -71,6 +75,7 @@ export default function CollaborationTypeResultLoadingPage() {
       <CollaborationResultPendingLeaveModal
         onOpenChange={setIsLeaveModalOpen}
         open={isLeaveModalOpen}
+        resultHref={DEFAULT_RESULT_HREF}
       />
     </main>
   );

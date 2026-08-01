@@ -8,11 +8,13 @@ import Dialog from "@/components/Dialog";
 type CollaborationResultPendingLeaveModalProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  resultHref: string;
 };
 
 export default function CollaborationResultPendingLeaveModal({
   onOpenChange,
   open,
+  resultHref,
 }: CollaborationResultPendingLeaveModalProps) {
   const confirmLinkRef = useRef<HTMLAnchorElement>(null);
 
@@ -41,7 +43,7 @@ export default function CollaborationResultPendingLeaveModal({
         <div className="mt-5 flex h-[51px] w-full items-center gap-2">
           <Link
             className="flex flex-1 items-center justify-center self-stretch rounded-xl border border-[rgba(97,97,97,0.5)] bg-white p-2 text-center font-[Pretendard] text-[15px] font-semibold leading-[125%] text-[#616161]"
-            href="/collaboration-type/results/planner"
+            href={resultHref}
             ref={confirmLinkRef}
           >
             확인하기
