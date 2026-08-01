@@ -8,20 +8,14 @@ export default function SignupCompletePage() {
   const router = useRouter();
 
   function handleBack() {
-    // TOD
-    // O: 실제 개발된 라우팅 주소로 변경 필요
     router.push("/");
   }
 
   function handleGoToTest() {
-    alert("협업 유형 검사 페이지로 이동합니다. (구현 예정)");
-    // TODO: 실제 개발된 라우팅 주소로 변경 필요
-    router.push("/test");
+    router.push("/collaboration-type");
   }
 
   function handleSkip() {
-    alert("메인 홈 화면으로 이동합니다. (구현 예정)");
-    // TODO: 실제 개발된 라우팅 주소로 변경 필요
     router.push("/");
   }
 
