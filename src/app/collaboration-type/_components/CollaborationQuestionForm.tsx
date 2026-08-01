@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 
-import type { SurveyQuestionOption } from "@/queries/useSurveyQuestionsQuery";
 import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
+
+export type CollaborationQuestionOption = {
+  displayOrder: number;
+  optionId: number;
+  optionKey: string;
+  optionLabel: string;
+  optionValue: string;
+};
 
 type CollaborationQuestionFormProps = {
   currentQuestionOrder: number;
   nextHref: string;
-  options: SurveyQuestionOption[];
+  options: CollaborationQuestionOption[];
   previousHref: string;
   questionId: number;
   title: string;
@@ -87,7 +94,9 @@ export default function CollaborationQuestionForm({
                 aria-pressed={isSelected}
                 className="flex w-full justify-center"
                 key={option.optionId}
-                onClick={() => setResponse(questionId, option.optionId)}
+                onClick={() =>
+                  setResponse(questionId, option.optionId, option.optionValue)
+                }
                 type="button"
               >
                 <span

@@ -224,7 +224,7 @@ export default function MyPage() {
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
-          onStartTest={() => router.push("/mypage/collaboration-type-test")}
+          onStartTest={() => router.push("/collaboration-type")}
         />
       )}
     </div>

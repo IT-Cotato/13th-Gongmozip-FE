@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { ApiError } from "@/lib/http";
-import { useSurveyStatusQuery } from "@/queries/useSurveyQuestionsQuery";
+import { useSurveyStatusQuery } from "@/queries/useSurveyStatusQuery";
 
 export default function CollaborationTypeStartPageContent() {
   const { data: surveyStatus, error, isError, isPending } = useSurveyStatusQuery();

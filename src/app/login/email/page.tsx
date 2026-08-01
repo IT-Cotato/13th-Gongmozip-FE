@@ -41,7 +41,7 @@ export default function EmailLoginPage() {
       {
         onSuccess: (data) => {
           setAccessToken(data.accessToken);
-          router.push("/");
+          router.push("/mypage");
         },
         onError: (error) => {
           setLoginError(
