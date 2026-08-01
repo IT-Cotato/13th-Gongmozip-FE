@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const DEFAULT_API_ORIGIN = "https://13.209.254.149.nip.io";
+
 const apiOrigin = (() => {
   try {
     return process.env.NEXT_PUBLIC_API_BASE_URL
@@ -9,7 +11,9 @@ const apiOrigin = (() => {
     return undefined;
   }
 })();
-const connectSrc = ["'self'", apiOrigin].filter(Boolean).join(" ");
+const connectSrc = Array.from(new Set(["'self'", DEFAULT_API_ORIGIN, apiOrigin]))
+  .filter(Boolean)
+  .join(" ");
 
 const nextConfig: NextConfig = {
   async headers() {
