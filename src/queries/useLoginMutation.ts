@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ApiError } from "@/lib/http";
+import { ApiError, API_BASE_URL, isBaseResponse } from "@/lib/http";
 
 export type LoginRequest = {
   email: string;
@@ -9,24 +9,6 @@ export type LoginRequest = {
 export type LoginResponse = {
   accessToken: string;
 };
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-type BaseResponse<T> = {
-  code: string;
-  data: T;
-  message: string;
-  status: number;
-};
-
-function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "message" in data &&
-    typeof (data as { message: unknown }).message === "string"
-  );
-}
 
 function normalizeAccessToken(accessToken: string) {
   return accessToken.startsWith("Bearer ") ? accessToken.slice("Bearer ".length) : accessToken;
