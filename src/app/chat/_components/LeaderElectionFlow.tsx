@@ -416,36 +416,37 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         <ChatInputBar />
       </div>
 
-      {sheetState !== "closed" ? (
+      {sheetState === "willingness" ||
+      sheetState === "candidateVote" ||
+      sheetState === "complete" ? (
+        <div className="absolute inset-0 z-40 flex items-end bg-color-gray-850/60">
+          {sheetState === "willingness" ? (
+            <LeaderWillingnessSheet
+              selectedChoice={leaderChoice}
+              onSelect={setLeaderChoice}
+              onSubmit={submitWillingness}
+            />
+          ) : null}
+
+          {sheetState === "candidateVote" ? (
+            <LeaderCandidateVoteSheet
+              candidates={safeCandidates}
+              selectedCandidateId={selectedCandidate.id}
+              onSelect={setSelectedCandidateId}
+              onSubmit={finishLeaderVote}
+            />
+          ) : null}
+
+          {sheetState === "complete" ? <VoteCompleteSheet onShowResult={showVoteResult} /> : null}
+        </div>
+      ) : null}
+
+      {isContestOverlay ? (
         <div
-          className={`absolute inset-0 z-40 flex bg-color-gray-850/60 ${
-            isContestOverlay ? "items-center justify-center" : "items-end"
-          }`}
+          className="absolute inset-0 z-40 flex items-center justify-center bg-color-gray-850/60"
           onClick={closeActiveSheet}
         >
-          <div
-            className={isContestOverlay ? "" : "w-full"}
-            onClick={(event) => event.stopPropagation()}
-          >
-            {sheetState === "willingness" ? (
-              <LeaderWillingnessSheet
-                selectedChoice={leaderChoice}
-                onSelect={setLeaderChoice}
-                onSubmit={submitWillingness}
-              />
-            ) : null}
-
-            {sheetState === "candidateVote" ? (
-              <LeaderCandidateVoteSheet
-                candidates={safeCandidates}
-                selectedCandidateId={selectedCandidate.id}
-                onSelect={setSelectedCandidateId}
-                onSubmit={finishLeaderVote}
-              />
-            ) : null}
-
-            {sheetState === "complete" ? <VoteCompleteSheet onShowResult={showVoteResult} /> : null}
-
+          <div onClick={(event) => event.stopPropagation()}>
             {sheetState === "contestAddConfirm" ? (
               <ContestCandidateAddDialog
                 contest={sharedContest}
