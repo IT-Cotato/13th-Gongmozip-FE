@@ -8,7 +8,7 @@ import Dialog from "@/components/Dialog";
 type CollaborationResultPendingLeaveModalProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
-  resultHref: string;
+  resultHref: string | null;
 };
 
 export default function CollaborationResultPendingLeaveModal({
@@ -41,13 +41,15 @@ export default function CollaborationResultPendingLeaveModal({
           이후 다시 확인할 수 없습니다.
         </p>
         <div className="mt-5 flex h-[51px] w-full items-center gap-2">
-          <Link
-            className="flex flex-1 items-center justify-center self-stretch rounded-xl border border-[rgba(97,97,97,0.5)] bg-white p-2 text-center font-[Pretendard] text-[15px] font-semibold leading-[125%] text-[#616161]"
-            href={resultHref}
-            ref={confirmLinkRef}
-          >
-            확인하기
-          </Link>
+          {resultHref ? (
+            <Link
+              className="flex flex-1 items-center justify-center self-stretch rounded-xl border border-[rgba(97,97,97,0.5)] bg-white p-2 text-center font-[Pretendard] text-[15px] font-semibold leading-[125%] text-[#616161]"
+              href={resultHref}
+              ref={confirmLinkRef}
+            >
+              확인하기
+            </Link>
+          ) : null}
           <Link
             className="flex flex-1 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
             href="/collaboration-type"

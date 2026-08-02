@@ -21,12 +21,9 @@ import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
 
 import CollaborationResultPendingLeaveModal from "../_components/CollaborationResultPendingLeaveModal";
 import {
-  COLLABORATION_RESULT_TYPES,
   COLLABORATION_TEST_TOTAL_QUESTION_COUNT,
 } from "../_data/collaborationTest";
 
-const DEFAULT_RESULT_TYPE = COLLABORATION_RESULT_TYPES[0].id;
-const DEFAULT_RESULT_HREF = `/collaboration-type/results/${DEFAULT_RESULT_TYPE}`;
 const submitSurveyRequests = new Map<string, Promise<SubmitSurveyResponse>>();
 
 type SubmitState =
@@ -55,7 +52,7 @@ function getSubmitSurveyRequest(answersKey: string, answers: SubmitSurveyAnswer[
 export default function CollaborationTypeResultLoadingPage() {
   const queryClient = useQueryClient();
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [resultHref, setResultHref] = useState(DEFAULT_RESULT_HREF);
+  const [resultHref, setResultHref] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
   const [retryAttempt, setRetryAttempt] = useState(0);
   const submittedCharacterType = useCollaborationTestStore(
@@ -276,7 +273,7 @@ export default function CollaborationTypeResultLoadingPage() {
       </div>
 
       <div className="shrink-0 bg-white px-4 pb-3 pt-2">
-        {isSubmitted ? (
+        {isSubmitted && resultHref ? (
           <Link
             className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white"
             href={resultHref}
