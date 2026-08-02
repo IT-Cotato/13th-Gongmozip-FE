@@ -1,5 +1,27 @@
 export const COLLABORATION_TEST_TOTAL_QUESTION_COUNT = 15;
 
+export type CollaborationCharacterType =
+  | "LEAD_RUNNER"
+  | "TRACK_RUNNER"
+  | "BOOST_RUNNER"
+  | "BOOSTER_RUNNER"
+  | "FREE_RUNNER";
+
+export const COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE = {
+  LEAD_RUNNER: "lead",
+  TRACK_RUNNER: "track",
+  BOOST_RUNNER: "boost",
+  BOOSTER_RUNNER: "boost",
+  FREE_RUNNER: "free",
+} as const satisfies Record<CollaborationCharacterType, CollaborationResultType>;
+
+export const COLLABORATION_RESULT_TYPE_TO_CHARACTER_TYPE = {
+  lead: "LEAD_RUNNER",
+  track: "TRACK_RUNNER",
+  boost: "BOOST_RUNNER",
+  free: "FREE_RUNNER",
+} as const satisfies Record<CollaborationResultType, CollaborationCharacterType>;
+
 const LIKERT_SCALE_OPTIONS = ["매우 그렇다", "그렇다", "보통이다", "그렇지 않다", "매우 그렇지 않다"];
 
 export const COLLABORATION_TEST_QUESTIONS = [
@@ -83,6 +105,7 @@ export const COLLABORATION_TEST_QUESTIONS = [
 export const COLLABORATION_RESULT_TYPES = [
   {
     id: "lead",
+    characterType: "LEAD_RUNNER",
     name: "리드러너",
     quote: '"우리 팀, 결승선까지 내가 페이스 맞춰줄게!"',
     hashtags: ["#계획적", "#적극적 소통", "#리더십", "#추진력"],
@@ -110,6 +133,7 @@ export const COLLABORATION_RESULT_TYPES = [
   },
   {
     id: "boost",
+    characterType: "BOOST_RUNNER",
     name: "부스트 러너",
     quote: '"좋은 아이디어는 움직이면서 나온다!"',
     hashtags: ["#창의성", "#친화력", "#즉흥성", "#도전정신"],
@@ -137,6 +161,7 @@ export const COLLABORATION_RESULT_TYPES = [
   },
   {
     id: "track",
+    characterType: "TRACK_RUNNER",
     name: "트랙러너",
     quote: '"조용히 달려도 결국 완주하는 건 나야."',
     hashtags: ["#꼼꼼함", "#책임감", "#집중력", "#안정성"],
@@ -164,6 +189,7 @@ export const COLLABORATION_RESULT_TYPES = [
   },
   {
     id: "free",
+    characterType: "FREE_RUNNER",
     name: "프리러너",
     quote: '"꼭 같은 길로 달릴 필요는 없잖아?"',
     hashtags: ["#독립심", "#유연성", "#탐색형", "#자유로움"],
@@ -192,3 +218,30 @@ export const COLLABORATION_RESULT_TYPES = [
 ] as const;
 
 export type CollaborationResultType = (typeof COLLABORATION_RESULT_TYPES)[number]["id"];
+
+export function normalizeCollaborationCharacterType(
+  characterType: CollaborationCharacterType,
+) {
+  return characterType === "BOOSTER_RUNNER" ? "BOOST_RUNNER" : characterType;
+}
+
+export function getCollaborationResultByCharacterType(
+  characterType: CollaborationCharacterType,
+) {
+  const normalizedCharacterType = normalizeCollaborationCharacterType(characterType);
+
+  return COLLABORATION_RESULT_TYPES.find((result) => {
+    return result.characterType === normalizedCharacterType;
+  });
+}
+
+export function getCollaborationResultByRouteParam(routeParam: string) {
+  if (routeParam in COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE) {
+    return getCollaborationResultByCharacterType(routeParam as CollaborationCharacterType);
+  }
+
+  const characterType =
+    COLLABORATION_RESULT_TYPE_TO_CHARACTER_TYPE[routeParam as CollaborationResultType];
+
+  return characterType ? getCollaborationResultByCharacterType(characterType) : undefined;
+}
