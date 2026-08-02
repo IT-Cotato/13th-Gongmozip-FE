@@ -3,17 +3,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { CollaborationCharacterType } from "@/types/collaboration";
+
 export type CollaborationTestResponse = {
   optionId: number;
   optionValue: string;
   questionId: number;
 };
-
-export type CollaborationCharacterType =
-  | "LEAD_RUNNER"
-  | "TRACK_RUNNER"
-  | "BOOST_RUNNER"
-  | "FREE_RUNNER";
 
 type CollaborationTestResponses = Record<number, CollaborationTestResponse>;
 

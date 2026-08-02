@@ -1,11 +1,8 @@
+import type { CollaborationCharacterType } from "@/types/collaboration";
+
 export const COLLABORATION_TEST_TOTAL_QUESTION_COUNT = 15;
 
-export type CollaborationCharacterType =
-  | "LEAD_RUNNER"
-  | "TRACK_RUNNER"
-  | "BOOST_RUNNER"
-  | "BOOSTER_RUNNER"
-  | "FREE_RUNNER";
+export type { CollaborationCharacterType } from "@/types/collaboration";
 
 export const COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE = {
   LEAD_RUNNER: "lead",

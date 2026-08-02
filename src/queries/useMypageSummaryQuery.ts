@@ -1,12 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/http";
 
-export type CollaborationCharacterKey =
-  | "TRACK_RUNNER"
-  | "FREE_RUNNER"
-  | "LEAD_RUNNER"
-  | "BOOST_RUNNER"
-  | "BOOSTER_RUNNER";
+import { apiFetch } from "@/lib/http";
+import type { CollaborationCharacterType } from "@/types/collaboration";
+
+export type CollaborationCharacterKey = CollaborationCharacterType;
 
 export type MypageSummary = {
   name: string;

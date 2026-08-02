@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
+import type { CollaborationCharacterType } from "@/types/collaboration";
 
 import { surveyStatusQueryKey } from "./useSurveyStatusQuery";
 
@@ -13,11 +14,7 @@ export type SubmitSurveyRequest = {
   answers: SubmitSurveyAnswer[];
 };
 
-export type SurveyCharacterType =
-  | "LEAD_RUNNER"
-  | "TRACK_RUNNER"
-  | "BOOST_RUNNER"
-  | "FREE_RUNNER";
+export type SurveyCharacterType = CollaborationCharacterType;
 
 export type SurveyExtroversionType = "I" | "A" | "E";
 
