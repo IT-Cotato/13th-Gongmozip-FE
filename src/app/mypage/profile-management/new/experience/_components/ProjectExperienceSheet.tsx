@@ -65,7 +65,8 @@ export function ProjectExperienceSheet({ onClose, onSubmit }: ProjectExperienceS
   const [awardName, setAwardName] = useState("");
   const [activeDateField, setActiveDateField] = useState<"start" | "end" | null>(null);
 
-  const isFormValid = name.trim().length > 0 && category !== null;
+  const isPeriodValid = !startMonth || !endMonth || startMonth <= endMonth;
+  const isFormValid = name.trim().length > 0 && category !== null && isPeriodValid;
 
   function handleSubmit() {
     if (!isFormValid || category === null) return;
@@ -121,37 +122,47 @@ export function ProjectExperienceSheet({ onClose, onSubmit }: ProjectExperienceS
               />
             </div>
 
-            <div className="relative flex items-end gap-1">
-              <div className="flex flex-1 flex-col gap-1">
-                <FieldLabel label="프로젝트 기간" />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveDateField((prev) => (prev === "start" ? null : "start"))
-                  }
-                  className="flex h-11 w-full items-center justify-between rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-left text-[13px] leading-[1.5]"
-                >
-                  <span className={startMonth ? "text-[#1F1F1F]" : "text-[#949494]"}>
-                    {startMonth ? formatMonthLabel(startMonth) : "시작 년월"}
-                  </span>
-                  <CalendarIcon />
-                </button>
+            <div className="relative flex flex-col gap-1">
+              <div className="flex items-end gap-1">
+                <div className="flex flex-1 flex-col gap-1">
+                  <FieldLabel label="프로젝트 기간" />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveDateField((prev) => (prev === "start" ? null : "start"))
+                    }
+                    className="flex h-11 w-full items-center justify-between rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-left text-[13px] leading-[1.5]"
+                  >
+                    <span className={startMonth ? "text-[#1F1F1F]" : "text-[#949494]"}>
+                      {startMonth ? formatMonthLabel(startMonth) : "시작 년월"}
+                    </span>
+                    <CalendarIcon />
+                  </button>
+                </div>
+
+                <span className="pb-3 text-[15px] leading-[1.25] font-semibold text-[#949494]">
+                  ~
+                </span>
+
+                <div className="flex flex-1 flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDateField((prev) => (prev === "end" ? null : "end"))}
+                    className="flex h-11 w-full items-center justify-between rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-left text-[13px] leading-[1.5]"
+                  >
+                    <span className={endMonth ? "text-[#1F1F1F]" : "text-[#949494]"}>
+                      {endMonth ? formatMonthLabel(endMonth) : "종료 년월"}
+                    </span>
+                    <CalendarIcon />
+                  </button>
+                </div>
               </div>
 
-              <span className="pb-3 text-[15px] leading-[1.25] font-semibold text-[#949494]">~</span>
-
-              <div className="flex flex-1 flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveDateField((prev) => (prev === "end" ? null : "end"))}
-                  className="flex h-11 w-full items-center justify-between rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-left text-[13px] leading-[1.5]"
-                >
-                  <span className={endMonth ? "text-[#1F1F1F]" : "text-[#949494]"}>
-                    {endMonth ? formatMonthLabel(endMonth) : "종료 년월"}
-                  </span>
-                  <CalendarIcon />
-                </button>
-              </div>
+              {!isPeriodValid && (
+                <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                  종료 년월은 시작 년월보다 빠를 수 없어요.
+                </p>
+              )}
 
               {activeDateField && (
                 <>
