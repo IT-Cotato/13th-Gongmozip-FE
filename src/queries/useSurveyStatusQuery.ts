@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { apiFetch } from "@/lib/http";
+import { ApiError, apiFetch } from "@/lib/http";
 
 export type SurveyStatus = "NONE" | "SUBMITTED";
 
@@ -18,6 +18,11 @@ export function useSurveyStatusQuery() {
   return useQuery({
     queryFn: getSurveyStatus,
     queryKey: surveyStatusQueryKey,
+    retry: (failureCount, error) => {
+      if (error instanceof ApiError && error.status === 401) return false;
+
+      return failureCount < 3;
+    },
     select: (response) => response.status,
   });
 }
