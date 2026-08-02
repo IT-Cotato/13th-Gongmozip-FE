@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import BottomSheet from "@/components/BottomSheet";
 import type { Certificate } from "./CertificateCard";
 
 const CERTIFICATE_CATEGORIES = [
@@ -57,113 +58,98 @@ export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(31,31,31,0.6)]">
-      <button
-        type="button"
-        aria-label="닫기"
-        onClick={onClose}
-        className="absolute inset-0 h-full w-full"
-      />
-
-      <div className="relative flex max-h-[88vh] w-full max-w-[390px] flex-col overflow-hidden rounded-t-2xl bg-white">
-        <div className="flex w-full flex-col items-center pt-4 pb-6">
-          <span className="h-1 w-12 rounded-full bg-[rgba(97,97,97,0.22)]" />
+    <BottomSheet onClose={onClose} aria-label="자격증 추가">
+      <div className="flex-1 overflow-y-auto px-5 pb-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">자격증 추가</h2>
+          <p className="text-[13px] leading-[1.5] text-[#949494]">
+            유효기간이 아직 유효한 자격증만 등록해주세요.
+          </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-6">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">자격증 추가</h2>
-            <p className="text-[13px] leading-[1.5] text-[#949494]">
-              유효기간이 아직 유효한 자격증만 등록해주세요.
-            </p>
+        <div className="mt-4 flex flex-col gap-3">
+          <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">카테고리</p>
+          <div className="flex flex-wrap gap-1">
+            {CERTIFICATE_CATEGORIES.map((option) => {
+              const isActive = category === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => handleSelectCategory(option)}
+                  className={`flex h-8 items-center justify-center rounded-full px-2.5 text-[15px] leading-[1.25] font-semibold ${
+                    isActive ? "bg-[#1f1f1f] text-white" : "bg-[rgba(97,97,97,0.1)] text-[#616161]"
+                  }`}
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">카테고리</p>
-            <div className="flex flex-wrap gap-1">
-              {CERTIFICATE_CATEGORIES.map((option) => {
-                const isActive = category === option;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    aria-pressed={isActive}
-                    onClick={() => handleSelectCategory(option)}
-                    className={`flex h-8 items-center justify-center rounded-full px-2.5 text-[15px] leading-[1.25] font-semibold ${
-                      isActive
-                        ? "bg-[#1f1f1f] text-white"
-                        : "bg-[rgba(97,97,97,0.1)] text-[#616161]"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="mt-4 flex flex-col gap-1">
+          <div className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">
+            자격증명
+            <span className="text-[#FF7658]">*</span>
           </div>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="자격증명을 입력하세요"
+            className={TEXTBOX_CLASS}
+          />
+        </div>
 
-          <div className="mt-4 flex flex-col gap-1">
-            <div className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">
-              자격증명
-              <span className="text-[#FF7658]">*</span>
-            </div>
+        <div className="mt-4 flex items-end gap-2">
+          <div className="flex flex-1 flex-col gap-1">
+            <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">취득년도</p>
             <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="자격증명을 입력하세요"
+              value={year}
+              onChange={(e) => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              inputMode="numeric"
+              placeholder="YYYY"
               className={TEXTBOX_CLASS}
             />
-          </div>
-
-          <div className="mt-4 flex items-end gap-2">
-            <div className="flex flex-1 flex-col gap-1">
-              <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">취득년도</p>
-              <input
-                value={year}
-                onChange={(e) => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                inputMode="numeric"
-                placeholder="YYYY"
-                className={TEXTBOX_CLASS}
-              />
-              {isYearComplete && !isYearInRange && (
-                <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">
-                  {MIN_CERTIFICATE_YEAR}~{currentYear}년 사이로 입력해주세요.
-                </p>
-              )}
-            </div>
-
-            {hasGradeField && (
-              <div className="flex flex-1 flex-col gap-1">
-                <div className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">
-                  점수/등급
-                  <span className="text-[#FF7658]">*</span>
-                </div>
-                <input
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  placeholder="ex) 900점"
-                  className={TEXTBOX_CLASS}
-                />
-              </div>
+            {isYearComplete && !isYearInRange && (
+              <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                {MIN_CERTIFICATE_YEAR}~{currentYear}년 사이로 입력해주세요.
+              </p>
             )}
           </div>
-        </div>
 
-        <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-          <button
-            type="button"
-            disabled={!isFormValid}
-            onClick={handleSubmit}
-            className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-              isFormValid
-                ? "bg-[#FF7658] text-white"
-                : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-            }`}
-          >
-            등록하기
-          </button>
+          {hasGradeField && (
+            <div className="flex flex-1 flex-col gap-1">
+              <div className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">
+                점수/등급
+                <span className="text-[#FF7658]">*</span>
+              </div>
+              <input
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                placeholder="ex) 900점"
+                className={TEXTBOX_CLASS}
+              />
+            </div>
+          )}
         </div>
       </div>
-    </div>
+
+      <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        <button
+          type="button"
+          disabled={!isFormValid}
+          onClick={handleSubmit}
+          className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+            isFormValid
+              ? "bg-[#FF7658] text-white"
+              : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+          }`}
+        >
+          등록하기
+        </button>
+      </div>
+    </BottomSheet>
   );
 }
