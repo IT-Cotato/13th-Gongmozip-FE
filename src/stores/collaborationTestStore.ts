@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { CollaborationCharacterType } from "@/types/collaboration";
+
 export type CollaborationTestResponse = {
   optionId: number;
   optionValue: string;
@@ -12,16 +14,23 @@ export type CollaborationTestResponse = {
 type CollaborationTestResponses = Record<number, CollaborationTestResponse>;
 
 type CollaborationTestState = {
+  submittedCharacterType: CollaborationCharacterType | null;
   responses: CollaborationTestResponses;
+  resetCollaborationTest: () => void;
   resetResponses: () => void;
+  setSubmittedCharacterType: (characterType: CollaborationCharacterType) => void;
   setResponse: (questionId: number, optionId: number, optionValue: string) => void;
 };
 
 export const useCollaborationTestStore = create<CollaborationTestState>()(
   persist(
     (set) => ({
+      submittedCharacterType: null,
       responses: {},
+      resetCollaborationTest: () => set({ responses: {}, submittedCharacterType: null }),
       resetResponses: () => set({ responses: {} }),
+      setSubmittedCharacterType: (characterType) =>
+        set({ submittedCharacterType: characterType }),
       setResponse: (questionId, optionId, optionValue) =>
         set((state) => ({
           responses: {

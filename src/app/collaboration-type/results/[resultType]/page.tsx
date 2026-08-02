@@ -1,7 +1,11 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-import { COLLABORATION_RESULT_TYPES } from "../../_data/collaborationTest";
+import {
+  COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE,
+  COLLABORATION_RESULT_TYPES,
+  getCollaborationResultByRouteParam,
+} from "../../_data/collaborationTest";
 
 type CollaborationTypeResultPageProps = {
   params: Promise<{
@@ -10,16 +14,24 @@ type CollaborationTypeResultPageProps = {
 };
 
 export function generateStaticParams() {
-  return COLLABORATION_RESULT_TYPES.map((result) => ({
-    resultType: result.id,
-  }));
+  return [
+    ...COLLABORATION_RESULT_TYPES.map((result) => ({
+      resultType: result.characterType,
+    })),
+    ...Object.keys(COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE).map((characterType) => ({
+      resultType: characterType,
+    })),
+    ...COLLABORATION_RESULT_TYPES.map((result) => ({
+      resultType: result.id,
+    })),
+  ];
 }
 
 export default async function CollaborationTypeResultPage({
   params,
 }: CollaborationTypeResultPageProps) {
   const { resultType } = await params;
-  const result = COLLABORATION_RESULT_TYPES.find((item) => item.id === resultType);
+  const result = getCollaborationResultByRouteParam(resultType);
 
   if (!result) {
     notFound();
