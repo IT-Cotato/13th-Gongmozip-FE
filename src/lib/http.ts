@@ -1,4 +1,4 @@
-import { AUTH_STORAGE_KEY, useAuthStore } from "@/stores/useAuthStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -33,27 +33,9 @@ export function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
   );
 }
 
-function getStoredAccessToken() {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const storedAuth = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!storedAuth) return null;
-
-    const parsedAuth = JSON.parse(storedAuth) as {
-      state?: { accessToken?: unknown };
-    };
-    const accessToken = parsedAuth.state?.accessToken;
-
-    return typeof accessToken === "string" ? accessToken : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
-  const accessToken = useAuthStore.getState().accessToken ?? getStoredAccessToken();
+  const accessToken = useAuthStore.getState().accessToken;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,

@@ -18,6 +18,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: AUTH_STORAGE_KEY,
+      partialize: () => ({}),
     },
   ),
 );
