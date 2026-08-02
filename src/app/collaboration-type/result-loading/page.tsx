@@ -2,29 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/http";
-import {
-  fetchMyCharacter,
-  myCharacterQueryKey,
-} from "@/queries/useMyCharacterQuery";
+import { fetchMyCharacter, myCharacterQueryKey } from "@/queries/useMyCharacterQuery";
 import { useSurveyQuestionsQuery } from "@/queries/useSurveyQuestionsQuery";
-import {
-  submitSurvey,
-  type SubmitSurveyAnswer,
-  type SubmitSurveyResponse,
-} from "@/queries/useSubmitSurveyMutation";
-import { surveyStatusQueryKey } from "@/queries/useSurveyStatusQuery";
+import { useSubmitSurveyMutation } from "@/queries/useSubmitSurveyMutation";
 import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
 
 import CollaborationResultPendingLeaveModal from "../_components/CollaborationResultPendingLeaveModal";
-import {
-  COLLABORATION_TEST_TOTAL_QUESTION_COUNT,
-} from "../_data/collaborationTest";
-
-const submitSurveyRequests = new Map<string, Promise<SubmitSurveyResponse>>();
+import { COLLABORATION_TEST_TOTAL_QUESTION_COUNT } from "../_data/collaborationTest";
 
 type SubmitState =
   | { status: "idle" }
@@ -33,63 +21,50 @@ type SubmitState =
   | { status: "existing" }
   | { status: "error"; error: unknown };
 
-function getSubmitSurveyRequest(answersKey: string, answers: SubmitSurveyAnswer[]) {
-  const existingRequest = submitSurveyRequests.get(answersKey);
-
-  if (existingRequest) {
-    return existingRequest;
-  }
-
-  const request = submitSurvey({ answers }).finally(() => {
-    submitSurveyRequests.delete(answersKey);
-  });
-
-  submitSurveyRequests.set(answersKey, request);
-
-  return request;
-}
-
 export default function CollaborationTypeResultLoadingPage() {
   const queryClient = useQueryClient();
+  const { mutateAsync: submitSurveyAsync, isPending: isSubmitSurveyPending } =
+    useSubmitSurveyMutation();
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [resultHref, setResultHref] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
   const [retryAttempt, setRetryAttempt] = useState(0);
-  const submittedCharacterType = useCollaborationTestStore(
-    (state) => state.submittedCharacterType,
-  );
+  const submittedRequestRef = useRef<{
+    answersKey: string;
+    attempt: number;
+  } | null>(null);
+  const inFlightSubmitRef = useRef<{
+    answersKey: string;
+    attempt: number;
+    request: ReturnType<typeof submitSurveyAsync>;
+  } | null>(null);
+  const submittedCharacterType = useCollaborationTestStore((state) => state.submittedCharacterType);
   const responses = useCollaborationTestStore((state) => state.responses);
   const resetResponses = useCollaborationTestStore((state) => state.resetResponses);
   const setSubmittedCharacterType = useCollaborationTestStore(
     (state) => state.setSubmittedCharacterType,
   );
   const { data: questions = [] } = useSurveyQuestionsQuery();
-  const requiredQuestionCount =
-    questions.length || COLLABORATION_TEST_TOTAL_QUESTION_COUNT;
-  const answers = useMemo(
-    () => {
-      const responseList =
-        questions.length > 0
-          ? questions
-              .map((question) => responses[question.questionId])
-              .filter((response) => response !== undefined)
-          : Object.values(responses);
+  const requiredQuestionCount = questions.length || COLLABORATION_TEST_TOTAL_QUESTION_COUNT;
+  const answers = useMemo(() => {
+    const responseList =
+      questions.length > 0
+        ? questions
+            .map((question) => responses[question.questionId])
+            .filter((response) => response !== undefined)
+        : Object.values(responses);
 
-      return responseList
-        .map((response) => ({
-          questionId: response.questionId,
-          selectedOptionId: response.optionId,
-        }))
-        .sort((currentAnswer, nextAnswer) => {
-          return currentAnswer.questionId - nextAnswer.questionId;
-        });
-    },
-    [questions, responses],
-  );
+    return responseList
+      .map((response) => ({
+        questionId: response.questionId,
+        selectedOptionId: response.optionId,
+      }))
+      .sort((currentAnswer, nextAnswer) => {
+        return currentAnswer.questionId - nextAnswer.questionId;
+      });
+  }, [questions, responses]);
   const answersKey = useMemo(() => {
-    return answers
-      .map((answer) => `${answer.questionId}:${answer.selectedOptionId}`)
-      .join("|");
+    return answers.map((answer) => `${answer.questionId}:${answer.selectedOptionId}`).join("|");
   }, [answers]);
   const isEveryQuestionAnswered = answers.length >= requiredQuestionCount;
   const submitError = submitState.status === "error" ? submitState.error : null;
@@ -99,12 +74,12 @@ export default function CollaborationTypeResultLoadingPage() {
       ? isUnauthorized
         ? "로그인이 필요한 검사입니다. 다시 로그인해 주세요."
         : submitError.code === "SURVEY_409_1"
-        ? "협업 유형 검사는 3개월에 한 번만 다시 응시할 수 있어요."
-        : submitError.code === "COMMON_409_1"
-        ? "동시에 처리된 요청과 충돌했습니다. 다시 시도해 주세요."
-        : submitError.code === "COMMON_409_2"
-        ? "다른 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요."
-        : submitError.message
+          ? "협업 유형 검사는 3개월에 한 번만 다시 응시할 수 있어요."
+          : submitError.code === "COMMON_409_1"
+            ? "동시에 처리된 요청과 충돌했습니다. 다시 시도해 주세요."
+            : submitError.code === "COMMON_409_2"
+              ? "다른 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요."
+              : submitError.message
       : "검사 결과를 제출하지 못했습니다.";
   const isSubmitting = submitState.status === "submitting";
   const isSubmitted = submitState.status === "success" || submitState.status === "existing";
@@ -118,22 +93,58 @@ export default function CollaborationTypeResultLoadingPage() {
       return;
     }
 
-    Promise.resolve()
-      .then(() => {
-        if (!isCurrent) return null;
+    const inFlightSubmit = inFlightSubmitRef.current;
+    const submitRequest =
+      inFlightSubmit?.answersKey === answersKey && inFlightSubmit.attempt === retryAttempt
+        ? inFlightSubmit.request
+        : null;
 
-        setSubmitState({ status: "submitting" });
+    const submittedRequest = submittedRequestRef.current;
 
-        return getSubmitSurveyRequest(answersKey, answers);
-      })
+    if (
+      submittedRequest?.answersKey === answersKey &&
+      submittedRequest.attempt === retryAttempt &&
+      !submitRequest
+    ) {
+      return;
+    }
+
+    if (!submitRequest && isSubmitSurveyPending) {
+      return;
+    }
+
+    const request =
+      submitRequest ??
+      submitSurveyAsync({ answers }).finally(() => {
+        const currentSubmit = inFlightSubmitRef.current;
+
+        if (currentSubmit?.answersKey === answersKey && currentSubmit.attempt === retryAttempt) {
+          inFlightSubmitRef.current = null;
+        }
+      });
+
+    if (!submitRequest) {
+      submittedRequestRef.current = {
+        answersKey,
+        attempt: retryAttempt,
+      };
+      inFlightSubmitRef.current = {
+        answersKey,
+        attempt: retryAttempt,
+        request,
+      };
+    }
+
+    setSubmitState({ status: "submitting" });
+
+    request
       .then((result) => {
-        if (!isCurrent || !result) return;
+        if (!isCurrent) return;
 
         setResultHref(`/collaboration-type/results/${result.characterType}`);
         setSubmittedCharacterType(result.characterType);
         setSubmitState({ status: "success" });
         resetResponses();
-        void queryClient.invalidateQueries({ queryKey: surveyStatusQueryKey });
       })
       .catch((error: unknown) => {
         if (!isCurrent) return;
@@ -185,10 +196,12 @@ export default function CollaborationTypeResultLoadingPage() {
     answers,
     answersKey,
     isEveryQuestionAnswered,
+    isSubmitSurveyPending,
     queryClient,
     retryAttempt,
     resetResponses,
     setSubmittedCharacterType,
+    submitSurveyAsync,
     submittedCharacterType,
   ]);
 
