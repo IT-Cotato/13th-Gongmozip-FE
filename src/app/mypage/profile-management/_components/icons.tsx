@@ -75,3 +75,65 @@ export function PlusIcon() {
     </svg>
   );
 }
+
+export function ChevronDownIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 transition-transform ${className}`}
+    >
+      <path
+        d="M4 6L8 10L12 6"
+        stroke="#949494"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ChevronLeftSmallIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12.5 15.833 6.667 10 12.5 4.167"
+        stroke="#616161"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ChevronRightSmallIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M7.5 4.167 13.333 10 7.5 15.833"
+        stroke="#616161"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function CalendarIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6.25 1.667c.46 0 .833.373.833.833v.834h5.834V2.5a.833.833 0 111.666 0v.834h1.25c1.15 0 2.084.932 2.084 2.083v10.417c0 1.15-.933 2.083-2.084 2.083H4.167a2.083 2.083 0 01-2.084-2.083V5.417c0-1.15.933-2.083 2.084-2.083h1.25V2.5c0-.46.373-.833.833-.833zM4.167 8.75v8.083c0 .23.186.417.416.417h11.667a.417.417 0 00.417-.417V8.75H4.167z"
+        fill="#616161"
+      />
+    </svg>
+  );
+}
