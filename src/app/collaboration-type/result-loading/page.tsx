@@ -69,11 +69,13 @@ export default function CollaborationTypeResultLoadingPage() {
   const isEveryQuestionAnswered = answers.length >= requiredQuestionCount;
   const submitError = submitState.status === "error" ? submitState.error : null;
   const isUnauthorized = submitError instanceof ApiError && submitError.status === 401;
+  const isSurveyRetakeLimited =
+    submitError instanceof ApiError && submitError.code === "SURVEY_409_1";
   const errorMessage =
     submitError instanceof ApiError
       ? isUnauthorized
         ? "로그인이 필요한 검사입니다. 다시 로그인해 주세요."
-        : submitError.code === "SURVEY_409_1"
+        : isSurveyRetakeLimited
           ? "협업 유형 검사는 3개월에 한 번만 다시 응시할 수 있어요."
           : submitError.code === "COMMON_409_1"
             ? "동시에 처리된 요청과 충돌했습니다. 다시 시도해 주세요."
@@ -301,6 +303,13 @@ export default function CollaborationTypeResultLoadingPage() {
             href="/login/email"
           >
             로그인하기
+          </Link>
+        ) : hasSubmitError && isSurveyRetakeLimited ? (
+          <Link
+            className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white"
+            href="/mypage"
+          >
+            마이페이지로 가기
           </Link>
         ) : isEveryQuestionAnswered ? (
           <button
