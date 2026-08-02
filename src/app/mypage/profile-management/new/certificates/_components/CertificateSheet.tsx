@@ -15,6 +15,8 @@ const CERTIFICATE_CATEGORIES = [
 const TEXTBOX_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
 
+const MIN_CERTIFICATE_YEAR = 1900;
+
 type CertificateSheetProps = {
   onClose: () => void;
   onSubmit: (certificate: Certificate) => void;
@@ -27,8 +29,16 @@ export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
   const [grade, setGrade] = useState("");
 
   const hasGradeField = category === "어학";
+  const currentYear = new Date().getFullYear();
+  const isYearComplete = year.length === 4;
+  const isYearInRange =
+    isYearComplete && Number(year) >= MIN_CERTIFICATE_YEAR && Number(year) <= currentYear;
+  const isYearValid = year.length === 0 || isYearInRange;
   const isFormValid =
-    category !== null && name.trim().length > 0 && (!hasGradeField || grade.trim().length > 0);
+    category !== null &&
+    name.trim().length > 0 &&
+    isYearValid &&
+    (!hasGradeField || grade.trim().length > 0);
 
   function handleSelectCategory(next: string) {
     setCategory(next);
@@ -115,6 +125,11 @@ export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
                 placeholder="YYYY"
                 className={TEXTBOX_CLASS}
               />
+              {isYearComplete && !isYearInRange && (
+                <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                  {MIN_CERTIFICATE_YEAR}~{currentYear}년 사이로 입력해주세요.
+                </p>
+              )}
             </div>
 
             {hasGradeField && (
@@ -126,6 +141,7 @@ export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
                 <input
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
+                  placeholder="ex) 900점"
                   className={TEXTBOX_CLASS}
                 />
               </div>
