@@ -1,6 +1,6 @@
-import { AUTH_STORAGE_KEY, useAuthStore } from "@/stores/useAuthStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   status: number;
@@ -17,14 +17,14 @@ export class ApiError extends Error {
 type ApiFetchOptions = Omit<RequestInit, "body"> & { body?: unknown };
 
 // 백엔드 공통 응답 포맷: { status, code, message, data }
-type BaseResponse<T> = {
+export type BaseResponse<T> = {
   status: number;
   code: string;
   message: string;
   data: T;
 };
 
-function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
+export function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
   return (
     typeof data === "object" &&
     data !== null &&
@@ -33,27 +33,9 @@ function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
   );
 }
 
-function getStoredAccessToken() {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const storedAuth = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!storedAuth) return null;
-
-    const parsedAuth = JSON.parse(storedAuth) as {
-      state?: { accessToken?: unknown };
-    };
-    const accessToken = parsedAuth.state?.accessToken;
-
-    return typeof accessToken === "string" ? accessToken : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
-  const accessToken = useAuthStore.getState().accessToken ?? getStoredAccessToken();
+  const accessToken = useAuthStore.getState().accessToken;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,

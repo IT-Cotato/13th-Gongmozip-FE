@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ApiError } from "@/lib/http";
+import { ApiError, API_BASE_URL, isBaseResponse } from "@/lib/http";
 
 export type LoginRequest = {
   email: string;
@@ -10,23 +10,7 @@ export type LoginResponse = {
   accessToken: string;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-
-type BaseResponse<T> = {
-  code: string;
-  data: T;
-  message: string;
-  status: number;
-};
-
-function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "message" in data &&
-    typeof (data as { message: unknown }).message === "string"
-  );
-}
+const AUTHORIZATION_HEADER = "Authorization";
 
 function normalizeAccessToken(accessToken: string) {
   return accessToken.startsWith("Bearer ") ? accessToken.slice("Bearer ".length) : accessToken;
@@ -49,6 +33,12 @@ function getAccessTokenFromBody(data: unknown) {
   return null;
 }
 
+function getAccessTokenFromHeaders(response: Response) {
+  const authorization = response.headers.get(AUTHORIZATION_HEADER);
+
+  return authorization?.trim() ? authorization : null;
+}
+
 async function login(payload: LoginRequest) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     credentials: "include",
@@ -68,11 +58,16 @@ async function login(payload: LoginRequest) {
     throw new ApiError(response.status, message, code);
   }
 
-  const accessToken =
-    getAccessTokenFromBody(data) ?? response.headers.get("Authorization");
+  const accessTokenFromBody = getAccessTokenFromBody(data);
+  // Cross-origin responses expose this header only when the API sends
+  // Access-Control-Expose-Headers: Authorization.
+  const accessToken = accessTokenFromBody ?? getAccessTokenFromHeaders(response);
 
   if (!accessToken) {
-    throw new ApiError(response.status, "로그인 토큰을 확인할 수 없습니다.");
+    throw new ApiError(
+      response.status,
+      "로그인 응답에서 토큰을 확인할 수 없습니다. accessToken 응답 본문 또는 노출된 Authorization 헤더가 필요합니다.",
+    );
   }
 
   return { accessToken: normalizeAccessToken(accessToken) };

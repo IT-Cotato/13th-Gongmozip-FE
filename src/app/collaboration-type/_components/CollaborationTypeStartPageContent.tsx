@@ -8,19 +8,25 @@ import { ApiError } from "@/lib/http";
 import { useSurveyStatusQuery } from "@/queries/useSurveyStatusQuery";
 
 export default function CollaborationTypeStartPageContent() {
-  const { data: surveyStatus, error, isError, isPending } = useSurveyStatusQuery();
+  const {
+    data: surveyStatus,
+    error,
+    isError,
+    isFetching,
+    isPending,
+    refetch,
+  } = useSurveyStatusQuery();
   const isSubmitted = surveyStatus === "SUBMITTED";
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const hasStatusFetchError = isError && !isUnauthorized;
   const actionHref = isSubmitted
     ? "/collaboration-type/result-loading"
     : isUnauthorized
       ? "/login/email"
-      : "/collaboration-type/questions/1";
-  const actionLabel = isSubmitted
-    ? "결과 확인하기"
-    : isUnauthorized
-      ? "로그인하기"
-      : "검사하기";
+      : hasStatusFetchError
+        ? null
+        : "/collaboration-type/questions/1";
+  const actionLabel = isSubmitted ? "결과 확인하기" : isUnauthorized ? "로그인하기" : "검사하기";
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -82,12 +88,23 @@ export default function CollaborationTypeStartPageContent() {
           >
             확인 중
           </button>
+        ) : hasStatusFetchError || !actionHref ? (
+          <button
+            className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white disabled:bg-[#EFEFEF] disabled:text-[#C8C8C8]"
+            disabled={isFetching}
+            onClick={() => {
+              void refetch();
+            }}
+            type="button"
+          >
+            {isFetching ? "확인 중" : "다시 시도"}
+          </button>
         ) : (
           <Link
             className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white"
             href={actionHref}
           >
-            {isError && !isUnauthorized ? "검사하기" : actionLabel}
+            {actionLabel}
           </Link>
         )}
       </div>

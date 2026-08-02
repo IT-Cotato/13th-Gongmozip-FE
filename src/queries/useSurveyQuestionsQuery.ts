@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { apiFetch } from "@/lib/http";
+import { ApiError, apiFetch } from "@/lib/http";
 
 export type SurveyQuestionOption = {
   displayOrder: number;
@@ -35,6 +35,11 @@ export function useSurveyQuestionsQuery() {
   return useQuery({
     queryFn: getSurveyQuestions,
     queryKey: surveyQuestionsQueryKey,
+    retry: (failureCount, error) => {
+      if (error instanceof ApiError && error.status === 401) return false;
+
+      return failureCount < 3;
+    },
     select: (response) => response.questions,
     staleTime: Infinity,
   });
