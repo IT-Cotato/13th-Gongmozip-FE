@@ -240,7 +240,9 @@ export default function CollaborationTypeResultLoadingPage() {
                 ? hasExistingResult
                   ? "기존 검사 결과가 있어요"
                   : "검사가 완료되었어요!"
-                : "검사 답변을 확인해 주세요"}
+                : hasSubmitError
+                  ? "검사 결과를 제출하지 못했어요"
+                  : "검사 답변을 확인해 주세요"}
           </h2>
           <p className="mt-[17px] text-center font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
             {isSubmitting ? (
