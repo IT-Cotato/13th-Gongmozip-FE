@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import type { ContestCategory, ContestSummary } from "@/app/contests/_types";
 import { apiFetch } from "@/lib/http";
@@ -79,6 +79,8 @@ export const contestCategoryLabels: Record<string, ContestCategory> = {
 };
 
 export const contestsQueryKey = (params: ContestsQueryParams) => ["contests", params] as const;
+export const infiniteContestsQueryKey = (params: ContestsQueryParams) =>
+  ["contests", "infinite", params] as const;
 
 export async function fetchContests(params: ContestsQueryParams = {}) {
   const searchParams = new URLSearchParams();
@@ -110,6 +112,19 @@ export function useContestsQuery(
     queryFn: () => fetchContests(params),
     enabled: options.enabled ?? true,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useInfiniteContestsQuery(
+  params: ContestsQueryParams = {},
+  options: { enabled?: boolean } = {},
+) {
+  return useInfiniteQuery({
+    queryKey: infiniteContestsQueryKey(params),
+    queryFn: ({ pageParam }) => fetchContests({ ...params, page: pageParam }),
+    initialPageParam: params.page ?? 0,
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
+    enabled: options.enabled ?? true,
   });
 }
 

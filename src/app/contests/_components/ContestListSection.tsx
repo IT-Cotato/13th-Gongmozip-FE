@@ -7,7 +7,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import {
   contestCategoryApiValues,
   type ContestSort,
-  useContestsQuery,
+  useInfiniteContestsQuery,
 } from "@/queries/useContestsQuery";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ContestCategory } from "../_types";
@@ -44,10 +44,24 @@ export function ContestListSection() {
     }),
     [deferredSearchKeyword, selectedCategory, selectedSort],
   );
-  const { data, error, isError, isFetching, isLoading } = useContestsQuery(contestQueryParams, {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    isFetching,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteContestsQuery(contestQueryParams, {
     enabled: isAuthenticated,
   });
-  const contests = data?.contests ?? [];
+  const contests = useMemo(
+    () => data?.pages.flatMap((pageData) => pageData.contests) ?? [],
+    [data?.pages],
+  );
+  const totalElements = data?.pages.at(-1)?.totalElements ?? 0;
+  const hasMoreContests = contests.length < totalElements;
 
   return (
     <>
@@ -208,6 +222,18 @@ export function ContestListSection() {
             </p>
           ) : null}
           <ContestList contests={contests} />
+          {hasMoreContests ? (
+            <div className="flex justify-center px-4 py-5">
+              <button
+                type="button"
+                disabled={!hasNextPage || isFetchingNextPage}
+                className="h-11 rounded-full bg-color-gray-900 px-6 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-color-gray-350"
+                onClick={() => fetchNextPage()}
+              >
+                {isFetchingNextPage ? "불러오는 중" : "더보기"}
+              </button>
+            </div>
+          ) : null}
         </>
       ) : null}
     </>
