@@ -25,7 +25,7 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
         <Link
           href="/contests"
           aria-label="공모전 목록으로 돌아가기"
-          className="flex size-8 items-center justify-center"
+          className="flex size-8 items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color-gray-900"
         >
           <span className="block h-2.5 w-2.5 rotate-45 border-b-2 border-l-2 border-color-gray-850" />
         </Link>
@@ -105,7 +105,7 @@ function ContestDetailStatus({
       {href && actionLabel ? (
         <Link
           href={href}
-          className="mt-3 rounded-full bg-color-gray-900 px-5 py-3 text-sm font-semibold text-white"
+          className="mt-3 rounded-full bg-color-gray-900 px-5 py-3 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color-gray-900"
         >
           {actionLabel}
         </Link>
