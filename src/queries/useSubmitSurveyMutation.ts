@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 import type { CollaborationCharacterType } from "@/types/collaboration";
 
+import { surveyResultQueryKey } from "./useSurveyResultQuery";
 import { surveyStatusQueryKey } from "./useSurveyStatusQuery";
 
 export type SubmitSurveyAnswer = {
@@ -63,7 +64,8 @@ export function useSubmitSurveyMutation() {
 
   return useMutation({
     mutationFn: submitSurvey,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(surveyResultQueryKey, data);
       void queryClient.invalidateQueries({ queryKey: surveyStatusQueryKey });
     },
   });

@@ -6,7 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/http";
-import { fetchMyCharacter, myCharacterQueryKey } from "@/queries/useMyCharacterQuery";
+import {
+  fetchSurveyResult,
+  shouldRetrySurveyResultQuery,
+  surveyResultQueryKey,
+} from "@/queries/useSurveyResultQuery";
 import { useSurveyQuestionsQuery } from "@/queries/useSurveyQuestionsQuery";
 import { useSubmitSurveyMutation } from "@/queries/useSubmitSurveyMutation";
 import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
@@ -161,15 +165,15 @@ export default function CollaborationTypeResultLoadingPage() {
 
           queryClient
             .fetchQuery({
-              queryKey: myCharacterQueryKey,
-              queryFn: fetchMyCharacter,
-              retry: false,
+              queryKey: surveyResultQueryKey,
+              queryFn: fetchSurveyResult,
+              retry: shouldRetrySurveyResultQuery,
             })
-            .then((character) => {
+            .then((result) => {
               if (!isCurrent) return;
 
-              setResultHref(`/collaboration-type/results/${character.characterType}`);
-              setSubmittedCharacterType(character.characterType);
+              setResultHref(`/collaboration-type/results/${result.characterType}`);
+              setSubmittedCharacterType(result.characterType);
               setSubmitState({ status: "existing" });
             })
             .catch(() => {
@@ -179,7 +183,7 @@ export default function CollaborationTypeResultLoadingPage() {
                 status: "error",
                 error: new ApiError(
                   error.status,
-                  "기존 검사 결과를 불러오지 못했습니다. 기존 결과 조회 API 연결이 필요합니다.",
+                  "기존 검사 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
                   error.code,
                 ),
               });
