@@ -7,6 +7,7 @@ import { MOCK_CONTESTS } from "@/app/contests/_data/mockContests";
 
 type ContestScrapState = {
   scrappedContestIds: string[];
+  setScrapStatus: (contestId: string, isScrapped: boolean) => void;
   toggleScrap: (contestId: string) => void;
   removeScrap: (contestId: string) => void;
 };
@@ -19,6 +20,22 @@ export const useContestScrapStore = create<ContestScrapState>()(
   persist(
     (set) => ({
       scrappedContestIds: initialScrappedContestIds,
+      setScrapStatus: (contestId, isScrapped) =>
+        set((state) => {
+          const isAlreadyScrapped = state.scrappedContestIds.includes(contestId);
+
+          if (isAlreadyScrapped === isScrapped) {
+            return state;
+          }
+
+          return {
+            scrappedContestIds: isScrapped
+              ? [...state.scrappedContestIds, contestId]
+              : state.scrappedContestIds.filter(
+                  (scrappedContestId) => scrappedContestId !== contestId,
+                ),
+          };
+        }),
       toggleScrap: (contestId) =>
         set((state) => {
           const isAlreadyScrapped = state.scrappedContestIds.includes(contestId);

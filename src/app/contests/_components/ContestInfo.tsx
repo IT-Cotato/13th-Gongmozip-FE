@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { useContestScrapStatusQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestDetail } from "../_types";
 import { ShareContestModal } from "./ShareContestModal";
@@ -29,7 +30,9 @@ const websiteLinkClassName =
 
 export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
+  const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
   const toggleScrap = useContestScrapStore((state) => state.toggleScrap);
+  const { data: scrapStatus } = useContestScrapStatusQuery(contest.id);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showScrapToast, setShowScrapToast] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
@@ -39,6 +42,14 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const shareToastTimerRef = useRef<number | null>(null);
   const linkCopiedToastTimerRef = useRef<number | null>(null);
   const isScrapped = scrappedContestIds.includes(contest.id);
+
+  useEffect(() => {
+    if (!scrapStatus) {
+      return;
+    }
+
+    setScrapStatus(contest.id, scrapStatus.isScrapped);
+  }, [contest.id, scrapStatus, setScrapStatus]);
 
   useEffect(() => {
     return () => {
