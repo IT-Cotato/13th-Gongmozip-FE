@@ -5,6 +5,7 @@ export type SheetState =
   | "willingness"
   | "candidateVote"
   | "complete"
+  | "leaderResult"
   | "contestAddConfirm"
   | "contestList"
   | "contestVote"
