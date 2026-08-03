@@ -106,11 +106,11 @@ function isContestScrapResponse(data: unknown): data is ContestScrapResponse {
 }
 
 function isAlreadyScrappedError(error: unknown) {
-  return error instanceof ApiError && error.status === 409 && error.code === "CONTEST_409_1";
+  return error instanceof ApiError && error.status === 409;
 }
 
 function isAlreadyUnscrappedError(error: unknown) {
-  return error instanceof ApiError && error.status === 404 && error.code === "CONTEST_404_2";
+  return error instanceof ApiError && error.status === 404;
 }
 
 export function useContestScrapMutation() {

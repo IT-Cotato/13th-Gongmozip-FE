@@ -41,12 +41,13 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
             actionLabel="로그인하기"
             href="/login/email"
             message="로그인 후 공모전 상세 정보를 확인할 수 있습니다."
+            state="status"
             title="인증이 필요합니다"
           />
         ) : null}
 
         {isAuthenticated && isLoading ? (
-          <ContestDetailStatus message="공모전 정보를 불러오는 중입니다" />
+          <ContestDetailStatus message="공모전 정보를 불러오는 중입니다" state="status" />
         ) : null}
 
         {isAuthenticated && isError ? (
@@ -69,6 +70,7 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
                   ? "인증이 필요합니다"
                   : "공모전 정보를 불러오지 못했어요"
             }
+            state="error"
           />
         ) : null}
 
@@ -82,15 +84,20 @@ function ContestDetailStatus({
   actionLabel,
   href,
   message,
+  state,
   title,
 }: {
   actionLabel?: string;
   href?: string;
   message: string;
+  state: "status" | "error";
   title?: string;
 }) {
   return (
-    <section className="flex min-h-full flex-col items-center justify-center gap-3 px-6 text-center">
+    <section
+      role={state === "error" ? "alert" : "status"}
+      className="flex min-h-full flex-col items-center justify-center gap-3 px-6 text-center"
+    >
       {title ? (
         <h2 className="text-xl leading-[135%] font-semibold text-color-gray-900">{title}</h2>
       ) : null}

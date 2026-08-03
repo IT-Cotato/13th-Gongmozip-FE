@@ -50,7 +50,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   });
 
   const text = await response.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  const data = parseResponseBody(text);
 
   if (!response.ok) {
     const message = isBaseResponse(data) ? data.message : "요청 처리 중 오류가 발생했습니다.";
@@ -64,6 +64,18 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   }
 
   return (isBaseResponse(data) ? data.data : data) as T;
+}
+
+function parseResponseBody(text: string): unknown {
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 function normalizeAccessToken(accessToken: string | null) {

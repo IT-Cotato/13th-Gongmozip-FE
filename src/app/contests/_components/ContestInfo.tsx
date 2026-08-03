@@ -86,6 +86,12 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       window.clearTimeout(scrapToastTimerRef.current);
     }
 
+    if (scrapErrorToastTimerRef.current !== null) {
+      window.clearTimeout(scrapErrorToastTimerRef.current);
+    }
+
+    setShowScrapErrorToast(false);
+
     try {
       await contestScrapMutation.mutateAsync({
         contestId: contest.id,
