@@ -128,7 +128,10 @@ export function ContestList({ contests }: ContestListProps) {
                 aria-label={`${contest.title} 스크랩`}
                 aria-pressed={isScrapped}
                 className="flex justify-center pt-1"
-                disabled={contestScrapMutation.isPending}
+                disabled={
+                  contestScrapMutation.isPending &&
+                  contestScrapMutation.variables?.contestId === contest.id
+                }
                 onClick={() => {
                   contestScrapMutation.mutate({
                     contestId: contest.id,
