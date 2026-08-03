@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo } from "react";
 
+import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
+import { useContestScrapStatusesQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
 
@@ -12,7 +15,31 @@ type ContestListProps = {
 
 export function ContestList({ contests }: ContestListProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
-  const toggleScrap = useContestScrapStore((state) => state.toggleScrap);
+  const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
+  const contestScrapMutation = useContestScrapMutation();
+  const contestIds = useMemo(() => contests.map((contest) => contest.id), [contests]);
+  const scrapStatusQueries = useContestScrapStatusesQuery(contestIds, {
+    enabled: contestIds.length > 0,
+  });
+  const scrapStatusByContestId = useMemo(
+    () =>
+      new Map(
+        scrapStatusQueries.flatMap((query) =>
+          query.data ? [[query.data.contestId, query.data.isScrapped] as const] : [],
+        ),
+      ),
+    [scrapStatusQueries],
+  );
+
+  useEffect(() => {
+    scrapStatusQueries.forEach((query) => {
+      if (!query.data) {
+        return;
+      }
+
+      setScrapStatus(query.data.contestId, query.data.isScrapped);
+    });
+  }, [scrapStatusQueries, setScrapStatus]);
 
   if (contests.length === 0) {
     return (
@@ -28,7 +55,9 @@ export function ContestList({ contests }: ContestListProps) {
   return (
     <section aria-label="공모전 목록" className="-mt-0.5">
       {contests.map((contest, index) => {
-        const isScrapped = scrappedContestIds.includes(contest.id);
+        const isScrapped =
+          scrapStatusByContestId.get(contest.id) ??
+          (scrappedContestIds.includes(contest.id) || contest.isScrapped);
 
         return (
           <article
@@ -76,8 +105,12 @@ export function ContestList({ contests }: ContestListProps) {
                 aria-label={`${contest.title} 스크랩`}
                 aria-pressed={isScrapped}
                 className="flex justify-center pt-1"
+                disabled={contestScrapMutation.isPending}
                 onClick={() => {
-                  toggleScrap(contest.id);
+                  contestScrapMutation.mutate({
+                    contestId: contest.id,
+                    isScrapped: !isScrapped,
+                  });
                 }}
               >
                 <Image

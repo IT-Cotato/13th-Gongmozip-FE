@@ -4,16 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
 
 type ScrapListProps = {
   contests: ContestSummary[];
+  scrappedContestIds?: string[];
 };
 
-export function ScrapList({ contests }: ScrapListProps) {
-  const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
-  const removeScrap = useContestScrapStore((state) => state.removeScrap);
+export function ScrapList({ contests, scrappedContestIds: scrappedContestIdsProp }: ScrapListProps) {
+  const storeScrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
+  const contestScrapMutation = useContestScrapMutation();
+  const scrappedContestIds = scrappedContestIdsProp ?? storeScrappedContestIds;
   const scrappedContests = contests.filter((contest) => scrappedContestIds.includes(contest.id));
 
   if (scrappedContests.length === 0) {
@@ -73,12 +76,9 @@ export function ScrapList({ contests }: ScrapListProps) {
                 className="contents"
               >
                 {contest.posterImageUrl ? (
-                  <Image
+                  <ScrapContestPosterImage
                     src={contest.posterImageUrl}
                     alt={`${contest.title} 포스터`}
-                    width={85}
-                    height={113}
-                    className="h-[113px] w-[85px] object-cover"
                   />
                 ) : (
                   <div className="flex h-[113px] w-[85px] items-center justify-center bg-color-gray-300 text-sm font-semibold text-color-gray-650">
@@ -112,8 +112,12 @@ export function ScrapList({ contests }: ScrapListProps) {
                 type="button"
                 aria-label={`${contest.title} 스크랩 해제`}
                 className="flex justify-center pt-[11px]"
+                disabled={contestScrapMutation.isPending}
                 onClick={() => {
-                  removeScrap(contest.id);
+                  contestScrapMutation.mutate({
+                    contestId: contest.id,
+                    isScrapped: false,
+                  });
                 }}
               >
                 <Image
@@ -130,6 +134,27 @@ export function ScrapList({ contests }: ScrapListProps) {
       </div>
     </section>
   );
+}
+
+function ScrapContestPosterImage({ alt, src }: { alt: string; src: string }) {
+  if (isExternalUrl(src)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} className="h-[113px] w-[85px] object-cover" />;
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={85}
+      height={113}
+      className="h-[113px] w-[85px] object-cover"
+    />
+  );
+}
+
+function isExternalUrl(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
 }
 
 function ScrapListHeader({ children }: { children?: ReactNode }) {

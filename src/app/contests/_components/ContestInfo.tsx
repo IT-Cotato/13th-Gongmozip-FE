@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestDetail } from "../_types";
@@ -31,17 +32,20 @@ const websiteLinkClassName =
 export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
-  const toggleScrap = useContestScrapStore((state) => state.toggleScrap);
   const { data: scrapStatus } = useContestScrapStatusQuery(contest.id);
+  const contestScrapMutation = useContestScrapMutation();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showScrapToast, setShowScrapToast] = useState(false);
+  const [showScrapErrorToast, setShowScrapErrorToast] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
   const [isWebSharePending, setIsWebSharePending] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
+  const scrapErrorToastTimerRef = useRef<number | null>(null);
   const shareToastTimerRef = useRef<number | null>(null);
   const linkCopiedToastTimerRef = useRef<number | null>(null);
-  const isScrapped = scrappedContestIds.includes(contest.id);
+  const isScrapped =
+    scrapStatus?.isScrapped ?? (scrappedContestIds.includes(contest.id) || contest.isScrapped);
 
   useEffect(() => {
     if (!scrapStatus) {
@@ -61,30 +65,56 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
         window.clearTimeout(shareToastTimerRef.current);
       }
 
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+
       if (linkCopiedToastTimerRef.current !== null) {
         window.clearTimeout(linkCopiedToastTimerRef.current);
       }
     };
   }, []);
 
-  const handleScrapClick = () => {
-    const nextIsScrapped = !isScrapped;
+  const handleScrapClick = async () => {
+    if (contestScrapMutation.isPending) {
+      return;
+    }
 
-    toggleScrap(contest.id);
+    const nextIsScrapped = !isScrapped;
 
     if (scrapToastTimerRef.current !== null) {
       window.clearTimeout(scrapToastTimerRef.current);
     }
 
-    if (nextIsScrapped) {
-      setShowScrapToast(true);
-      scrapToastTimerRef.current = window.setTimeout(() => {
+    try {
+      await contestScrapMutation.mutateAsync({
+        contestId: contest.id,
+        isScrapped: nextIsScrapped,
+      });
+
+      if (nextIsScrapped) {
+        setShowScrapToast(true);
+        scrapToastTimerRef.current = window.setTimeout(() => {
+          setShowScrapToast(false);
+          scrapToastTimerRef.current = null;
+        }, 2000);
+      } else {
         setShowScrapToast(false);
         scrapToastTimerRef.current = null;
-      }, 2000);
-    } else {
+      }
+    } catch {
       setShowScrapToast(false);
       scrapToastTimerRef.current = null;
+      setShowScrapErrorToast(true);
+
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+
+      scrapErrorToastTimerRef.current = window.setTimeout(() => {
+        setShowScrapErrorToast(false);
+        scrapErrorToastTimerRef.current = null;
+      }, 2000);
     }
   };
 
@@ -223,6 +253,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             aria-label={`${contest.title} 스크랩`}
             aria-pressed={isScrapped}
             className="relative mt-1 flex h-12 w-12 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)]"
+            disabled={contestScrapMutation.isPending}
             onClick={handleScrapClick}
           >
             <Image
@@ -272,6 +303,10 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
           {showScrapToast ? (
             <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
+          ) : null}
+
+          {showScrapErrorToast ? (
+            <ContestActionToast message="스크랩 처리에 실패했습니다" />
           ) : null}
 
           {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
