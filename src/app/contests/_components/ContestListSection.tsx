@@ -59,6 +59,7 @@ export function ContestListSection() {
           <input
             id="contest-search"
             type="search"
+            disabled={!isAuthenticated}
             value={searchKeyword}
             placeholder="원하는 공모전을 검색하세요"
             className="min-w-0 flex-1 bg-transparent text-[15px] leading-[135%] font-normal text-color-gray-650 outline-none placeholder:text-color-gray-650"
@@ -78,6 +79,7 @@ export function ContestListSection() {
         <div className="relative flex w-full items-start justify-between">
           <button
             type="button"
+            disabled={!isAuthenticated}
             aria-expanded={isCategorySheetOpen}
             aria-haspopup="dialog"
             className="flex h-[30px] items-center gap-1 rounded-[10px] border border-[rgba(97,97,97,0.16)] bg-white py-[3px] pr-[3px] pl-2.5 text-xs leading-[135%] font-semibold text-color-gray-650"
@@ -98,6 +100,7 @@ export function ContestListSection() {
           <div className="relative">
             <button
               type="button"
+              disabled={!isAuthenticated}
               aria-expanded={isSortOpen}
               aria-haspopup="menu"
               className="flex items-center bg-white pl-2"
@@ -126,6 +129,7 @@ export function ContestListSection() {
                   <button
                     key={sortOption}
                     type="button"
+                    disabled={!isAuthenticated}
                     role="menuitem"
                     className="flex w-full items-center gap-2.5 self-stretch px-2 py-3 text-left text-[15px] leading-[125%] font-medium text-color-gray-850"
                     onClick={() => {
@@ -144,6 +148,7 @@ export function ContestListSection() {
         {selectedCategory !== "전체" && (
           <button
             type="button"
+            disabled={!isAuthenticated}
             aria-label={`${selectedCategory} 분야 필터 삭제`}
             className="mt-2 flex h-7 items-center justify-center rounded-full bg-[rgba(97,97,97,0.10)] p-2 text-center text-[13px] leading-[125%] font-medium text-color-gray-650"
             onClick={() => setSelectedCategory("전체")}
