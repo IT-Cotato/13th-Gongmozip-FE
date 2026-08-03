@@ -42,13 +42,7 @@ export function ContestList({ contests }: ContestListProps) {
                 className="contents"
               >
                 {contest.posterImageUrl ? (
-                  <Image
-                    src={contest.posterImageUrl}
-                    alt={`${contest.title} 포스터`}
-                    width={85}
-                    height={113}
-                    className="h-[113px] w-[85px] object-cover"
-                  />
+                  <ContestPosterImage src={contest.posterImageUrl} alt={`${contest.title} 포스터`} />
                 ) : (
                   <div className="flex h-[113px] w-[85px] items-center justify-center bg-color-gray-300 text-sm font-semibold text-color-gray-650">
                     이미지 {index + 1}
@@ -104,4 +98,25 @@ export function ContestList({ contests }: ContestListProps) {
       })}
     </section>
   );
+}
+
+function ContestPosterImage({ alt, src }: { alt: string; src: string }) {
+  if (isExternalUrl(src)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} className="h-[113px] w-[85px] object-cover" />;
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={85}
+      height={113}
+      className="h-[113px] w-[85px] object-cover"
+    />
+  );
+}
+
+function isExternalUrl(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
 }

@@ -11,7 +11,7 @@ export type ContestSummary = {
   id: string;
   title: string;
   organizer: string;
-  category: ContestCategory;
+  category: string;
   dDay: string;
   viewCount: number;
   posterImageUrl: string;

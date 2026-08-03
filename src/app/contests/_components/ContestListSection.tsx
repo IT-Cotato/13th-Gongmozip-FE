@@ -1,48 +1,47 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 
-import type { ContestCategory, ContestSummary } from "../_types";
+import {
+  contestCategoryApiValues,
+  type ContestSort,
+  useContestsQuery,
+} from "@/queries/useContestsQuery";
+import type { ContestCategory } from "../_types";
 import { ContestCategorySheet } from "./ContestCategorySheet";
 import { ContestList } from "./ContestList";
 
 type SortOption = "최신순" | "조회순" | "마감순";
 
-type ContestListSectionProps = {
-  contests: ContestSummary[];
-};
-
 const SORT_OPTIONS: SortOption[] = ["최신순", "조회순", "마감순"];
 
-export function ContestListSection({ contests }: ContestListSectionProps) {
+const sortApiValues: Record<SortOption, ContestSort> = {
+  최신순: "newest",
+  조회순: "popular",
+  마감순: "deadlineAsc",
+};
+
+export function ContestListSection() {
   const [searchKeyword, setSearchKeyword] = useState("");
+  const deferredSearchKeyword = useDeferredValue(searchKeyword);
   const [selectedCategory, setSelectedCategory] = useState<ContestCategory>("전체");
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const filteredAndSortedContests = useMemo(() => {
-    const trimmedKeyword = searchKeyword.trim().toLowerCase();
-    const filteredContests = contests.filter((contest) => {
-      const matchesKeyword =
-        trimmedKeyword.length === 0 || contest.title.toLowerCase().includes(trimmedKeyword);
-      const matchesCategory = selectedCategory === "전체" || contest.category === selectedCategory;
-
-      return matchesKeyword && matchesCategory;
-    });
-    const copiedContests = [...filteredContests];
-
-    if (selectedSort === "조회순") {
-      return copiedContests.sort((a, b) => b.viewCount - a.viewCount);
-    }
-
-    if (selectedSort === "마감순") {
-      return copiedContests.sort((a, b) => getRemainingDays(a.dDay) - getRemainingDays(b.dDay));
-    }
-
-    return copiedContests;
-  }, [contests, searchKeyword, selectedCategory, selectedSort]);
+  const contestQueryParams = useMemo(
+    () => ({
+      keyword: deferredSearchKeyword.trim() || undefined,
+      category: contestCategoryApiValues[selectedCategory],
+      sort: sortApiValues[selectedSort],
+      page: 0,
+      size: 20,
+    }),
+    [deferredSearchKeyword, selectedCategory, selectedSort],
+  );
+  const { data, error, isError, isFetching, isLoading } = useContestsQuery(contestQueryParams);
+  const contests = data?.contests ?? [];
 
   return (
     <>
@@ -157,6 +156,18 @@ export function ContestListSection({ contests }: ContestListSectionProps) {
         )}
       </section>
 
+      {isLoading ? <ContestListStatus message="공모전 목록을 불러오는 중입니다" /> : null}
+
+      {isError ? (
+        <ContestListStatus
+          message={
+            error instanceof Error
+              ? error.message
+              : "공모전 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+          }
+        />
+      ) : null}
+
       {isCategorySheetOpen && (
         <ContestCategorySheet
           selectedCategory={selectedCategory}
@@ -168,13 +179,27 @@ export function ContestListSection({ contests }: ContestListSectionProps) {
         />
       )}
 
-      <ContestList contests={filteredAndSortedContests} />
+      {!isLoading && !isError ? (
+        <>
+          {isFetching ? (
+            <p className="px-4 pb-2 text-xs font-medium text-color-gray-500">
+              최신 공모전 목록으로 업데이트 중입니다
+            </p>
+          ) : null}
+          <ContestList contests={contests} />
+        </>
+      ) : null}
     </>
   );
 }
 
-function getRemainingDays(dDay: string) {
-  const remainingDays = Number(dDay.replace("D-", ""));
-
-  return Number.isNaN(remainingDays) ? Number.MAX_SAFE_INTEGER : remainingDays;
+function ContestListStatus({ message }: { message: string }) {
+  return (
+    <section
+      aria-label="공모전 목록 상태"
+      className="flex min-h-[240px] items-center justify-center px-4 text-center text-sm font-medium text-color-gray-500"
+    >
+      {message}
+    </section>
+  );
 }
