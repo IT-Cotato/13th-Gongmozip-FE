@@ -1,4 +1,7 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+import { useCollaborationTestStore } from "./collaborationTestStore";
 
 type AuthState = {
   accessToken: string | null;
@@ -6,8 +9,21 @@ type AuthState = {
   clearAccessToken: () => void;
 };
 
-export const useAuthStore = create<AuthState>()((set) => ({
-  accessToken: null,
-  setAccessToken: (accessToken) => set({ accessToken }),
-  clearAccessToken: () => set({ accessToken: null }),
-}));
+export const AUTH_STORAGE_KEY = "auth-storage";
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      accessToken: null,
+      setAccessToken: (accessToken) => set({ accessToken }),
+      clearAccessToken: () => {
+        useCollaborationTestStore.getState().resetCollaborationTest();
+        set({ accessToken: null });
+      },
+    }),
+    {
+      name: AUTH_STORAGE_KEY,
+      partialize: (state) => ({ accessToken: state.accessToken }),
+    },
+  ),
+);

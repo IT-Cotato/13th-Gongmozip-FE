@@ -1,11 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/http";
 
-export type CollaborationCharacterKey =
-  | "TRACK_RUNNER"
-  | "FREE_RUNNER"
-  | "LEAD_RUNNER"
-  | "BOOSTER_RUNNER";
+import { apiFetch } from "@/lib/http";
+import type { CollaborationCharacterType } from "@/types/collaboration";
+
+export type CollaborationCharacterKey = CollaborationCharacterType;
 
 export type MypageSummary = {
   name: string;
@@ -22,13 +20,15 @@ export type MypageSummary = {
   };
 };
 
-function fetchMypageSummary() {
+export const mypageSummaryQueryKey = ["member", "mypage-summary"] as const;
+
+export function fetchMypageSummary() {
   return apiFetch<MypageSummary>("/api/members/me/mypage-summary");
 }
 
 export function useMypageSummaryQuery() {
   return useQuery({
-    queryKey: ["member", "mypage-summary"],
+    queryKey: mypageSummaryQueryKey,
     queryFn: fetchMypageSummary,
   });
 }

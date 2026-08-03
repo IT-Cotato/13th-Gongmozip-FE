@@ -1,4 +1,23 @@
+import type { CollaborationCharacterType } from "@/types/collaboration";
+
 export const COLLABORATION_TEST_TOTAL_QUESTION_COUNT = 15;
+
+export type { CollaborationCharacterType } from "@/types/collaboration";
+
+export const COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE = {
+  LEAD_RUNNER: "lead",
+  TRACK_RUNNER: "track",
+  BOOST_RUNNER: "boost",
+  BOOSTER_RUNNER: "boost",
+  FREE_RUNNER: "free",
+} as const satisfies Record<CollaborationCharacterType, CollaborationResultType>;
+
+export const COLLABORATION_RESULT_TYPE_TO_CHARACTER_TYPE = {
+  lead: "LEAD_RUNNER",
+  track: "TRACK_RUNNER",
+  boost: "BOOST_RUNNER",
+  free: "FREE_RUNNER",
+} as const satisfies Record<CollaborationResultType, CollaborationCharacterType>;
 
 const LIKERT_SCALE_OPTIONS = ["매우 그렇다", "그렇다", "보통이다", "그렇지 않다", "매우 그렇지 않다"];
 
@@ -82,25 +101,144 @@ export const COLLABORATION_TEST_QUESTIONS = [
 
 export const COLLABORATION_RESULT_TYPES = [
   {
-    id: "planner",
-    name: "기획형",
-    imageSrc: "/images/collaboration-type/planner.png",
+    id: "lead",
+    characterType: "LEAD_RUNNER",
+    name: "리드러너",
+    quote: '"우리 팀, 결승선까지 내가 페이스 맞춰줄게!"',
+    hashtags: ["#계획적", "#적극적 소통", "#리더십", "#추진력"],
+    imageSrc: "/images/test/lead.png",
+    quoteBoxWidth: 250,
+    quoteBoxColor: "#FF7658",
+    themeColor: "#FF7658",
+    nameColor: "#D56046",
+    hashtagColor: "#FF7658",
+    featureTitleColor: "#591E12",
+    traitLabelColor: "#FF7658",
+    traitBarColor: "#FF7658",
+    borderColor: "#FF7658",
+    traits: [
+      { left: "계획형", right: "즉흥형", percentage: 82 },
+      { left: "조율형", right: "독립형", percentage: 82 },
+      { left: "추진형", right: "신중형", percentage: 82 },
+    ],
+    descriptions: [
+      "팀의 방향을 잡고 모두를 끌고 가는 선두 러너",
+      "일정관리, 역할분배, 회의 진행까지 주도",
+      "목표를 향해 팀원들의 페이스를 맞춰주는 성향",
+      "공모전 수상 가능성 가장 높은 편",
+    ],
   },
   {
-    id: "driver",
-    name: "추진형",
-    imageSrc: "/images/collaboration-type/driver.png",
+    id: "boost",
+    characterType: "BOOST_RUNNER",
+    name: "부스트 러너",
+    quote: '"좋은 아이디어는 움직이면서 나온다!"',
+    hashtags: ["#창의성", "#친화력", "#즉흥성", "#도전정신"],
+    imageSrc: "/images/test/boost.png",
+    quoteBoxWidth: 218,
+    quoteBoxColor: "#FFAD62",
+    themeColor: "#FF9B50",
+    nameColor: "#885527",
+    hashtagColor: "#885527",
+    featureTitleColor: "#625E10",
+    traitLabelColor: "#885527",
+    traitBarColor: "#FFAD62",
+    borderColor: "#D7904E",
+    traits: [
+      { left: "추진형", right: "신중형", percentage: 81 },
+      { left: "교류형", right: "관찰형", percentage: 81 },
+      { left: "속도형", right: "꼼꼼형", percentage: 81 },
+    ],
+    descriptions: [
+      "아이디어와 에너지로 분위기를 띄우는 러너",
+      "사람들과 빠르게 친해지고 네트워킹에 강한 편",
+      "브레인 스토밍과 발표 상황에서 빛남",
+      "새로운 시도를 두려워하지 않는 성향",
+    ],
   },
   {
-    id: "supporter",
-    name: "조율형",
-    imageSrc: "/images/collaboration-type/supporter.png",
+    id: "track",
+    characterType: "TRACK_RUNNER",
+    name: "트랙러너",
+    quote: '"조용히 달려도 결국 완주하는 건 나야."',
+    hashtags: ["#꼼꼼함", "#책임감", "#집중력", "#안정성"],
+    imageSrc: "/images/test/track.png",
+    quoteBoxWidth: 223,
+    quoteBoxColor: "#51D879",
+    themeColor: "#74E094",
+    nameColor: "#318249",
+    hashtagColor: "#41AD61",
+    featureTitleColor: "#184224",
+    traitLabelColor: "#41AD61",
+    traitBarColor: "#51D879",
+    borderColor: "#74E094",
+    traits: [
+      { left: "배려형", right: "주장형", percentage: 78 },
+      { left: "꼼꼼형", right: "속도형", percentage: 78 },
+      { left: "신중형", right: "추진형", percentage: 78 },
+    ],
+    descriptions: [
+      "말보다 결과물로 보여주는 꾸준한 러너",
+      "눈에 띄진 않지만 팀의 완성도를 책임짐",
+      "맡은 일은 끝까지 해내는 신뢰형 플레이어",
+      "마감 직전 모두가 찾게 되는 존재",
+    ],
   },
   {
-    id: "creator",
-    name: "창작형",
-    imageSrc: "/images/collaboration-type/creator.png",
+    id: "free",
+    characterType: "FREE_RUNNER",
+    name: "프리러너",
+    quote: '"꼭 같은 길로 달릴 필요는 없잖아?"',
+    hashtags: ["#독립심", "#유연성", "#탐색형", "#자유로움"],
+    imageSrc: "/images/test/free.png",
+    quoteBoxWidth: 205,
+    quoteBoxColor: "#3CAEF4",
+    themeColor: "#3CAFF4",
+    nameColor: "#308CC5",
+    hashtagColor: "#3CAEF4",
+    featureTitleColor: "#12384F",
+    traitLabelColor: "#3CAEF4",
+    traitBarColor: "#3CAEF4",
+    borderColor: "#3CAEF4",
+    traits: [
+      { left: "유연형", right: "계획형", percentage: 79 },
+      { left: "탐색형", right: "안정형", percentage: 79 },
+      { left: "독립형", right: "조율형", percentage: 79 },
+    ],
+    descriptions: [
+      "정해진 코스보다 자신만의 길을 찾는 러너",
+      "압박 없는 환경에서 창의력이 발휘됨",
+      "자유로운 탐색과 새로운 관점을 제공",
+      "팀에 신선한 시각을 더해주는 존재",
+    ],
   },
 ] as const;
 
 export type CollaborationResultType = (typeof COLLABORATION_RESULT_TYPES)[number]["id"];
+
+export function normalizeCollaborationCharacterType(
+  characterType: CollaborationCharacterType,
+) {
+  return characterType === "BOOSTER_RUNNER" ? "BOOST_RUNNER" : characterType;
+}
+
+export function getCollaborationResultByCharacterType(
+  characterType: CollaborationCharacterType,
+) {
+  const normalizedCharacterType = normalizeCollaborationCharacterType(characterType);
+
+  return COLLABORATION_RESULT_TYPES.find((result) => {
+    return result.characterType === normalizedCharacterType;
+  });
+}
+
+export function getCollaborationResultByRouteParam(routeParam: string) {
+  if (routeParam in COLLABORATION_CHARACTER_TYPE_TO_RESULT_TYPE) {
+    return getCollaborationResultByCharacterType(routeParam as CollaborationCharacterType);
+  }
+
+  const characterType =
+    COLLABORATION_RESULT_TYPE_TO_CHARACTER_TYPE[routeParam as CollaborationResultType];
+
+  return characterType ? getCollaborationResultByCharacterType(characterType) : undefined;
+}
