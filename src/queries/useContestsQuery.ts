@@ -25,7 +25,7 @@ export type ContestApiCategory =
   | "PHOTO_VIDEO";
 
 type ContestListItemResponse = {
-  contestId: string;
+  contestId: string | number;
   title: string;
   category: string;
   status: ContestStatus;
@@ -33,6 +33,8 @@ type ContestListItemResponse = {
   thumbnailUrl: string | null;
   applyEndAt: string;
   daysRemaining: number;
+  viewCount?: number;
+  isScrapped?: boolean;
 };
 
 export type ContestsResponse = {
@@ -121,14 +123,14 @@ function addSearchParam(
 
 function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
   return {
-    id: contest.contestId,
+    id: String(contest.contestId),
     title: contest.title,
     organizer: contest.hostName,
     category: contestCategoryLabels[contest.category] ?? contest.category,
     dDay: formatDday(contest.daysRemaining),
-    viewCount: 0,
+    viewCount: contest.viewCount ?? 0,
     posterImageUrl: contest.thumbnailUrl ?? "",
-    isScrapped: false,
+    isScrapped: contest.isScrapped ?? false,
   };
 }
 

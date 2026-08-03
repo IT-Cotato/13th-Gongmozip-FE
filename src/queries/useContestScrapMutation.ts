@@ -16,6 +16,12 @@ type UpdateContestScrapStatusRequest = {
   isScrapped: boolean;
 };
 
+type ContestScrapResponse = {
+  contestId: string | number;
+  isScrapped: boolean;
+  scrappedAt: string | null;
+};
+
 async function updateContestScrapStatus({
   contestId,
   isScrapped,
@@ -24,8 +30,14 @@ async function updateContestScrapStatus({
 
   if (!isScrapped) {
     try {
-      await apiFetch<void>(path, {
+      const data = await apiFetch<ContestScrapResponse | null>(path, {
         method: "DELETE",
+      });
+
+      return mapContestScrapResponse(data, {
+        contestId,
+        isScrapped: false,
+        scrappedAt: null,
       });
     } catch (error) {
       if (!isAlreadyUnscrappedError(error)) {
@@ -41,8 +53,14 @@ async function updateContestScrapStatus({
   }
 
   try {
-    await apiFetch<void>(path, {
+    const data = await apiFetch<ContestScrapResponse>(path, {
       method: "POST",
+    });
+
+    return mapContestScrapResponse(data, {
+      contestId,
+      isScrapped: true,
+      scrappedAt: new Date().toISOString(),
     });
   } catch (error) {
     if (!isAlreadyScrappedError(error)) {
@@ -54,6 +72,21 @@ async function updateContestScrapStatus({
     contestId,
     isScrapped: true,
     scrappedAt: new Date().toISOString(),
+  } satisfies ContestScrapStatus;
+}
+
+function mapContestScrapResponse(
+  data: ContestScrapResponse | null,
+  fallback: ContestScrapStatus,
+) {
+  if (!data) {
+    return fallback;
+  }
+
+  return {
+    contestId: String(data.contestId),
+    isScrapped: data.isScrapped,
+    scrappedAt: data.scrappedAt,
   } satisfies ContestScrapStatus;
 }
 
@@ -77,6 +110,8 @@ export function useContestScrapMutation() {
 
       const previousScrapStatus = queryClient.getQueryData<ContestScrapStatus>(queryKey);
       const previousScrappedContestIds = useContestScrapStore.getState().scrappedContestIds;
+      const previousIsScrapped =
+        previousScrapStatus?.isScrapped ?? previousScrappedContestIds.includes(contestId);
 
       const optimisticScrapStatus = {
         contestId,
@@ -95,6 +130,7 @@ export function useContestScrapMutation() {
 
       return {
         contestId,
+        previousIsScrapped,
         previousScrapStatus,
         previousScrappedContestIds,
       };
@@ -109,9 +145,7 @@ export function useContestScrapMutation() {
         context.previousScrapStatus,
       );
       queryClient.setQueryData<ContestDetail>(contestDetailQueryKey(context.contestId), (current) =>
-        current
-          ? { ...current, isScrapped: Boolean(context.previousScrapStatus?.isScrapped) }
-          : current,
+        current ? { ...current, isScrapped: context.previousIsScrapped } : current,
       );
       queryClient.invalidateQueries({ queryKey: ["contests"] });
       useContestScrapStore.setState({

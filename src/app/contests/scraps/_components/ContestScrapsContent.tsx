@@ -36,8 +36,6 @@ export function ContestScrapsContent() {
   const scrapStatusQueries = useContestScrapStatusesQuery(contestIds, {
     enabled: isAuthenticated && contestIds.length > 0,
   });
-  const isScrapStatusLoading = scrapStatusQueries.some((query) => query.isLoading);
-  const scrapStatusError = scrapStatusQueries.find((query) => query.isError)?.error;
   const scrappedContestIds = useMemo(
     () => {
       const scrappedIds = new Set(storeScrappedContestIds);
@@ -85,19 +83,17 @@ export function ContestScrapsContent() {
     );
   }
 
-  if (isContestsLoading || isScrapStatusLoading) {
+  if (isContestsLoading) {
     return <ContestScrapsStatus message="스크랩한 공모전을 불러오는 중입니다" />;
   }
 
-  if (isError || scrapStatusError) {
+  if (isError) {
     return (
       <ContestScrapsStatus
         message={
           error instanceof Error
             ? error.message
-            : scrapStatusError instanceof Error
-              ? scrapStatusError.message
-              : "스크랩 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+            : "스크랩 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
         }
       />
     );

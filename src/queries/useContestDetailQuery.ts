@@ -26,6 +26,7 @@ type ContestDetailResponse = {
   maxTeamSize: number | null;
   daysRemaining: number;
   viewCount: number;
+  isScrapped?: boolean;
 };
 
 export const contestDetailQueryKey = (contestId: string) => ["contest", contestId] as const;
@@ -55,7 +56,7 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     dDay: formatDday(contest.daysRemaining),
     viewCount: contest.viewCount,
     posterImageUrl: contest.thumbnailUrl ?? "",
-    isScrapped: false,
+    isScrapped: contest.isScrapped ?? false,
     applicationPeriod: formatPeriod(contest.applyStartAt, contest.applyEndAt),
     announcementDate: formatDateTime(contest.announcementAt),
     eligibility: contest.eligibilityText ?? "제한 없음",
