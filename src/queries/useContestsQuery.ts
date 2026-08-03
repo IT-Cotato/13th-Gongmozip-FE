@@ -33,7 +33,11 @@ type ContestListItemResponse = {
   thumbnailUrl: string | null;
   applyEndAt: string;
   daysRemaining: number;
-  viewCount?: number;
+  viewCount?: number | string | null;
+  views?: number | string | null;
+  hitCount?: number | string | null;
+  hits?: number | string | null;
+  readCount?: number | string | null;
   isScrapped?: boolean;
 };
 
@@ -128,10 +132,35 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
     organizer: contest.hostName,
     category: contestCategoryLabels[contest.category] ?? contest.category,
     dDay: formatDday(contest.daysRemaining),
-    viewCount: contest.viewCount ?? 0,
+    viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",
     isScrapped: contest.isScrapped ?? false,
   };
+}
+
+function getContestViewCount(contest: ContestListItemResponse) {
+  return (
+    parseCount(contest.viewCount) ??
+    parseCount(contest.views) ??
+    parseCount(contest.hitCount) ??
+    parseCount(contest.hits) ??
+    parseCount(contest.readCount) ??
+    0
+  );
+}
+
+function parseCount(value: number | string | null | undefined) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const parsedValue = Number(value.replaceAll(",", ""));
+
+  return Number.isFinite(parsedValue) ? parsedValue : undefined;
 }
 
 function formatDday(daysRemaining: number) {
