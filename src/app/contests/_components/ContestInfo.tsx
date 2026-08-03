@@ -393,7 +393,7 @@ function ContestImage({
 }) {
   if (isExternalUrl(src)) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} className={className} />;
+    return <img src={src} alt={alt} width={width} height={height} className={className} />;
   }
 
   return <Image src={src} alt={alt} width={width} height={height} className={className} />;
