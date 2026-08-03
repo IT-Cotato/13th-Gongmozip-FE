@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
 
 import {
@@ -8,6 +9,7 @@ import {
   type ContestSort,
   useContestsQuery,
 } from "@/queries/useContestsQuery";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ContestCategory } from "../_types";
 import { ContestCategorySheet } from "./ContestCategorySheet";
 import { ContestList } from "./ContestList";
@@ -29,6 +31,8 @@ export function ContestListSection() {
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const isAuthenticated = Boolean(accessToken);
 
   const contestQueryParams = useMemo(
     () => ({
@@ -40,7 +44,9 @@ export function ContestListSection() {
     }),
     [deferredSearchKeyword, selectedCategory, selectedSort],
   );
-  const { data, error, isError, isFetching, isLoading } = useContestsQuery(contestQueryParams);
+  const { data, error, isError, isFetching, isLoading } = useContestsQuery(contestQueryParams, {
+    enabled: isAuthenticated,
+  });
   const contests = data?.contests ?? [];
 
   return (
@@ -156,9 +162,19 @@ export function ContestListSection() {
         )}
       </section>
 
-      {isLoading ? <ContestListStatus message="공모전 목록을 불러오는 중입니다" /> : null}
+      {!isAuthenticated ? (
+        <ContestListStatus
+          actionLabel="로그인하기"
+          href="/login/email"
+          message="로그인 후 공모전 정보를 확인할 수 있습니다."
+        />
+      ) : null}
 
-      {isError ? (
+      {isAuthenticated && isLoading ? (
+        <ContestListStatus message="공모전 목록을 불러오는 중입니다" />
+      ) : null}
+
+      {isAuthenticated && isError ? (
         <ContestListStatus
           message={
             error instanceof Error
@@ -179,7 +195,7 @@ export function ContestListSection() {
         />
       )}
 
-      {!isLoading && !isError ? (
+      {isAuthenticated && !isLoading && !isError ? (
         <>
           {isFetching ? (
             <p className="px-4 pb-2 text-xs font-medium text-color-gray-500">
@@ -193,13 +209,29 @@ export function ContestListSection() {
   );
 }
 
-function ContestListStatus({ message }: { message: string }) {
+function ContestListStatus({
+  actionLabel,
+  href,
+  message,
+}: {
+  actionLabel?: string;
+  href?: string;
+  message: string;
+}) {
   return (
     <section
       aria-label="공모전 목록 상태"
-      className="flex min-h-[240px] items-center justify-center px-4 text-center text-sm font-medium text-color-gray-500"
+      className="flex min-h-[240px] flex-col items-center justify-center gap-3 px-4 text-center text-sm font-medium text-color-gray-500"
     >
-      {message}
+      <p>{message}</p>
+      {href && actionLabel ? (
+        <Link
+          href={href}
+          className="rounded-full bg-color-gray-900 px-5 py-3 text-sm font-semibold text-white"
+        >
+          {actionLabel}
+        </Link>
+      ) : null}
     </section>
   );
 }

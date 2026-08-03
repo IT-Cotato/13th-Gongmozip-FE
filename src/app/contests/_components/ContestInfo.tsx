@@ -15,9 +15,12 @@ type ContestInfoProps = {
 
 const detailRows = [
   { label: "접수기간", key: "applicationPeriod" },
+  { label: "결과발표", key: "announcementDate" },
   { label: "공모전 분야", key: "category" },
   { label: "지원자격", key: "eligibility" },
   { label: "시상내역", key: "prize" },
+  { label: "진행장소", key: "location" },
+  { label: "참가방식", key: "teamParticipation" },
   { label: "공모전 내용", key: "description" },
 ] as const;
 
@@ -162,12 +165,12 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
         <div className="mt-[14px] flex justify-center">
           {contest.posterImageUrl ? (
-            <Image
+            <ContestImage
               src={contest.posterImageUrl}
               alt={`${contest.title} 포스터`}
+              className="h-[222px] w-[159px] object-cover"
               width={159}
               height={222}
-              className="h-[222px] w-[159px] object-cover"
             />
           ) : (
             <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
@@ -235,6 +238,21 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             </div>
           ))}
         </dl>
+
+        {contest.detailImageUrls.length > 0 ? (
+          <div className="mt-6 flex w-full flex-col gap-3">
+            {contest.detailImageUrls.map((imageUrl, index) => (
+              <ContestImage
+                key={`${imageUrl}-${index}`}
+                src={imageUrl}
+                alt={`${contest.title} 상세 이미지 ${index + 1}`}
+                className="h-auto w-full rounded-lg object-cover"
+                width={342}
+                height={456}
+              />
+            ))}
+          </div>
+        ) : null}
 
         <div className="relative mt-8 w-full max-w-[358px]">
           {showShareToast ? (
@@ -312,6 +330,31 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       />
     </section>
   );
+}
+
+function ContestImage({
+  alt,
+  className,
+  height,
+  src,
+  width,
+}: {
+  alt: string;
+  className: string;
+  height: number;
+  src: string;
+  width: number;
+}) {
+  if (isExternalUrl(src)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} className={className} />;
+  }
+
+  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
+}
+
+function isExternalUrl(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
 }
 
 function ContestActionToast({ href, message }: { href?: string; message: string }) {

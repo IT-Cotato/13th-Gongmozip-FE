@@ -63,7 +63,7 @@ export const contestCategoryApiValues: Record<ContestCategory, ContestApiCategor
   "사진/영상": "PHOTO_VIDEO",
 };
 
-const contestCategoryLabels: Record<string, ContestCategory> = {
+export const contestCategoryLabels: Record<string, ContestCategory> = {
   IT_AI_TECH: "IT/AI/기술",
   MARKETING_AD_BRANDING: "마케팅/광고/브랜딩",
   PLANNING_IDEA: "기획/아이디어",
@@ -95,10 +95,14 @@ export async function fetchContests(params: ContestsQueryParams = {}) {
   } satisfies ContestsResponse;
 }
 
-export function useContestsQuery(params: ContestsQueryParams = {}) {
+export function useContestsQuery(
+  params: ContestsQueryParams = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: contestsQueryKey(params),
     queryFn: () => fetchContests(params),
+    enabled: options.enabled ?? true,
     placeholderData: keepPreviousData,
   });
 }
