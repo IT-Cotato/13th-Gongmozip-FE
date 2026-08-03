@@ -6,7 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/http";
-import { fetchSurveyResult, surveyResultQueryKey } from "@/queries/useSurveyResultQuery";
+import {
+  fetchSurveyResult,
+  shouldRetrySurveyResultQuery,
+  surveyResultQueryKey,
+} from "@/queries/useSurveyResultQuery";
 import { useSurveyQuestionsQuery } from "@/queries/useSurveyQuestionsQuery";
 import { useSubmitSurveyMutation } from "@/queries/useSubmitSurveyMutation";
 import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
@@ -163,7 +167,7 @@ export default function CollaborationTypeResultLoadingPage() {
             .fetchQuery({
               queryKey: surveyResultQueryKey,
               queryFn: fetchSurveyResult,
-              retry: false,
+              retry: shouldRetrySurveyResultQuery,
             })
             .then((result) => {
               if (!isCurrent) return;
