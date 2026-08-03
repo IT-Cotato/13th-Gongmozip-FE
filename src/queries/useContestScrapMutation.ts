@@ -30,7 +30,7 @@ async function updateContestScrapStatus({
 
   if (!isScrapped) {
     try {
-      const data = await apiFetch<ContestScrapResponse | null>(path, {
+      const data = await apiFetch<unknown>(path, {
         method: "DELETE",
       });
 
@@ -53,7 +53,7 @@ async function updateContestScrapStatus({
   }
 
   try {
-    const data = await apiFetch<ContestScrapResponse>(path, {
+    const data = await apiFetch<unknown>(path, {
       method: "POST",
     });
 
@@ -76,10 +76,10 @@ async function updateContestScrapStatus({
 }
 
 function mapContestScrapResponse(
-  data: ContestScrapResponse | null,
+  data: unknown,
   fallback: ContestScrapStatus,
 ) {
-  if (!data) {
+  if (!isContestScrapResponse(data)) {
     return fallback;
   }
 
@@ -88,6 +88,21 @@ function mapContestScrapResponse(
     isScrapped: data.isScrapped,
     scrappedAt: data.scrappedAt,
   } satisfies ContestScrapStatus;
+}
+
+function isContestScrapResponse(data: unknown): data is ContestScrapResponse {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "contestId" in data &&
+    (typeof (data as { contestId: unknown }).contestId === "string" ||
+      typeof (data as { contestId: unknown }).contestId === "number") &&
+    "isScrapped" in data &&
+    typeof (data as { isScrapped: unknown }).isScrapped === "boolean" &&
+    "scrappedAt" in data &&
+    ((data as { scrappedAt: unknown }).scrappedAt === null ||
+      typeof (data as { scrappedAt: unknown }).scrappedAt === "string")
+  );
 }
 
 function isAlreadyScrappedError(error: unknown) {
