@@ -196,11 +196,13 @@ export function OnboardingCoachmark() {
     setStepIndex((current) => current + 1);
   }, [stepIndex]);
 
+  const hasMeasuredRect = rect !== null;
+
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !hasMeasuredRect) return;
     const timer = setTimeout(handleNext, AUTO_ADVANCE_MS);
     return () => clearTimeout(timer);
-  }, [isActive, handleNext]);
+  }, [isActive, hasMeasuredRect, handleNext]);
 
   if (!isActive || !rect) return null;
 
