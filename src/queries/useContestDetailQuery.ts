@@ -2,9 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { ContestDetail } from "@/app/contests/_types";
 import { apiFetch } from "@/lib/http";
-import { contestCategoryLabels, type ContestStatus } from "./useContestsQuery";
+import {
+  contestCategoryLabels,
+  getContestViewCount,
+  type ContestStatus,
+  type ContestViewCountFields,
+} from "./useContestsQuery";
 
-type ContestDetailResponse = {
+type ContestDetailResponse = ContestViewCountFields & {
   contestId: string | number;
   title: string;
   summary: string | null;
@@ -25,7 +30,6 @@ type ContestDetailResponse = {
   minTeamSize: number | null;
   maxTeamSize: number | null;
   daysRemaining: number;
-  viewCount: number;
   isScrapped?: boolean;
 };
 
@@ -54,7 +58,7 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     organizer: contest.hostName,
     category: contestCategoryLabels[contest.category] ?? contest.category,
     dDay: formatDday(contest.daysRemaining),
-    viewCount: contest.viewCount,
+    viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",
     isScrapped: contest.isScrapped ?? false,
     applicationPeriod: formatPeriod(contest.applyStartAt, contest.applyEndAt),

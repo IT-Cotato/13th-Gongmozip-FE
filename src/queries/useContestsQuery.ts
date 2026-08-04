@@ -41,6 +41,14 @@ type ContestListItemResponse = {
   isScrapped?: boolean;
 };
 
+export type ContestViewCountFields = {
+  viewCount?: number | string | null;
+  views?: number | string | null;
+  hitCount?: number | string | null;
+  hits?: number | string | null;
+  readCount?: number | string | null;
+};
+
 export type ContestsResponse = {
   contests: ContestSummary[];
   page: number;
@@ -153,7 +161,7 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
   };
 }
 
-function getContestViewCount(contest: ContestListItemResponse) {
+export function getContestViewCount(contest: ContestViewCountFields) {
   return (
     parseCount(contest.viewCount) ??
     parseCount(contest.views) ??
