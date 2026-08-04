@@ -74,7 +74,7 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
           />
         ) : null}
 
-        {isAuthenticated && contest ? <ContestInfo contest={contest} posterIndex={1} /> : null}
+        {isAuthenticated && !isError && contest ? <ContestInfo contest={contest} posterIndex={1} /> : null}
       </div>
     </main>
   );
