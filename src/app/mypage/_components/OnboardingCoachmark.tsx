@@ -12,6 +12,7 @@ import {
 const ONBOARDING_SEEN_KEY = "gongmozip:mypage-onboarding-seen";
 const HIGHLIGHT_PADDING = 8;
 const ARROW_CLEARANCE = 14;
+const AUTO_ADVANCE_MS = 10000;
 
 type PopupSide = "below" | "above";
 
@@ -181,18 +182,20 @@ export function OnboardingCoachmark() {
     el?.scrollIntoView({ block: "center", behavior: "auto" });
   }, [isActive, step.targetSelector]);
 
-  function finishOnboarding() {
-    localStorage.setItem(ONBOARDING_SEEN_KEY, "true");
-    setIsDismissed(true);
-  }
-
-  function handleNext() {
+  const handleNext = useCallback(() => {
     if (stepIndex === STEPS.length - 1) {
-      finishOnboarding();
+      localStorage.setItem(ONBOARDING_SEEN_KEY, "true");
+      setIsDismissed(true);
       return;
     }
     setStepIndex((current) => current + 1);
-  }
+  }, [stepIndex]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const timer = setTimeout(handleNext, AUTO_ADVANCE_MS);
+    return () => clearTimeout(timer);
+  }, [isActive, handleNext]);
 
   if (!isActive || !rect) return null;
 
