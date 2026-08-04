@@ -124,9 +124,9 @@ export function useContestScrapMutation() {
       await queryClient.cancelQueries({ queryKey });
 
       const previousScrapStatus = queryClient.getQueryData<ContestScrapStatus>(queryKey);
-      const previousScrappedContestIds = useContestScrapStore.getState().scrappedContestIds;
+      const currentScrappedContestIds = useContestScrapStore.getState().scrappedContestIds;
       const previousIsScrapped =
-        previousScrapStatus?.isScrapped ?? previousScrappedContestIds.includes(contestId);
+        previousScrapStatus?.isScrapped ?? currentScrappedContestIds.includes(contestId);
 
       const optimisticScrapStatus = {
         contestId,
@@ -147,7 +147,6 @@ export function useContestScrapMutation() {
         contestId,
         previousIsScrapped,
         previousScrapStatus,
-        previousScrappedContestIds,
       };
     },
     onError: (_error, _variables, context) => {
@@ -163,9 +162,9 @@ export function useContestScrapMutation() {
         current ? { ...current, isScrapped: context.previousIsScrapped } : current,
       );
       queryClient.invalidateQueries({ queryKey: ["contests"] });
-      useContestScrapStore.setState({
-        scrappedContestIds: context.previousScrappedContestIds,
-      });
+      useContestScrapStore
+        .getState()
+        .setScrapStatus(context.contestId, context.previousIsScrapped);
     },
     onSuccess: (data) => {
       queryClient.setQueryData(contestScrapStatusQueryKey(data.contestId), data);
