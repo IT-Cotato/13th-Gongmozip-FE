@@ -38,9 +38,9 @@ export function ContestRecommendationMessage({
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            {isCandidateClosed
-              ? "이제 함께 나갈 공모전을 투표해볼게요.\n원하는 공모전 2개를 선택해주세요."
-              : `자기소개를 마쳤으면, 팀원들과 함께 나갈 공모전을 선택해보아요. 현재 팀의 카테고리가 기획/아이디어이기 때문에 저는 이러한 공모전을 추천드려요.
+              {isCandidateClosed
+                ? "이제 함께 나갈 공모전을 투표해볼게요.\n원하는 공모전 2개를 선택해주세요."
+                : `팀장 선출까지 마쳤으면, 팀원들과 함께 나갈 공모전을 선택해보아요. 현재 팀의 카테고리가 기획/아이디어이기 때문에 저는 이러한 공모전을 추천드려요.
 더 원하는 공모전이 있으면 오늘 오후 11시 내로 리스트에 추가해주세요.`}
           </p>
           <MessageMeta />
@@ -193,6 +193,17 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 export function ContestVoteNoticeBanner({ onVote }: { onVote: () => void }) {
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
       <div className="min-w-0 flex-1">
         <p className="whitespace-pre-line text-center text-[15px] leading-[1.35] text-color-gray-750">
           {`공모전 투표 완료하셨나요? 투표마감까지 10분

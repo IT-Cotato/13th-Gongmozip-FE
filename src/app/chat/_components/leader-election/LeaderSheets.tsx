@@ -87,7 +87,13 @@ export function LeaderCandidateVoteSheet({
   );
 }
 
-export function VoteCompleteSheet({ onShowResult }: { onShowResult: () => void }) {
+export function VoteCompleteSheet({
+  isResultReady,
+  onShowResult,
+}: {
+  isResultReady: boolean;
+  onShowResult: () => void;
+}) {
   return (
     <BottomSheet className="h-[475px] justify-between">
       <div className="flex flex-1 flex-col items-center justify-center">
@@ -96,12 +102,53 @@ export function VoteCompleteSheet({ onShowResult }: { onShowResult: () => void }
           투표 완료
         </h2>
         <p className="mt-2 text-center text-[13px] leading-[1.25] font-medium text-color-gray-650/60">
-          투표 결과를 확인하고 있습니다.
+          {isResultReady ? "투표 결과를 확인할 수 있습니다." : "투표 결과를 확인하고 있습니다."}
         </p>
         <CountdownPill className="mt-3" label="투표 마감까지" time="01 : 24 : 30" />
       </div>
 
-      <SheetButton label="결과 확인하기" onClick={onShowResult} tone="disabled" />
+      <SheetButton
+        disabled={!isResultReady}
+        label="결과 확인하기"
+        onClick={onShowResult}
+        tone={isResultReady ? "brand" : "disabled"}
+      />
+    </BottomSheet>
+  );
+}
+
+export function LeaderVoteResultSheet({
+  leader,
+  onDone,
+}: {
+  leader: LeaderCandidate;
+  onDone: () => void;
+}) {
+  return (
+    <BottomSheet className="min-h-[436px]">
+      <div className="flex flex-col gap-8 px-6">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-1">
+            <MedalIcon size="small" />
+            <h2 className="text-[20px] leading-[1.35] font-bold text-color-gray-850">
+              팀장 투표 결과
+            </h2>
+          </div>
+          <p className="px-2 text-[13px] leading-[1.5] text-color-gray-850">
+            <span className="font-semibold text-[#AC4A35]">{leader.name} 님</span>이 팀장으로
+            확정되었습니다! 🎉
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center justify-center gap-2">
+          <MemberAvatar member={leader} sizeClassName="size-[122px]" />
+          <span className="rounded-full bg-color-coral-500 px-3 py-2 text-[15px] leading-[1.25] font-semibold text-white">
+            {leader.name}
+          </span>
+        </div>
+      </div>
+
+      <SheetButton label="완료" onClick={onDone} tone="neutral" />
     </BottomSheet>
   );
 }
@@ -184,10 +231,12 @@ function ChoiceButton({
 }
 
 function SheetButton({
+  disabled = false,
   label,
   onClick,
   tone,
 }: {
+  disabled?: boolean;
   label: string;
   onClick: () => void;
   tone: "brand" | "disabled" | "neutral";
@@ -201,7 +250,8 @@ function SheetButton({
   return (
     <div className="mt-4 bg-gradient-to-t from-white from-[38%] to-white/0 p-4">
       <button
-        className={`flex h-[51px] w-full items-center justify-center rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold ${toneClass}`}
+        className={`flex h-[51px] w-full items-center justify-center rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold ${toneClass} disabled:cursor-not-allowed`}
+        disabled={disabled}
         onClick={onClick}
         type="button"
       >

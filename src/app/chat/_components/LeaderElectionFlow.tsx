@@ -27,15 +27,17 @@ import {
 } from "./leader-election/LeaderCards";
 import {
   LeaderCandidateVoteSheet,
+  LeaderVoteResultSheet,
   LeaderWillingnessSheet,
   VoteCompleteSheet,
 } from "./leader-election/LeaderSheets";
 import {
   fallbackCandidate,
+  mockContestVoteResult,
+  mockAiRecommendedLeaderIds,
   mockIsTieResult,
   mockLeaderIntentAnswers,
   mockRecommendedContests,
-  recommendedCandidateIds,
 } from "./leader-election/mock";
 import type {
   LeaderChoice,
@@ -45,13 +47,14 @@ import type {
 } from "./leader-election/types";
 import {
   findMembersByIds,
+  formatLeaderCandidateNames,
   formatRecommendedLeaderNames,
   getLeaderCandidates,
   getLeaderScenario,
 } from "./leader-election/utils";
 
 const recommendedLeaderNames = MOCK_CHAT_MEMBERS.filter((member) =>
-  recommendedCandidateIds.includes(member.id),
+  mockAiRecommendedLeaderIds.includes(member.id),
 ).map((member) => member.name);
 
 function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
@@ -74,8 +77,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     getInitialLeaderEvent(leaderScenario),
   );
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [isLeaderResultReady, setIsLeaderResultReady] = useState(false);
   const [isContestResultShown, setIsContestResultShown] = useState(false);
   const [isContestResultReady, setIsContestResultReady] = useState(false);
+  const [isContestRevoteRequested, setIsContestRevoteRequested] = useState(false);
   const [isContestToastShown, setIsContestToastShown] = useState(false);
   const [isSharedContestAdded, setIsSharedContestAdded] = useState(false);
   const [candidateRemainingSeconds, setCandidateRemainingSeconds] = useState(10);
@@ -101,7 +106,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     safeCandidates.find((candidate) => candidate.id === selectedCandidateId) ?? safeCandidates[0];
   const recommendedLeader = safeCandidates[0] ?? fallbackCandidate;
   const recommendedLeaders = MOCK_CHAT_MEMBERS.filter((member) =>
-    recommendedCandidateIds.includes(member.id),
+    mockAiRecommendedLeaderIds.includes(member.id),
+  );
+  const recommendedLeaderLabel = formatRecommendedLeaderNames(
+    recommendedLeaderNames.map((name) => `${name}님`),
+  );
+  const leaderCandidateLabel = formatLeaderCandidateNames(
+    candidates.map((candidate) => `${candidate.name}님`),
   );
 
   useEffect(() => {
@@ -124,6 +135,18 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
     return () => window.clearTimeout(timerId);
   }, [candidateRemainingSeconds, leaderEvent]);
+
+  useEffect(() => {
+    if (sheetState !== "complete") {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setIsLeaderResultReady(true);
+    }, 3000);
+
+    return () => window.clearTimeout(timerId);
+  }, [sheetState]);
 
   useEffect(() => {
     if (sheetState !== "contestComplete") {
@@ -172,12 +195,23 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   };
 
   const finishLeaderVote = () => {
+    setIsLeaderResultReady(false);
     setSheetState("complete");
   };
 
   const showVoteResult = () => {
+    if (mockIsTieResult) {
+      setSheetState("closed");
+      setLeaderEvent("tie");
+      return;
+    }
+
+    setSheetState("leaderResult");
+  };
+
+  const finishLeaderResult = () => {
     setSheetState("closed");
-    setLeaderEvent(mockIsTieResult ? "tie" : "elected");
+    setLeaderEvent("elected");
   };
 
   const acceptRecommendedLeader = () => {
@@ -188,10 +222,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const requestRevote = () => {
     setLeaderEvent("revote");
     setSelectedCandidateId(recommendedLeader.id);
-    setSheetState("candidateVote");
+    setSheetState("closed");
   };
 
   const startContestVote = () => {
+    setIsContestRevoteRequested(false);
+    setSelectedContestIds([]);
     setSheetState("contestVote");
   };
 
@@ -254,6 +290,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   };
 
   const showContestVoteResult = () => {
+    if (mockContestVoteResult === "tie") {
+      setIsContestRevoteRequested(true);
+      setSheetState("closed");
+      return;
+    }
+
     setSheetState("contestResult");
   };
 
@@ -331,16 +373,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         {leaderEvent === "candidateRegistrationRequest" ? (
           <BotMessage
             body={`이제, 팀장을 선출해볼게요.
-매칭 전에 팀장을 지원해주신 분이 없으셔서 사용자 프로필 및 협업 유형 검사
-결과 ${formatRecommendedLeaderNames(recommendedLeaderNames)}님이 리더를 잘하실 수 있을 거라 추천드립니다.
-다른 분들도 모두 리더를 하기 충분한
-자질을 가지신 분들이니, 팀장 여부를
-모두 투표해주세요.`}
+매칭 전에 팀장을 지원해주신 분이 없으셔서 사용자 프로필 및 협업 유형 검사 결과 ${recommendedLeaderLabel}이 리더를 잘하실 수 있을 거라 추천드립니다.
+다른 분들도 모두 리더를 하기 충분한 자질을 가지신 분들이니, 팀장 여부를 모두 투표해주세요.`}
             buttonDisabled={false}
             buttonLabel="팀장 여부 투표하기"
             onButtonClick={() => setSheetState("willingness")}
           >
-            <LeaderCandidatePreviewCard leaders={recommendedLeaders} />
+            <LeaderCandidatePreviewCard leaders={recommendedLeaders} title="AI 팀장 추천" />
           </BotMessage>
         ) : null}
 
@@ -351,21 +390,21 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
                 ? "팀원들의 의견에 따라 재투표를 진행합니다. 팀장을 다시 선출해 주세요."
                 : leaderScenario === "multipleDefinite"
                   ? `이제, 팀장을 선출해볼게요.
-매칭 전에 팀장에 지원해주신 분들이 팀장 후보입니다. 팀장
+매칭 전에 팀장에 지원해주신 ${leaderCandidateLabel}이 팀장 후보입니다. 팀장
 지원자 분들은 되도록이면 프로필을
 공개로 돌려, 팀원들이 볼 수 있도록
 해주세요.`
-                  : `이제, 팀장을 선출해볼게요.
-매칭 전에 팀장에 지원해주신 김민정님과
-이해은님이 팀장 후보입니다. 팀장
-지원자 분들은 되도록이면 프로필을
-공개로 돌려, 팀원들이 볼 수 있도록
+                  : `바로 팀장 선출 투표를 하도록 하겠습니다. 팀장 지원자 분들은 되도록이면 프로필을 공개로 돌려, 팀원들이 볼 수 있도록
 해주세요.`
             }
             buttonDisabled={false}
             buttonLabel="팀장 투표하기"
             onButtonClick={openCandidateVote}
-          />
+          >
+            {leaderScenario === "multipleDefinite" && leaderEvent === "voteRequest" ? (
+              <LeaderCandidatePreviewCard leaders={safeCandidates} />
+            ) : null}
+          </BotMessage>
         ) : null}
 
         {leaderEvent === "elected" ? <LeaderElectedMessage leader={selectedCandidate} /> : null}
@@ -410,6 +449,15 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         {shouldShowContestVote && isContestResultShown ? (
           <ContestVoteResultMessage contest={winningContest} />
         ) : null}
+
+        {shouldShowContestVote && isContestRevoteRequested ? (
+          <BotMessage
+            body="동률이 나와서, 동률이 나온 공모전들끼리 재투표를 진행할게요."
+            buttonDisabled={false}
+            buttonLabel="공모전 투표하기"
+            onButtonClick={startContestVote}
+          />
+        ) : null}
       </section>
 
       <div className="flex flex-col gap-px bg-white pb-[env(safe-area-inset-bottom)]">
@@ -418,7 +466,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
       {sheetState === "willingness" ||
       sheetState === "candidateVote" ||
-      sheetState === "complete" ? (
+      sheetState === "complete" ||
+      sheetState === "leaderResult" ? (
         <div className="absolute inset-0 z-40 flex items-end bg-color-gray-850/60">
           {sheetState === "willingness" ? (
             <LeaderWillingnessSheet
@@ -437,7 +486,16 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             />
           ) : null}
 
-          {sheetState === "complete" ? <VoteCompleteSheet onShowResult={showVoteResult} /> : null}
+          {sheetState === "complete" ? (
+            <VoteCompleteSheet
+              isResultReady={isLeaderResultReady}
+              onShowResult={showVoteResult}
+            />
+          ) : null}
+
+          {sheetState === "leaderResult" ? (
+            <LeaderVoteResultSheet leader={selectedCandidate} onDone={finishLeaderResult} />
+          ) : null}
         </div>
       ) : null}
 
@@ -473,7 +531,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
             {sheetState === "contestResult" ? (
               <ContestVoteResultSheet
-                hasVotes={selectedContestIds.length > 0}
+                hasVotes={mockContestVoteResult !== "noVotes"}
                 onShowDetail={showContestVoteDetail}
               />
             ) : null}

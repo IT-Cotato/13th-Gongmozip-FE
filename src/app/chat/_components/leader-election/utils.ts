@@ -28,6 +28,22 @@ export function formatRecommendedLeaderNames(names: string[]) {
   return `${names.slice(0, -1).join(", ")} 혹은 ${names.at(-1)}`;
 }
 
+export function formatLeaderCandidateNames(names: string[]) {
+  if (names.length === 0) {
+    return "팀장 후보";
+  }
+
+  if (names.length === 1) {
+    return names[0];
+  }
+
+  if (names.length === 2) {
+    return `${names[0]}과\n${names[1]}`;
+  }
+
+  return `${names.slice(0, -1).join(", ")}과\n${names.at(-1)}`;
+}
+
 export function findMembersByIds(ids: string[]) {
   return ids
     .map((id) => MOCK_CHAT_MEMBERS.find((member) => member.id === id))
