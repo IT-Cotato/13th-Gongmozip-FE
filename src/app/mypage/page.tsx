@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BottomNavigation from "@/components/layout/BottomNavigation";
@@ -9,6 +9,7 @@ import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
 import { COLLABORATION_CHARACTER_IMAGE } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
+import { ApiError } from "@/lib/http";
 
 const COLLABORATIVE_DISTANCE_MAX = 500;
 const COLLABORATIVE_DISTANCE_STEP = 100;
@@ -42,8 +43,15 @@ const MENU_SECTIONS: MenuSection[] = [
 
 export default function MyPage() {
   const router = useRouter();
-  const { data, isLoading, isError, refetch } = useMypageSummaryQuery();
+  const { data, isLoading, isError, error, refetch } = useMypageSummaryQuery();
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
+  const isUnauthorized = error instanceof ApiError && error.status === 401;
+
+  useEffect(() => {
+    if (isUnauthorized) {
+      router.replace("/login/email");
+    }
+  }, [isUnauthorized, router]);
 
   const collaborationType = data?.collaborationType ?? null;
 
@@ -91,7 +99,13 @@ export default function MyPage() {
           </p>
         )}
 
-        {isError && !isLoading && (
+        {isUnauthorized && !isLoading && (
+          <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
+            로그인이 필요해요. 로그인 페이지로 이동할게요...
+          </p>
+        )}
+
+        {isError && !isLoading && !isUnauthorized && (
           <div className="flex flex-col items-center gap-3 px-4 py-16">
             <p className="text-[13px] text-[#949494]">마이페이지 정보를 불러오지 못했어요.</p>
             <button
