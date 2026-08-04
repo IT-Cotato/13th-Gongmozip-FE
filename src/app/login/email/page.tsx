@@ -19,7 +19,7 @@ const MEMBER_NOT_FOUND_CODE = "MEMBER_404_1";
 const LOGIN_LOCKED_CODE = "AUTH_401_7";
 
 const INPUT_CLASS =
-  "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
+  "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494] focus-visible:[outline-style:solid] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color-gray-900";
 
 type LoginError = {
   type: "not-registered" | "locked" | "generic";
