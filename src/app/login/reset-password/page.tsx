@@ -194,11 +194,13 @@ export default function ResetPasswordPage() {
           </h2>
 
           <div className="flex flex-col gap-1 p-4">
-            <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">
+            <label htmlFor="reset-email" className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">
               아이디(이메일)
-            </p>
+            </label>
             <input
+              id="reset-email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -238,11 +240,13 @@ export default function ResetPasswordPage() {
           </h2>
 
           <div className="flex flex-col gap-1 p-4">
-            <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">인증코드</p>
+            <label htmlFor="reset-code" className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">인증코드</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
+                  id="reset-code"
                   inputMode="numeric"
+                  autoComplete="one-time-code"
                   value={code}
                   onChange={(e) => {
                     setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
@@ -310,9 +314,11 @@ export default function ResetPasswordPage() {
           </h2>
 
           <div className="flex flex-col gap-1 p-4">
-            <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">새 비밀번호</p>
+            <label htmlFor="reset-new-password" className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">새 비밀번호</label>
             <input
+              id="reset-new-password"
               type="password"
+              autoComplete="new-password"
               value={newPassword}
               onChange={(e) => {
                 setNewPassword(e.target.value);
@@ -338,11 +344,16 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="flex flex-col gap-1 p-4">
-            <p className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">
+            <label
+              htmlFor="reset-confirm-password"
+              className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]"
+            >
               새 비밀번호 확인
-            </p>
+            </label>
             <input
+              id="reset-confirm-password"
               type="password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="비밀번호를 재입력해 주세요."
