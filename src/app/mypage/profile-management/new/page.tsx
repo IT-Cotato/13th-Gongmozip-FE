@@ -9,12 +9,25 @@ import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
 
-function FieldLabel({ label, required }: { label: string; required?: boolean }) {
+const GPA_FORMAT_REGEX = /^\d+(\.\d{1,2})?$/;
+
+function FieldLabel({
+  label,
+  htmlFor,
+  required,
+}: {
+  label: string;
+  htmlFor: string;
+  required?: boolean;
+}) {
   return (
-    <div className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">
+    <label
+      htmlFor={htmlFor}
+      className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]"
+    >
       {label}
       {required && <span className="text-[#FF7658]">*</span>}
-    </div>
+    </label>
   );
 }
 
@@ -32,11 +45,16 @@ export default function CreateProfilePage() {
   const [gpaScale, setGpaScale] = useState("");
   const [saveAsDefault, setSaveAsDefault] = useState(true);
 
+  const isGpaValid =
+    GPA_FORMAT_REGEX.test(gpa.trim()) &&
+    GPA_FORMAT_REGEX.test(gpaScale.trim()) &&
+    Number(gpa) <= Number(gpaScale);
+
   const isFormValid =
     nickname.trim().length > 0 &&
     school.trim().length > 0 &&
     major.trim().length > 0 &&
-    gpa.trim().length > 0;
+    isGpaValid;
 
   function handleNext() {
     if (!isFormValid) return;
@@ -76,8 +94,9 @@ export default function CreateProfilePage() {
                 </button>
               </div>
               <div className="flex flex-1 flex-col gap-1">
-                <FieldLabel label="닉네임" required />
+                <FieldLabel label="닉네임" htmlFor="nickname" required />
                 <input
+                  id="nickname"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   placeholder="김철수"
@@ -92,8 +111,9 @@ export default function CreateProfilePage() {
             <div className="flex flex-col gap-2">
               <div className="flex items-start gap-4 px-5">
                 <div className="flex flex-1 flex-col gap-1">
-                  <FieldLabel label="학교" required />
+                  <FieldLabel label="학교" htmlFor="school" required />
                   <input
+                    id="school"
                     value={school}
                     onChange={(e) => setSchool(e.target.value)}
                     placeholder="학교명"
@@ -101,8 +121,9 @@ export default function CreateProfilePage() {
                   />
                 </div>
                 <div className="flex w-20 flex-col gap-1">
-                  <FieldLabel label="학년" />
+                  <FieldLabel label="학년" htmlFor="grade" />
                   <input
+                    id="grade"
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
                     placeholder="ex) 3"
@@ -113,8 +134,9 @@ export default function CreateProfilePage() {
               </div>
 
               <div className="flex flex-col gap-1 px-5">
-                <FieldLabel label="전공" required />
+                <FieldLabel label="전공" htmlFor="major" required />
                 <input
+                  id="major"
                   value={major}
                   onChange={(e) => setMajor(e.target.value)}
                   placeholder="전공 및 학위"
@@ -123,8 +145,9 @@ export default function CreateProfilePage() {
               </div>
 
               <div className="flex flex-col gap-1 px-5">
-                <FieldLabel label="복수전공" />
+                <FieldLabel label="복수전공" htmlFor="doubleMajor" />
                 <input
+                  id="doubleMajor"
                   value={doubleMajor}
                   onChange={(e) => setDoubleMajor(e.target.value)}
                   placeholder="전공 및 학위"
@@ -133,8 +156,9 @@ export default function CreateProfilePage() {
               </div>
 
               <div className="flex flex-col gap-1 px-5">
-                <FieldLabel label="부전공" />
+                <FieldLabel label="부전공" htmlFor="minor" />
                 <input
+                  id="minor"
                   value={minor}
                   onChange={(e) => setMinor(e.target.value)}
                   placeholder="전공 및 학위"
@@ -144,8 +168,9 @@ export default function CreateProfilePage() {
 
               <div className="flex items-end gap-1 px-5">
                 <div className="flex flex-1 flex-col gap-1">
-                  <FieldLabel label="학점" required />
+                  <FieldLabel label="학점" htmlFor="gpa" required />
                   <input
+                    id="gpa"
                     value={gpa}
                     onChange={(e) => setGpa(e.target.value)}
                     placeholder="ex) 3.5"
@@ -158,9 +183,11 @@ export default function CreateProfilePage() {
                 </span>
                 <div className="flex flex-1 flex-col gap-1">
                   <input
+                    id="gpaScale"
                     value={gpaScale}
                     onChange={(e) => setGpaScale(e.target.value)}
                     placeholder="기준 학점"
+                    aria-label="기준 학점"
                     inputMode="decimal"
                     className={INPUT_CLASS}
                   />

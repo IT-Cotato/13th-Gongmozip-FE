@@ -10,6 +10,8 @@ import {
   type ProjectExperienceInput,
 } from "./_components/ProjectExperienceSheet";
 
+const MAX_PROJECTS = 10;
+
 // TODO: 프로필 작성 최종 제출(API 연동) 예정
 export default function ProjectExperiencePage() {
   const router = useRouter();
@@ -17,13 +19,15 @@ export default function ProjectExperiencePage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectExperienceInput[]>([]);
   const hasProjects = projects.length > 0;
+  const hasReachedMaxProjects = projects.length >= MAX_PROJECTS;
 
   function handleAddProject() {
+    if (hasReachedMaxProjects) return;
     setIsSheetOpen(true);
   }
 
   function handleSubmitProject(project: ProjectExperienceInput) {
-    setProjects((prev) => [...prev, project]);
+    setProjects((prev) => (prev.length >= MAX_PROJECTS ? prev : [...prev, project]));
   }
 
   function handleDeleteProject(index: number) {
@@ -88,7 +92,8 @@ export default function ProjectExperiencePage() {
               <button
                 type="button"
                 onClick={handleAddProject}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[rgba(97,97,97,0.1)] text-[15px] leading-[1.25] font-semibold text-[#616161]"
+                disabled={hasReachedMaxProjects}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[rgba(97,97,97,0.1)] text-[15px] leading-[1.25] font-semibold text-[#616161] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <PlusIcon />
                 추가
