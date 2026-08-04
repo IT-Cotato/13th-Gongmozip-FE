@@ -7,6 +7,7 @@ import type { ReviewMember } from "./types";
 
 type MemberReviewStartDialogProps = {
   bonusDistance?: number;
+  completionVariant?: "member" | "leader";
   member: ReviewMember;
   onClose: () => void;
   onStart: () => void;
@@ -17,6 +18,7 @@ type MemberReviewStartDialogProps = {
 
 export function MemberReviewStartDialog({
   bonusDistance = 10,
+  completionVariant = "member",
   member,
   onClose,
   onStart,
@@ -24,6 +26,11 @@ export function MemberReviewStartDialog({
   reviewerName,
   totalDistance = 20,
 }: MemberReviewStartDialogProps) {
+  const completionMessage =
+    completionVariant === "leader"
+      ? `${reviewerName}님의 프로젝트\n완주를 축하드려요!!\n팀을 끝까지 성공적으로 이끌어\n협업거리 ${totalDistance}m를 획득했어요.`
+      : `${reviewerName}님의 프로젝트\n완주를 축하드려요!!\n협업거리가 ${totalDistance}m 늘어났어요.`;
+
   return (
     <Dialog
       aria-label="팀원 리뷰 시작"
@@ -51,7 +58,7 @@ export function MemberReviewStartDialog({
           <MemberReviewAvatar member={member} size="large" />
 
           <h2 className="mt-2 whitespace-pre-line text-center text-[20px] leading-[1.35] font-medium text-color-gray-850">
-            {`${reviewerName}님의 프로젝트\n완주를 축하드려요!!\n협업거리가 ${totalDistance}m 늘어났어요.`}
+            {completionMessage}
           </h2>
           <p className="mt-2 whitespace-pre-line text-center text-[17px] leading-[1.5] font-medium text-color-gray-650">
             {`팀원들에 대한 솔직한 리뷰를 남기면\n협업거리가 ${bonusDistance}m 더 늘어나요`}

@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { MOCK_CHAT_MEMBERS } from "../_data/mockMessages";
 import { ChatInputBar } from "./ChatInputBar";
 import { ChatTopBar } from "./ChatTopBar";
-import { BotMessage, ChatbotTextMessage } from "./leader-election/ChatbotMessage";
+import { MemberReviewStartDialog } from "./member-review";
+import {
+  BotMessage,
+  ChatbotTextMessage,
+  ContestDeadlineReminderMessage,
+} from "./leader-election/ChatbotMessage";
 import {
   ContestCandidateAddDialog,
   ContestCandidateListPage,
@@ -70,6 +76,7 @@ function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
 }
 
 export function LeaderElectionFlow({ roomId }: { roomId: string }) {
+  const router = useRouter();
   const leaderScenario = getLeaderScenario(mockLeaderIntentAnswers);
   const [sheetState, setSheetState] = useState<SheetState>("closed");
   const [leaderChoice, setLeaderChoice] = useState<LeaderChoice>("no");
@@ -81,8 +88,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [isContestResultShown, setIsContestResultShown] = useState(false);
   const [isContestResultReady, setIsContestResultReady] = useState(false);
   const [isContestRevoteRequested, setIsContestRevoteRequested] = useState(false);
+  // TODO: API 연동 후 선택된 공모전 D-1 조건으로 대체한다.
+  const [isMidtermSubmitted, setIsMidtermSubmitted] = useState(false);
+  const [isMidtermToastShown, setIsMidtermToastShown] = useState(false);
+  const [isMemberReviewStartOpen, setIsMemberReviewStartOpen] = useState(false);
   const [isContestToastShown, setIsContestToastShown] = useState(false);
   const [isSharedContestAdded, setIsSharedContestAdded] = useState(false);
+  const [, setDeadlineSubmissionStatus] = useState<"completed" | "incomplete" | null>(null);
   const [candidateRemainingSeconds, setCandidateRemainingSeconds] = useState(10);
   const [candidateContestIds, setCandidateContestIds] = useState<string[]>(
     mockRecommendedContests.slice(0, 3).map((contest) => contest.id),
@@ -108,6 +120,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const recommendedLeaders = MOCK_CHAT_MEMBERS.filter((member) =>
     mockAiRecommendedLeaderIds.includes(member.id),
   );
+  const currentMember = MOCK_CHAT_MEMBERS.find((member) => member.isMe) ?? fallbackCandidate;
+  const isCurrentMemberLeader = selectedCandidate.id === currentMember.id;
   const recommendedLeaderLabel = formatRecommendedLeaderNames(
     recommendedLeaderNames.map((name) => `${name}님`),
   );
@@ -171,6 +185,18 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
     return () => window.clearTimeout(timerId);
   }, [isContestToastShown]);
+
+  useEffect(() => {
+    if (!isMidtermToastShown) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setIsMidtermToastShown(false);
+    }, 3000);
+
+    return () => window.clearTimeout(timerId);
+  }, [isMidtermToastShown]);
 
   const submitWillingness = () => {
     const registeredCandidates = getLeaderCandidates(leaderScenario, leaderChoice);
@@ -313,6 +339,21 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     setSheetState("closed");
   };
 
+  const submitMidtermCheck = () => {
+    setIsMidtermSubmitted(true);
+    setIsMidtermToastShown(true);
+  };
+
+  const completeContestSubmission = () => {
+    setDeadlineSubmissionStatus("completed");
+    setIsMemberReviewStartOpen(true);
+  };
+
+  const startMemberReview = () => {
+    setIsMemberReviewStartOpen(false);
+    router.push(`/chat/${roomId}/member-review-preview`);
+  };
+
   const shouldShowContestVote =
     leaderEvent === "autoLeaderNotice" ||
     leaderEvent === "elected" ||
@@ -447,7 +488,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         ) : null}
 
         {shouldShowContestVote && isContestResultShown ? (
-          <ContestVoteResultMessage contest={winningContest} />
+          <ContestVoteResultMessage
+            contest={winningContest}
+            onMidtermSubmit={submitMidtermCheck}
+          />
         ) : null}
 
         {shouldShowContestVote && isContestRevoteRequested ? (
@@ -458,9 +502,23 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             onButtonClick={startContestVote}
           />
         ) : null}
+
+        {shouldShowContestVote && isContestResultShown && isMidtermSubmitted ? (
+          <ContestDeadlineReminderMessage
+            onComplete={completeContestSubmission}
+            onIncomplete={() => setDeadlineSubmissionStatus("incomplete")}
+          />
+        ) : null}
       </section>
 
-      <div className="flex flex-col gap-px bg-white pb-[env(safe-area-inset-bottom)]">
+      <div className="relative flex flex-col gap-px bg-white pb-[env(safe-area-inset-bottom)]">
+        {isMidtermToastShown ? (
+          <div className="pointer-events-none absolute right-[24px] bottom-[calc(100%+18px)] left-[24px] z-50 flex h-8 items-center justify-center rounded-full bg-[rgba(17,17,17,0.6)] px-5 py-2">
+            <p className="text-center text-[13px] leading-[1.25] font-medium text-white">
+              진행률에 응답해주셔서 협업거리가 5m 증가했습니다.
+            </p>
+          </div>
+        ) : null}
         <ChatInputBar />
       </div>
 
@@ -547,6 +605,17 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       ) : null}
 
       {isContestToastShown ? <ContestAddedToast onShortcut={openContestList} /> : null}
+
+      <MemberReviewStartDialog
+        completionVariant={isCurrentMemberLeader ? "leader" : "member"}
+        member={currentMember}
+        onClose={() => setIsMemberReviewStartOpen(false)}
+        onStart={startMemberReview}
+        open={isMemberReviewStartOpen}
+        reviewerName={currentMember.name}
+        totalDistance={isCurrentMemberLeader ? 30 : 20}
+      />
+
     </main>
   );
 }
