@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 type ContestScrapState = {
   scrappedContestIds: string[];
+  resetScraps: () => void;
   setScrapStatus: (contestId: string, isScrapped: boolean) => void;
 };
 
@@ -12,6 +13,7 @@ export const useContestScrapStore = create<ContestScrapState>()(
   persist(
     (set) => ({
       scrappedContestIds: [],
+      resetScraps: () => set({ scrappedContestIds: [] }),
       setScrapStatus: (contestId, isScrapped) =>
         set((state) => {
           const isAlreadyScrapped = state.scrappedContestIds.includes(contestId);

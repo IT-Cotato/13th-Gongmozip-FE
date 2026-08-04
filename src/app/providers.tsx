@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/http";
 import { surveyResultQueryKey } from "@/queries/useSurveyResultQuery";
+import { useContestScrapStore } from "@/stores/contestScrapStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -32,6 +33,10 @@ export function Providers({ children }: { children: ReactNode }) {
     return useAuthStore.subscribe((state, previousState) => {
       if (state.accessToken !== previousState.accessToken) {
         queryClient.removeQueries({ exact: true, queryKey: surveyResultQueryKey });
+
+        if (previousState.accessToken) {
+          useContestScrapStore.getState().resetScraps();
+        }
       }
     });
   }, [queryClient]);
