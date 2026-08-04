@@ -15,16 +15,23 @@ const sulphurPoint = Sulphur_Point({
 });
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MEMBER_NOT_FOUND_CODE = "MEMBER_404_1";
+const LOGIN_LOCKED_CODE = "AUTH_401_7";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
+
+type LoginError = {
+  type: "not-registered" | "locked" | "generic";
+  message: string;
+};
 
 export default function EmailLoginPage() {
   const router = useRouter();
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<LoginError | null>(null);
   const loginMutation = useLoginMutation();
 
   const isValid = EMAIL_REGEX.test(email) && password.length > 0;
@@ -44,9 +51,18 @@ export default function EmailLoginPage() {
           router.push("/mypage");
         },
         onError: (error) => {
-          setLoginError(
-            error instanceof ApiError ? error.message : "로그인에 실패했습니다. 다시 시도해주세요.",
-          );
+          if (error instanceof ApiError && error.code === MEMBER_NOT_FOUND_CODE) {
+            setLoginError({ type: "not-registered", message: "가입되지 않은 이메일이에요." });
+            return;
+          }
+          if (error instanceof ApiError && error.code === LOGIN_LOCKED_CODE) {
+            setLoginError({ type: "locked", message: error.message });
+            return;
+          }
+          setLoginError({
+            type: "generic",
+            message: error instanceof ApiError ? error.message : "로그인에 실패했습니다. 다시 시도해주세요.",
+          });
         },
       },
     );
@@ -106,7 +122,24 @@ export default function EmailLoginPage() {
               placeholder="비밀번호를 입력해 주세요."
               className={INPUT_CLASS}
             />
-            {loginError && <p className="px-1 text-xs text-[#FF5A5A]">{loginError}</p>}
+            {loginError && (
+              <div className="flex flex-col gap-1 px-1 text-xs leading-[1.35]">
+                <p className="text-[#FF5A5A]">{loginError.message}</p>
+                {loginError.type === "not-registered" && (
+                  <Link href="/signup" className="font-semibold text-[#FF7658] underline">
+                    회원가입 하러 가기
+                  </Link>
+                )}
+                {loginError.type === "locked" && (
+                  <Link
+                    href="/login/reset-password"
+                    className="font-semibold text-[#FF7658] underline"
+                  >
+                    비밀번호 재설정 하러 가기
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-center gap-3 pt-8">
