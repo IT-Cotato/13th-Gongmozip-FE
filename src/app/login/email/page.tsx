@@ -107,6 +107,7 @@ export default function EmailLoginPage() {
               }}
               placeholder="gongmozip@gongmo-zip.com"
               className={INPUT_CLASS}
+              aria-describedby={loginError ? "login-error" : undefined}
             />
           </div>
 
@@ -121,9 +122,14 @@ export default function EmailLoginPage() {
               }}
               placeholder="비밀번호를 입력해 주세요."
               className={INPUT_CLASS}
+              aria-describedby={loginError ? "login-error" : undefined}
             />
             {loginError && (
-              <div className="flex flex-col gap-1 px-1 text-xs leading-[1.35]">
+              <div
+                id="login-error"
+                role="alert"
+                className="flex flex-col gap-1 px-1 text-xs leading-[1.35]"
+              >
                 <p className="text-[#FF5A5A]">{loginError.message}</p>
                 {loginError.type === "not-registered" && (
                   <Link href="/signup" className="font-semibold text-[#FF7658] underline">
