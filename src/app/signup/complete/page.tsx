@@ -13,7 +13,7 @@ export default function SignupCompletePage() {
 
   useEffect(() => {
     autoAdvanceTimerRef.current = setTimeout(() => {
-      router.push("/");
+      router.replace("/");
     }, AUTO_ADVANCE_MS);
 
     return () => {
