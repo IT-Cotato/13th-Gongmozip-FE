@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { useCollaborationTestStore } from "./collaborationTestStore";
+import { useContestScrapStore } from "./contestScrapStore";
 
 type AuthState = {
   accessToken: string | null;
@@ -18,6 +19,7 @@ export const useAuthStore = create<AuthState>()(
       setAccessToken: (accessToken) => set({ accessToken }),
       clearAccessToken: () => {
         useCollaborationTestStore.getState().resetCollaborationTest();
+        useContestScrapStore.getState().resetScraps();
         set({ accessToken: null });
       },
     }),

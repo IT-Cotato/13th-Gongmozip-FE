@@ -11,26 +11,44 @@ const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
   coral: "bg-color-coral-100",
 };
 
-export function LeaderCandidatePreviewCard({ leaders }: { leaders: LeaderCandidate[] }) {
+export function LeaderCandidatePreviewCard({
+  leaders,
+  title = "팀장 후보",
+}: {
+  leaders: LeaderCandidate[];
+  title?: string;
+}) {
   return (
-    <div className="mt-1 flex h-[170px] w-[230px] flex-col items-center rounded-[8px] border border-color-gray-200 bg-white px-5 pt-5">
+    <div className="mt-1 flex min-h-[170px] w-[230px] flex-col items-center rounded-[8px] border border-color-gray-200 bg-white px-5 py-5">
       <div className="flex items-center gap-1 text-[13px] leading-[1.35] font-bold text-color-coral-500">
         <Image src="/icons/chat/medal.svg" alt="" width={18} height={18} />
-        <span>팀장 후보</span>
+        <span>{title}</span>
       </div>
 
-      <div className="mt-6 flex w-full items-start justify-center gap-[34px]">
-        {leaders.map((leader) => (
-          <LeaderCandidatePreviewProfile key={leader.id} leader={leader} />
+      <div className="mt-6 grid w-full grid-cols-2 justify-items-center gap-x-[34px] gap-y-5">
+        {leaders.map((leader, index) => (
+          <LeaderCandidatePreviewProfile
+            className={
+              leaders.length % 2 === 1 && index === leaders.length - 1 ? "col-span-2" : ""
+            }
+            key={leader.id}
+            leader={leader}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function LeaderCandidatePreviewProfile({ leader }: { leader: LeaderCandidate }) {
+function LeaderCandidatePreviewProfile({
+  className = "",
+  leader,
+}: {
+  className?: string;
+  leader: LeaderCandidate;
+}) {
   return (
-    <div className="flex w-[64px] flex-col items-center gap-3">
+    <div className={`flex w-[64px] flex-col items-center gap-3 ${className}`}>
       <MemberAvatar member={leader} sizeClassName="size-[60px]" />
       <span className="max-w-[64px] rounded-full bg-color-gray-200 px-2 py-1 text-center text-[12px] leading-[1.25] font-semibold text-color-gray-650">
         {leader.name}
@@ -67,7 +85,7 @@ export function LeaderElectedMessage({ leader }: { leader: LeaderCandidate }) {
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
           <p className="max-w-[230px] rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            투표 결과, {leader.name}님이 이번 공모전 출품의 팀장으로 선출되셨습니다.
+            투표 결과, {leader.name}님이 이번 공모전 출품의 팀장으로 선출되셨습니다🎉
             이제 팀원들과 함께 공모전 준비를 시작해 보세요.
           </p>
           <MessageMeta />

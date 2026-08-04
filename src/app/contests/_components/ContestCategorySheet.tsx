@@ -46,7 +46,11 @@ export function ContestCategorySheet({
                 type="button"
                 aria-pressed={selectedCategory === category}
                 onClick={() => onSelect(category)}
-                className="w-full py-3 text-left text-[15px] leading-[125%] font-bold text-color-gray-650"
+                className={`w-full py-3 text-left ${
+                  category === "전체"
+                    ? "text-[17px] leading-[150%] font-semibold text-[var(--Semantic-Label-Brand,#AC4A35)]"
+                    : "text-[17px] leading-[150%] font-medium text-color-gray-650"
+                }`}
               >
                 {category}
               </button>

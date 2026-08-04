@@ -11,11 +11,15 @@ export const mockLeaderIntentAnswers: LeaderIntentAnswer[] = [
   { memberId: "junsu", intent: "none" },
 ];
 
-export const recommendedCandidateIds = ["minjeong", "haeeun"];
+// TODO: API 연동 후 백엔드가 내려주는 AI 추천 팀장 2명으로 교체한다.
+export const mockAiRecommendedLeaderIds = ["minjeong", "haeeun"];
 
-// TODO: 케이스 확정 후 백엔드가 내려주는 전체 후보 등록 결과로 교체한다.
+// TODO: 팀장 여부 투표 완료 후 백엔드가 내려주는 전체 후보 등록 결과로 교체한다.
 export const mockRegisteredCandidateIds = ["minjeong", "haeeun"];
 export const mockIsTieResult = false;
+
+// TODO: API 연동 후 백엔드가 내려주는 공모전 투표 결과 상태로 교체한다.
+export const mockContestVoteResult: "normal" | "noVotes" | "tie" = "normal";
 
 export const mockRecommendedContests: RecommendedContest[] = [
   {

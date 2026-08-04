@@ -11,7 +11,7 @@ export type ContestSummary = {
   id: string;
   title: string;
   organizer: string;
-  category: ContestCategory;
+  category: string;
   dDay: string;
   viewCount: number;
   posterImageUrl: string;
@@ -20,8 +20,12 @@ export type ContestSummary = {
 
 export type ContestDetail = ContestSummary & {
   applicationPeriod: string;
+  announcementDate: string;
   eligibility: string;
   prize: string;
+  location: string;
+  teamParticipation: string;
   description: string;
   websiteUrl: string;
+  detailImageUrls: string[];
 };

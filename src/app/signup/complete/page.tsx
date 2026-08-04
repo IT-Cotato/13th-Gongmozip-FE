@@ -2,20 +2,41 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { ChevronLeftIcon } from "../_components/icons";
+
+const AUTO_ADVANCE_MS = 10000;
 
 export default function SignupCompletePage() {
   const router = useRouter();
+  const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    autoAdvanceTimerRef.current = setTimeout(() => {
+      router.replace("/");
+    }, AUTO_ADVANCE_MS);
+
+    return () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    };
+  }, [router]);
+
+  function clearAutoAdvance() {
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+  }
 
   function handleBack() {
+    clearAutoAdvance();
     router.push("/");
   }
 
   function handleGoToTest() {
+    clearAutoAdvance();
     router.push("/collaboration-type");
   }
 
   function handleSkip() {
+    clearAutoAdvance();
     router.push("/");
   }
 
