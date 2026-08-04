@@ -36,26 +36,52 @@ export function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
   const accessToken = useAuthStore.getState().accessToken;
+  const normalizedAccessToken = normalizeAccessToken(accessToken);
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(normalizedAccessToken ? { Authorization: `Bearer ${normalizedAccessToken}` } : {}),
       ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   const text = await response.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  const data = parseResponseBody(text);
 
   if (!response.ok) {
     const message = isBaseResponse(data) ? data.message : "요청 처리 중 오류가 발생했습니다.";
     const code = isBaseResponse(data) ? data.code : undefined;
+
+    if (response.status === 401) {
+      useAuthStore.getState().clearAccessToken();
+    }
+
     throw new ApiError(response.status, message, code);
   }
 
   return (isBaseResponse(data) ? data.data : data) as T;
+}
+
+function parseResponseBody(text: string): unknown {
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function normalizeAccessToken(accessToken: string | null) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return accessToken.startsWith("Bearer ") ? accessToken.slice("Bearer ".length) : accessToken;
 }

@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { ApiError } from "@/lib/http";
 import { surveyResultQueryKey } from "@/queries/useSurveyResultQuery";
+import { useContestScrapStore } from "@/stores/contestScrapStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -15,7 +17,13 @@ export function Providers({ children }: { children: ReactNode }) {
           queries: {
             staleTime: 1000 * 60,
             refetchOnWindowFocus: false,
-            retry: 1,
+            retry: (failureCount, error) => {
+              if (error instanceof ApiError && error.status === 401) {
+                return false;
+              }
+
+              return failureCount < 1;
+            },
           },
         },
       }),
@@ -25,6 +33,10 @@ export function Providers({ children }: { children: ReactNode }) {
     return useAuthStore.subscribe((state, previousState) => {
       if (state.accessToken !== previousState.accessToken) {
         queryClient.removeQueries({ exact: true, queryKey: surveyResultQueryKey });
+
+        if (previousState.accessToken) {
+          useContestScrapStore.getState().resetScraps();
+        }
       }
     });
   }, [queryClient]);
