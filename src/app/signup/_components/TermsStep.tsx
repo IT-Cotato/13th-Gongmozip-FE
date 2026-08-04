@@ -10,6 +10,7 @@ export type TermsState = {
   terms: boolean;
   privacy: boolean;
   marketing: boolean;
+  location: boolean;
 };
 
 type TermsItemKey = keyof TermsState;
@@ -34,6 +35,12 @@ const TERMS_ITEMS: {
     label: "[선택] 광고성 정보 수신 및 마케팅 활용 동의",
     hasDetail: false,
     subtext: "다양한 앱 소식 및 신규 기능 정보를 보내드립니다.",
+  },
+  {
+    key: "location",
+    label: "[선택] 위치 기반 서비스 이용 동의",
+    hasDetail: false,
+    subtext: "근거리 기반 팀 매칭 서비스 이용을 위해 위치 정보를 활용합니다.",
   },
 ];
 
@@ -131,7 +138,8 @@ export function TermsStep({ terms, onToggleAll, onToggleItem }: TermsStepProps) 
   const [isAge14DetailOpen, setIsAge14DetailOpen] = useState(false);
   const [isTermsDetailOpen, setIsTermsDetailOpen] = useState(false);
   const [isPrivacyDetailOpen, setIsPrivacyDetailOpen] = useState(false);
-  const allChecked = terms.age14 && terms.terms && terms.privacy && terms.marketing;
+  const allChecked =
+    terms.age14 && terms.terms && terms.privacy && terms.marketing && terms.location;
 
   return (
     <div>
