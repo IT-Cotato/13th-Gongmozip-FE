@@ -203,7 +203,7 @@ export function ProjectExperienceSheet({ onClose, onSubmit }: ProjectExperienceS
                   className="absolute top-[calc(100%+4px)] left-0 z-50 w-full overflow-hidden rounded-xl bg-white px-5 py-2 shadow-[0_1px_1px_rgba(0,0,0,0.1),0_3px_3px_rgba(0,0,0,0.09),0_6px_3px_rgba(0,0,0,0.05),0_10px_4px_rgba(0,0,0,0.01)]"
                 >
                   {PROJECT_CATEGORIES.map((option) => (
-                    <li key={option}>
+                    <li key={option} role="none">
                       <button
                         type="button"
                         role="option"

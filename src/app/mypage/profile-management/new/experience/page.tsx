@@ -107,7 +107,10 @@ export default function ProjectExperiencePage() {
             <div className="flex h-[106px] items-center gap-2 px-4">
               <button
                 type="button"
-                onClick={() => setHasNoExperience((prev) => !prev)}
+                onClick={() => {
+                  setHasNoExperience(true);
+                  router.push("/mypage/profile-management/new/certificates");
+                }}
                 aria-pressed={hasNoExperience}
                 className={`flex h-full flex-1 items-center justify-center rounded-[14px] border px-2.5 py-[9px] text-center text-[17px] leading-[1.25] font-semibold ${
                   hasNoExperience
