@@ -184,7 +184,12 @@ export function OnboardingCoachmark() {
 
   const handleNext = useCallback(() => {
     if (stepIndex === STEPS.length - 1) {
-      localStorage.setItem(ONBOARDING_SEEN_KEY, "true");
+      try {
+        localStorage.setItem(ONBOARDING_SEEN_KEY, "true");
+      } catch {
+        // Persisting the "seen" flag failed (e.g. storage disabled/full); the
+        // onboarding will simply reappear on a later visit.
+      }
       setIsDismissed(true);
       return;
     }
