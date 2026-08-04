@@ -1,5 +1,5 @@
-import TeamMatchingStatusEmptyView from "@/components/team-matching/TeamMatchingStatusEmptyView";
+import TeamMatchingStatusResultView from "@/components/team-matching/TeamMatchingStatusResultView";
 
 export default function TeamMatchingStatusPage() {
-  return <TeamMatchingStatusEmptyView />;
+  return <TeamMatchingStatusResultView />;
 }
