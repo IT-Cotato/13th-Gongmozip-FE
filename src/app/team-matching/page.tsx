@@ -143,7 +143,7 @@ export default function TeamMatchingPage() {
 
           <section className="mt-6 space-y-4">
             <InfoCard
-              href="/team-matching/pool"
+              href="/team-matching/status"
               title="나의 매칭현황"
               description="매칭결과까지"
               descriptionValue="01:24:30"
