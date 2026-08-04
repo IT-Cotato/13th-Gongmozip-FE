@@ -9,93 +9,73 @@ const sulphurPoint = Sulphur_Point({
 
 export default function Home() {
   return (
-    <main className="relative flex h-full w-full flex-col overflow-y-auto bg-white">
-        <section className="relative h-[320px] overflow-hidden bg-white">
-          <Image
-            src="/images/home/Vector.svg"
-            alt=""
-            className="absolute top-0 left-0 w-[172px]"
-            height={172}
-            width={172}
-          />
-          <Image
-            src="/images/home/Vector%20(1).svg"
-            alt=""
-            className="absolute top-[19px] left-[252px] w-[138px]"
-            height={138}
-            width={138}
-          />
-          <Image
-            src="/images/home/Vector%20(2).svg"
-            alt=""
-            className="absolute top-[101px] left-[92px] w-[121px]"
-            height={121}
-            width={121}
-          />
-          <Image
-            src="/images/home/Vector%20(3).svg"
-            alt=""
-            className="absolute bottom-0 left-0 w-24"
-            height={96}
-            width={96}
-          />
-          <Image
-            src="/images/home/character.svg"
-            alt="Gongmozip mascot"
-            className="absolute top-1/2 left-1/2 w-52 -translate-x-1/2 -translate-y-1/2"
-            height={208}
-            width={208}
-          />
-        </section>
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white">
+      <Image
+        src="/images/home/login-background.svg"
+        alt=""
+        fill
+        aria-hidden="true"
+        className="pointer-events-none object-cover"
+      />
+      <Image
+        src="/images/home/login-character.png"
+        alt=""
+        aria-hidden="true"
+        width={246}
+        height={249}
+        className="pointer-events-none absolute top-[19%] left-[calc(50%-10px)] h-auto w-[63%] max-w-[246px] -translate-x-1/2"
+      />
 
-        <section className="flex flex-col items-center px-6 pt-2 pb-10">
+      <div className="relative z-10 mt-auto flex w-full flex-col items-center gap-9 bg-gradient-to-b from-white/0 to-white to-40% px-6 pt-16 pb-10">
+        <div className="flex w-full max-w-[269px] flex-col items-center gap-1 text-center">
           <h1
-            className={`${sulphurPoint.className} self-stretch bg-gradient-to-r from-[#FF7658] to-[#FFAD62] bg-clip-text text-center text-[36px] leading-normal font-normal tracking-[-1.44px] text-transparent`}
+            className={`${sulphurPoint.className} w-full bg-gradient-to-r from-[#FF7658] to-[#FFAD62] bg-clip-text text-[36px] leading-normal font-normal tracking-[-1.44px] text-transparent`}
           >
             gongmo.zip
           </h1>
-          <p className="mt-2 mb-6 text-sm text-gray-500">
+          <p className="w-full text-[13px] leading-[1.35] text-[#616161]">
             공모전 수상을 위한 최고의 팀 매칭 서비스
           </p>
+        </div>
 
-          <div className="flex w-full flex-col gap-3">
-            <button
-              type="button"
-              className="relative flex w-full items-center justify-center rounded-xl bg-[#FEE500] py-3.5 text-sm font-medium text-black"
-            >
-              <Image
-                alt=""
-                className="absolute left-4 h-4 w-auto"
-                height={16}
-                src="/icons/auth/kakao.svg"
-                width={16}
-              />
-              <span>카카오 로그인</span>
-            </button>
+        <div className="flex w-full max-w-[300px] flex-col items-center gap-4">
+          <button
+            type="button"
+            className="relative flex h-12 w-full items-center justify-center rounded-[6px] bg-[#FEE500] px-3.5"
+          >
+            <Image
+              alt=""
+              className="absolute left-3.5 h-[18px] w-auto"
+              height={18}
+              width={18}
+              src="/icons/auth/kakao.svg"
+            />
+            <span className="text-[15px] font-semibold text-black/85">카카오 로그인</span>
+          </button>
 
-            <button
-              type="button"
-              className="relative flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-medium text-gray-800"
-            >
-              <Image
-                alt=""
-                className="absolute left-4 h-5 w-auto"
-                height={20}
-                src="/icons/auth/Google.svg"
-                width={20}
-              />
-              <span>Google 계정으로 로그인</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="relative flex h-12 w-full items-center justify-center rounded-[6px] border border-[#E7E7E7] bg-white px-4"
+          >
+            <Image
+              alt=""
+              className="absolute left-4 h-5 w-5"
+              height={20}
+              width={20}
+              src="/icons/auth/Google.svg"
+            />
+            <span className="text-[14px] font-medium text-[#121212]">Google 계정으로 로그인</span>
+          </button>
 
-          <div className="mt-6 flex items-center gap-3 text-xs text-gray-400">
+          <div className="flex items-center gap-3 text-[13px] font-semibold text-[#616161]">
             <Link href="/signup">회원가입</Link>
-            <span className="text-gray-200">|</span>
+            <span className="h-3 w-px bg-[#e7e7e7]" />
             <Link href="/login/email">이메일 로그인</Link>
-            <span className="text-gray-200">|</span>
+            <span className="h-3 w-px bg-[#e7e7e7]" />
             <Link href="/contact">문의하기</Link>
           </div>
-        </section>
+        </div>
+      </div>
     </main>
   );
 }
