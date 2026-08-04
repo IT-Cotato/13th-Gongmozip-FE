@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
 import { ChevronLeftIcon, CloseIcon, PlusIcon } from "../../_components/icons";
+import { ExitProfileWriteModal } from "../../_components/ExitProfileWriteModal";
 import { CertificateCard, type Certificate } from "./_components/CertificateCard";
 import { CertificateSheet } from "./_components/CertificateSheet";
 
@@ -12,6 +13,7 @@ export default function CertificatesPage() {
   const router = useRouter();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   function handleAddCertificate() {
     setIsSheetOpen(true);
@@ -47,7 +49,7 @@ export default function CertificatesPage() {
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
         <button
           type="button"
-          onClick={() => router.push("/mypage/profile-management")}
+          onClick={() => setIsExitModalOpen(true)}
           aria-label="닫기"
           className="absolute right-4 flex h-[38px] w-[38px] items-center justify-center rounded-[14px]"
         >
@@ -115,6 +117,12 @@ export default function CertificatesPage() {
           onSubmit={handleSubmitCertificate}
         />
       )}
+
+      <ExitProfileWriteModal
+        onExit={() => router.push("/mypage/profile-management")}
+        onOpenChange={setIsExitModalOpen}
+        open={isExitModalOpen}
+      />
     </div>
   );
 }

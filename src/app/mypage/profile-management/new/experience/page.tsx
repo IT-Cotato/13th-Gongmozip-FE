@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
 import { ChevronLeftIcon, CloseIcon, PlusIcon } from "../../_components/icons";
+import { ExitProfileWriteModal } from "../../_components/ExitProfileWriteModal";
 import { ProjectExperienceCard } from "./_components/ProjectExperienceCard";
 import {
   ProjectExperienceSheet,
@@ -18,6 +19,7 @@ export default function ProjectExperiencePage() {
   const [hasNoExperience, setHasNoExperience] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectExperienceInput[]>([]);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const hasProjects = projects.length > 0;
   const hasReachedMaxProjects = projects.length >= MAX_PROJECTS;
 
@@ -56,7 +58,7 @@ export default function ProjectExperiencePage() {
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
         <button
           type="button"
-          onClick={() => router.push("/mypage/profile-management")}
+          onClick={() => setIsExitModalOpen(true)}
           aria-label="닫기"
           className="absolute right-4 flex h-[38px] w-[38px] items-center justify-center rounded-[14px]"
         >
@@ -165,6 +167,12 @@ export default function ProjectExperiencePage() {
           onSubmit={handleSubmitProject}
         />
       )}
+
+      <ExitProfileWriteModal
+        onExit={() => router.push("/mypage/profile-management")}
+        onOpenChange={setIsExitModalOpen}
+        open={isExitModalOpen}
+      />
     </div>
   );
 }

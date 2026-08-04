@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
 import { EditIcon } from "../../_components/icons";
 import { CheckCircleIcon, CloseIcon } from "../_components/icons";
+import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -44,6 +45,7 @@ export default function CreateProfilePage() {
   const [gpa, setGpa] = useState("");
   const [gpaScale, setGpaScale] = useState("");
   const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   const isGpaValid =
     GPA_FORMAT_REGEX.test(gpa.trim()) &&
@@ -68,7 +70,7 @@ export default function CreateProfilePage() {
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => setIsExitModalOpen(true)}
           aria-label="닫기"
           className="absolute right-4 flex h-[38px] w-[38px] items-center justify-center rounded-[14px]"
         >
@@ -239,6 +241,12 @@ export default function CreateProfilePage() {
           다음
         </button>
       </div>
+
+      <ExitProfileWriteModal
+        onExit={() => router.back()}
+        onOpenChange={setIsExitModalOpen}
+        open={isExitModalOpen}
+      />
     </div>
   );
 }
