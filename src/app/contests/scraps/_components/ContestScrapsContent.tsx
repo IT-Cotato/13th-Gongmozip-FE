@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo } from "react";
 
 import { useContestScrapStatusesQuery } from "@/queries/useContestScrapStatusQuery";
-import { useContestsQuery } from "@/queries/useContestsQuery";
+import { useInfiniteContestsQuery } from "@/queries/useContestsQuery";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import { ScrapList } from "../../_components/ScrapList";
@@ -16,25 +16,24 @@ export function ContestScrapsContent() {
   const isAuthenticated = Boolean(accessToken);
   const storeScrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
-  const {
-    data,
-    error,
-    isError,
-    isLoading: isContestsLoading,
-  } = useContestsQuery(
-    {
-      page: 0,
-      size: SCRAP_CONTESTS_PAGE_SIZE,
-      sort: "newest",
-    },
-    {
-      enabled: isAuthenticated,
-    },
+  const { data, error, fetchNextPage, hasNextPage, isError, isFetchingNextPage, isLoading } =
+    useInfiniteContestsQuery(
+      {
+        page: 0,
+        size: SCRAP_CONTESTS_PAGE_SIZE,
+        sort: "newest",
+      },
+      {
+        enabled: isAuthenticated,
+      },
+    );
+  const contests = useMemo(
+    () => data?.pages.flatMap((pageData) => pageData.contests) ?? [],
+    [data?.pages],
   );
-  const contests = useMemo(() => data?.contests ?? [], [data?.contests]);
   const contestIds = useMemo(() => contests.map((contest) => contest.id), [contests]);
   const scrapStatusQueries = useContestScrapStatusesQuery(contestIds, {
-    enabled: isAuthenticated && contestIds.length > 0,
+    enabled: isAuthenticated && !hasNextPage && contestIds.length > 0,
   });
   const scrappedContestIds = useMemo(
     () => {
@@ -64,6 +63,14 @@ export function ContestScrapsContent() {
   );
 
   useEffect(() => {
+    if (!isAuthenticated || !hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isAuthenticated, isFetchingNextPage]);
+
+  useEffect(() => {
     scrapStatusQueries.forEach((query) => {
       if (!query.data) {
         return;
@@ -83,10 +90,6 @@ export function ContestScrapsContent() {
     );
   }
 
-  if (isContestsLoading) {
-    return <ContestScrapsStatus message="스크랩한 공모전을 불러오는 중입니다" />;
-  }
-
   if (isError) {
     return (
       <ContestScrapsStatus
@@ -97,6 +100,10 @@ export function ContestScrapsContent() {
         }
       />
     );
+  }
+
+  if (isLoading || hasNextPage || isFetchingNextPage) {
+    return <ContestScrapsStatus message="스크랩한 공모전을 불러오는 중입니다" />;
   }
 
   return <ScrapList contests={contests} scrappedContestIds={scrappedContestIds} />;

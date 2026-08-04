@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 
 import type { ContestDetail } from "@/app/contests/_types";
 import { ApiError, apiFetch } from "@/lib/http";
@@ -138,8 +138,8 @@ export function useContestScrapMutation() {
       queryClient.setQueryData<ContestDetail>(contestDetailQueryKey(contestId), (current) =>
         current ? { ...current, isScrapped } : current,
       );
-      queryClient.setQueriesData<ContestsResponse>({ queryKey: ["contests"] }, (current) =>
-        updateContestListScrapStatus(current, contestId, isScrapped),
+      queryClient.setQueriesData<ContestsQueryCacheData>({ queryKey: ["contests"] }, (current) =>
+        updateContestQueryScrapStatus(current, contestId, isScrapped),
       );
       useContestScrapStore.getState().setScrapStatus(contestId, isScrapped);
 
@@ -172,8 +172,8 @@ export function useContestScrapMutation() {
       queryClient.setQueryData<ContestDetail>(contestDetailQueryKey(data.contestId), (current) =>
         current ? { ...current, isScrapped: data.isScrapped } : current,
       );
-      queryClient.setQueriesData<ContestsResponse>({ queryKey: ["contests"] }, (current) =>
-        updateContestListScrapStatus(current, data.contestId, data.isScrapped),
+      queryClient.setQueriesData<ContestsQueryCacheData>({ queryKey: ["contests"] }, (current) =>
+        updateContestQueryScrapStatus(current, data.contestId, data.isScrapped),
       );
       useContestScrapStore.getState().setScrapStatus(data.contestId, data.isScrapped);
       void queryClient.invalidateQueries({ queryKey: mypageSummaryQueryKey });
@@ -181,8 +181,10 @@ export function useContestScrapMutation() {
   });
 }
 
-function updateContestListScrapStatus(
-  current: ContestsResponse | undefined,
+type ContestsQueryCacheData = ContestsResponse | InfiniteData<ContestsResponse> | undefined;
+
+function updateContestQueryScrapStatus(
+  current: ContestsQueryCacheData,
   contestId: string,
   isScrapped: boolean,
 ) {
@@ -190,10 +192,31 @@ function updateContestListScrapStatus(
     return current;
   }
 
+  if (isInfiniteContestsResponse(current)) {
+    return {
+      ...current,
+      pages: current.pages.map((page) => updateContestPageScrapStatus(page, contestId, isScrapped)),
+    };
+  }
+
+  return updateContestPageScrapStatus(current, contestId, isScrapped);
+}
+
+function updateContestPageScrapStatus(
+  current: ContestsResponse,
+  contestId: string,
+  isScrapped: boolean,
+) {
   return {
     ...current,
     contests: current.contests.map((contest) =>
       contest.id === contestId ? { ...contest, isScrapped } : contest,
     ),
   };
+}
+
+function isInfiniteContestsResponse(
+  current: ContestsResponse | InfiniteData<ContestsResponse>,
+): current is InfiniteData<ContestsResponse> {
+  return "pages" in current;
 }
