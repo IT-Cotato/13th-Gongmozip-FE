@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
+import { useContestScrapStatusQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestDetail } from "../_types";
 import { ShareContestModal } from "./ShareContestModal";
@@ -15,9 +17,12 @@ type ContestInfoProps = {
 
 const detailRows = [
   { label: "접수기간", key: "applicationPeriod" },
+  { label: "결과발표", key: "announcementDate" },
   { label: "공모전 분야", key: "category" },
   { label: "지원자격", key: "eligibility" },
   { label: "시상내역", key: "prize" },
+  { label: "진행장소", key: "location" },
+  { label: "참가방식", key: "teamParticipation" },
   { label: "공모전 내용", key: "description" },
 ] as const;
 
@@ -26,16 +31,29 @@ const websiteLinkClassName =
 
 export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
-  const toggleScrap = useContestScrapStore((state) => state.toggleScrap);
+  const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
+  const { data: scrapStatus } = useContestScrapStatusQuery(contest.id);
+  const contestScrapMutation = useContestScrapMutation();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showScrapToast, setShowScrapToast] = useState(false);
+  const [showScrapErrorToast, setShowScrapErrorToast] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
   const [isWebSharePending, setIsWebSharePending] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
+  const scrapErrorToastTimerRef = useRef<number | null>(null);
   const shareToastTimerRef = useRef<number | null>(null);
   const linkCopiedToastTimerRef = useRef<number | null>(null);
-  const isScrapped = scrappedContestIds.includes(contest.id);
+  const isScrapped =
+    scrapStatus?.isScrapped ?? (scrappedContestIds.includes(contest.id) || contest.isScrapped);
+
+  useEffect(() => {
+    if (!scrapStatus) {
+      return;
+    }
+
+    setScrapStatus(contest.id, scrapStatus.isScrapped);
+  }, [contest.id, scrapStatus, setScrapStatus]);
 
   useEffect(() => {
     return () => {
@@ -47,30 +65,62 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
         window.clearTimeout(shareToastTimerRef.current);
       }
 
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+
       if (linkCopiedToastTimerRef.current !== null) {
         window.clearTimeout(linkCopiedToastTimerRef.current);
       }
     };
   }, []);
 
-  const handleScrapClick = () => {
-    const nextIsScrapped = !isScrapped;
+  const handleScrapClick = async () => {
+    if (contestScrapMutation.isPending) {
+      return;
+    }
 
-    toggleScrap(contest.id);
+    const nextIsScrapped = !isScrapped;
 
     if (scrapToastTimerRef.current !== null) {
       window.clearTimeout(scrapToastTimerRef.current);
     }
 
-    if (nextIsScrapped) {
-      setShowScrapToast(true);
-      scrapToastTimerRef.current = window.setTimeout(() => {
+    if (scrapErrorToastTimerRef.current !== null) {
+      window.clearTimeout(scrapErrorToastTimerRef.current);
+    }
+
+    setShowScrapErrorToast(false);
+
+    try {
+      await contestScrapMutation.mutateAsync({
+        contestId: contest.id,
+        isScrapped: nextIsScrapped,
+      });
+
+      if (nextIsScrapped) {
+        setShowScrapToast(true);
+        scrapToastTimerRef.current = window.setTimeout(() => {
+          setShowScrapToast(false);
+          scrapToastTimerRef.current = null;
+        }, 2000);
+      } else {
         setShowScrapToast(false);
         scrapToastTimerRef.current = null;
-      }, 2000);
-    } else {
+      }
+    } catch {
       setShowScrapToast(false);
       scrapToastTimerRef.current = null;
+      setShowScrapErrorToast(true);
+
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+
+      scrapErrorToastTimerRef.current = window.setTimeout(() => {
+        setShowScrapErrorToast(false);
+        scrapErrorToastTimerRef.current = null;
+      }, 2000);
     }
   };
 
@@ -162,12 +212,12 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
         <div className="mt-[14px] flex justify-center">
           {contest.posterImageUrl ? (
-            <Image
+            <ContestImage
               src={contest.posterImageUrl}
               alt={`${contest.title} 포스터`}
+              className="h-[222px] w-[159px] object-cover"
               width={159}
               height={222}
-              className="h-[222px] w-[159px] object-cover"
             />
           ) : (
             <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
@@ -209,6 +259,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             aria-label={`${contest.title} 스크랩`}
             aria-pressed={isScrapped}
             className="relative mt-1 flex h-12 w-12 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)]"
+            disabled={contestScrapMutation.isPending}
             onClick={handleScrapClick}
           >
             <Image
@@ -236,6 +287,21 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
           ))}
         </dl>
 
+        {contest.detailImageUrls.length > 0 ? (
+          <div className="mt-6 flex w-full flex-col gap-3">
+            {contest.detailImageUrls.map((imageUrl, index) => (
+              <ContestImage
+                key={`${imageUrl}-${index}`}
+                src={imageUrl}
+                alt={`${contest.title} 상세 이미지 ${index + 1}`}
+                className="h-auto w-full rounded-lg object-cover"
+                width={342}
+                height={456}
+              />
+            ))}
+          </div>
+        ) : null}
+
         <div className="relative mt-8 w-full max-w-[358px]">
           {showShareToast ? (
             <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
@@ -243,6 +309,10 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
           {showScrapToast ? (
             <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
+          ) : null}
+
+          {showScrapErrorToast ? (
+            <ContestActionToast message="스크랩 처리에 실패했습니다" />
           ) : null}
 
           {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
@@ -312,6 +382,31 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       />
     </section>
   );
+}
+
+function ContestImage({
+  alt,
+  className,
+  height,
+  src,
+  width,
+}: {
+  alt: string;
+  className: string;
+  height: number;
+  src: string;
+  width: number;
+}) {
+  if (isExternalUrl(src)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} width={width} height={height} className={className} />;
+  }
+
+  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
+}
+
+function isExternalUrl(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
 }
 
 function ContestActionToast({ href, message }: { href?: string; message: string }) {

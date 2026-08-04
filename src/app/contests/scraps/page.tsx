@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-import { ScrapList } from "../_components/ScrapList";
-import { MOCK_CONTESTS } from "../_data/mockContests";
+import { ContestScrapsContent } from "./_components/ContestScrapsContent";
 
 export default function ContestScrapsPage() {
   return (
@@ -21,7 +20,7 @@ export default function ContestScrapsPage() {
       </header>
 
       <div className="relative z-10 flex-1 overflow-y-auto px-4">
-        <ScrapList contests={MOCK_CONTESTS} />
+        <ContestScrapsContent />
       </div>
     </main>
   );

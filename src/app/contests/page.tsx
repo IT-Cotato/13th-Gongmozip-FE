@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { ContestListSection } from "./_components/ContestListSection";
-import { MOCK_CONTESTS } from "./_data/mockContests";
 
 export default function ContestsPage() {
   return (
@@ -25,7 +24,7 @@ export default function ContestsPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto pb-8">
-        <ContestListSection contests={MOCK_CONTESTS} />
+        <ContestListSection />
       </div>
 
       <BottomNavigation unreadChatCount={9} />
