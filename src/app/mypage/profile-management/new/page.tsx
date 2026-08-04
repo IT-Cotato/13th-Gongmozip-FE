@@ -201,17 +201,19 @@ export default function CreateProfilePage() {
               type="button"
               onClick={() => setSaveAsDefault((prev) => !prev)}
               aria-pressed={saveAsDefault}
-              className="flex size-6 shrink-0 items-center justify-center"
+              className="flex items-center gap-1"
             >
-              {saveAsDefault ? (
-                <CheckCircleIcon />
-              ) : (
-                <span className="block size-6 rounded-full border-2 border-[#c8c8c8]" />
-              )}
+              <span className="flex size-6 shrink-0 items-center justify-center">
+                {saveAsDefault ? (
+                  <CheckCircleIcon />
+                ) : (
+                  <span className="block size-6 rounded-full border-2 border-[#c8c8c8]" />
+                )}
+              </span>
+              <span className="text-[13px] leading-[1.25] font-semibold text-[#616161]">
+                기본값으로 저장
+              </span>
             </button>
-            <span className="text-[13px] leading-[1.25] font-semibold text-[#616161]">
-              기본값으로 저장
-            </span>
           </div>
         </div>
       </div>
