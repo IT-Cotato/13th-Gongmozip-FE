@@ -4,32 +4,43 @@ import Link from "next/link";
 
 import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
 
+export type CollaborationQuestionOption = {
+  displayOrder: number;
+  optionId: number;
+  optionKey: string;
+  optionLabel: string;
+  optionValue: string;
+};
+
 type CollaborationQuestionFormProps = {
-  currentQuestionId: number;
+  currentQuestionOrder: number;
   nextHref: string;
-  options: string[];
+  options: CollaborationQuestionOption[];
   previousHref: string;
+  questionId: number;
   title: string;
 };
 
 export default function CollaborationQuestionForm({
-  currentQuestionId,
+  currentQuestionOrder,
   nextHref,
   options,
   previousHref,
+  questionId,
   title,
 }: CollaborationQuestionFormProps) {
-  const selectedOption = useCollaborationTestStore(
-    (state) => state.responses[currentQuestionId] ?? null,
+  const selectedOptionId = useCollaborationTestStore(
+    (state) => state.responses[questionId]?.optionId ?? null,
   );
   const setResponse = useCollaborationTestStore((state) => state.setResponse);
-  const isLikertScaleQuestion = currentQuestionId >= 4;
+  const isFirstQuestion = currentQuestionOrder === 1;
+  const isLikertScaleQuestion = options.length >= 5;
   const optionGapClassName = isLikertScaleQuestion ? "gap-5" : "gap-[21px]";
   const optionMarginClassName = isLikertScaleQuestion ? "mt-5" : "mt-[21px]";
   const optionTextClassName = isLikertScaleQuestion
     ? "h-[60px] text-[15px] leading-[125%]"
     : "h-[101px] text-[15px] leading-[125%]";
-  const nextButtonClassName = selectedOption
+  const nextButtonClassName = selectedOptionId
     ? "inline-flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
     : "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#EFEFEF] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#C8C8C8]";
   const previousButtonClassName =
@@ -67,7 +78,7 @@ export default function CollaborationQuestionForm({
     <>
       <div className="flex h-[531px] flex-col self-stretch rounded-2xl bg-white px-11 pb-[14px] pt-[22px]">
         <p className="h-[17px] self-stretch text-center font-[Pretendard] text-[17px] font-bold leading-[135%] text-semantic-fill-brand">
-          Q{currentQuestionId}
+          Q{currentQuestionOrder}
         </p>
         <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal">
           {title}
@@ -76,14 +87,16 @@ export default function CollaborationQuestionForm({
           className={`mx-auto flex w-[250px] flex-col ${optionMarginClassName} ${optionGapClassName}`}
         >
           {options.map((option) => {
-            const isSelected = selectedOption === option;
+            const isSelected = selectedOptionId === option.optionId;
 
             return (
               <button
                 aria-pressed={isSelected}
                 className="flex w-full justify-center"
-                key={option}
-                onClick={() => setResponse(currentQuestionId, option)}
+                key={option.optionId}
+                onClick={() =>
+                  setResponse(questionId, option.optionId, option.optionValue)
+                }
                 type="button"
               >
                 <span
@@ -93,7 +106,7 @@ export default function CollaborationQuestionForm({
                       : "border-transparent bg-[#F5F5F5]"
                   } ${optionTextClassName}`}
                 >
-                  {option}
+                  {option.optionLabel}
                 </span>
               </button>
             );
@@ -102,11 +115,15 @@ export default function CollaborationQuestionForm({
       </div>
 
       <div className="mt-5 flex w-full items-center justify-between">
-        <Link className={previousButtonClassName} href={previousHref}>
-          {previousButtonContent}
-        </Link>
+        {isFirstQuestion ? (
+          <span aria-hidden="true" className="h-8" />
+        ) : (
+          <Link className={previousButtonClassName} href={previousHref}>
+            {previousButtonContent}
+          </Link>
+        )}
 
-        {selectedOption ? (
+        {selectedOptionId ? (
           <Link className={nextButtonClassName} href={nextHref}>
             {nextButtonContent}
           </Link>

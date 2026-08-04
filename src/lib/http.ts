@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   status: number;
@@ -17,14 +17,14 @@ export class ApiError extends Error {
 type ApiFetchOptions = Omit<RequestInit, "body"> & { body?: unknown };
 
 // 백엔드 공통 응답 포맷: { status, code, message, data }
-type BaseResponse<T> = {
+export type BaseResponse<T> = {
   status: number;
   code: string;
   message: string;
   data: T;
 };
 
-function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
+export function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
   return (
     typeof data === "object" &&
     data !== null &&

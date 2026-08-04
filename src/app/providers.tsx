@@ -2,7 +2,10 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { surveyResultQueryKey } from "@/queries/useSurveyResultQuery";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -17,6 +20,14 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       }),
   );
+
+  useEffect(() => {
+    return useAuthStore.subscribe((state, previousState) => {
+      if (state.accessToken !== previousState.accessToken) {
+        queryClient.removeQueries({ exact: true, queryKey: surveyResultQueryKey });
+      }
+    });
+  }, [queryClient]);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

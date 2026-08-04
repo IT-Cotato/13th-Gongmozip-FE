@@ -4,9 +4,12 @@ import { ChevronLeftIcon, MenuIcon } from "./icons";
 
 type ChatTopBarProps = {
   roomId: string;
+  title?: string;
 };
 
-export function ChatTopBar({ roomId }: ChatTopBarProps) {
+export function ChatTopBar({ roomId, title }: ChatTopBarProps) {
+  const topBarTitle = title ?? CHAT_ROOM_TITLE;
+
   return (
     <header className="border-b border-[rgba(97,97,97,0.08)] bg-white">
       <div className="relative flex h-[46px] items-center justify-center px-4">
@@ -18,8 +21,8 @@ export function ChatTopBar({ roomId }: ChatTopBarProps) {
           <ChevronLeftIcon />
         </Link>
         <h1 className="flex max-w-[250px] items-center justify-center gap-2 truncate text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
-          <span className="truncate">{CHAT_ROOM_TITLE}</span>
-          <span className="shrink-0">{CHAT_MEMBER_COUNT}</span>
+          <span className="truncate">{topBarTitle}</span>
+          {title ? null : <span className="shrink-0">{CHAT_MEMBER_COUNT}</span>}
         </h1>
         <Link
           href={`/chat/${roomId}/menu`}
