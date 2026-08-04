@@ -16,6 +16,8 @@ type TeamMatchingStepLayoutProps = {
   backHref?: string;
   children: ReactNode;
   currentStep: number;
+  previousHref?: string;
+  previousLabel?: string;
 };
 
 export default function TeamMatchingStepLayout({
@@ -25,6 +27,8 @@ export default function TeamMatchingStepLayout({
   backHref = "/team-matching",
   children,
   currentStep,
+  previousHref,
+  previousLabel,
 }: TeamMatchingStepLayoutProps) {
   const [isLeaveConfirmationOpen, setIsLeaveConfirmationOpen] = useState(false);
   const continueButtonRef = useRef<HTMLButtonElement>(null);
@@ -39,7 +43,13 @@ export default function TeamMatchingStepLayout({
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-[21px]">
         {children}
       </div>
-      <TeamMatchingActionBar disabled={actionDisabled} href={actionHref} label={actionLabel} />
+      <TeamMatchingActionBar
+        disabled={actionDisabled}
+        href={actionHref}
+        label={actionLabel}
+        previousHref={previousHref}
+        previousLabel={previousLabel}
+      />
 
       <Dialog
         aria-labelledby="leave-confirmation-title"
