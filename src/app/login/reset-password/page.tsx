@@ -20,8 +20,9 @@ const RESEND_SECONDS = 300;
 const PASSWORD_CHECKS = [
   { key: "hasLetter", label: "영문", test: (v: string) => /[A-Za-z]/.test(v) },
   { key: "hasNumber", label: "숫자", test: (v: string) => /[0-9]/.test(v) },
-  { key: "hasSpecial", label: "특수문자", test: (v: string) => /[^A-Za-z0-9]/.test(v) },
-  { key: "hasMinLength", label: "8자리 이상", test: (v: string) => v.length >= 8 },
+  { key: "hasSpecial", label: "특수문자", test: (v: string) => /[^A-Za-z0-9\s]/.test(v) },
+  { key: "hasMinLength", label: "8자리 이상", test: (v: string) => v.length >= 8 && !/\s/.test(v) },
+  { key: "hasMaxLength", label: "20자리 이하", test: (v: string) => v.length <= 20 },
 ] as const;
 
 const INPUT_CLASS =
