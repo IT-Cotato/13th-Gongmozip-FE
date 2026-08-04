@@ -8,7 +8,7 @@ export default function ProfileCompletePage() {
   const router = useRouter();
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-white">
+    <div className="relative isolate flex h-full w-full flex-col overflow-hidden bg-white">
       <Image
         src="/images/mypage/profileCompleteBlob.svg"
         alt=""

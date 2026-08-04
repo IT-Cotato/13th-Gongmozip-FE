@@ -26,7 +26,7 @@ export default function ProfileManagementPage() {
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111111]">프로필 관리</h1>
       </div>
 
-      <div className="relative flex flex-1 flex-col items-center gap-5 px-5 py-9">
+      <div className="relative isolate flex flex-1 flex-col items-center gap-5 px-5 py-9">
         <Image
           src="/images/mypage/profile-empty-background.svg"
           alt=""
