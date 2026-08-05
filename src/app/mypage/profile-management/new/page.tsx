@@ -37,6 +37,7 @@ export default function CreateProfilePage() {
   const router = useRouter();
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
+  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
 
   const [nickname, setNickname] = useState(draftBasicInfo.nickname);
   const [school, setSchool] = useState(draftBasicInfo.school);
@@ -69,7 +70,9 @@ export default function CreateProfilePage() {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
+          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+        </h1>
         <button
           type="button"
           onClick={() => setIsExitModalOpen(true)}
@@ -246,8 +249,14 @@ export default function CreateProfilePage() {
 
       <ExitProfileWriteModal
         onExit={() => {
+          const exitDestination =
+            editingProfileId !== null ? `/mypage/profile-management/${editingProfileId}` : null;
           useProfileDraftStore.getState().resetProfileDraft();
-          router.back();
+          if (exitDestination) {
+            router.push(exitDestination);
+          } else {
+            router.back();
+          }
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

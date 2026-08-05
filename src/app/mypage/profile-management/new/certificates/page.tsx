@@ -8,7 +8,10 @@ import { ExitProfileWriteModal } from "../../_components/ExitProfileWriteModal";
 import { CertificateCard, type Certificate } from "./_components/CertificateCard";
 import { CertificateSheet } from "./_components/CertificateSheet";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
-import { useCreateProfileWithDetailsMutation } from "@/queries/useCreateProfileWithDetailsMutation";
+import {
+  useCreateProfileWithDetailsMutation,
+  useUpdateProfileWithDetailsMutation,
+} from "@/queries/useCreateProfileWithDetailsMutation";
 import { ApiError } from "@/lib/http";
 
 // TODO: 자격증 수정용 바텀시트 디자인 전달받으면 구현 예정
@@ -16,9 +19,13 @@ export default function CertificatesPage() {
   const router = useRouter();
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const draftProjects = useProfileDraftStore((state) => state.projects);
+  const draftCertificates = useProfileDraftStore((state) => state.certificates);
+  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const updateProfileMutation = useUpdateProfileWithDetailsMutation();
+  const isSubmitting = createProfileMutation.isPending || updateProfileMutation.isPending;
+  const [certificates, setCertificates] = useState<Certificate[]>(draftCertificates);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -40,8 +47,29 @@ export default function CertificatesPage() {
   }
 
   function handleNext() {
-    if (createProfileMutation.isPending) return;
+    if (isSubmitting) return;
     setSubmitError(null);
+
+    const onError = (error: unknown) => {
+      setSubmitError(
+        error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
+      );
+    };
+
+    if (editingProfileId !== null) {
+      updateProfileMutation.mutate(
+        { profileId: editingProfileId, basicInfo: draftBasicInfo, projects: draftProjects, certificates },
+        {
+          onSuccess: () => {
+            resetProfileDraft();
+            router.push(`/mypage/profile-management/${editingProfileId}`);
+          },
+          onError,
+        },
+      );
+      return;
+    }
+
     createProfileMutation.mutate(
       { basicInfo: draftBasicInfo, projects: draftProjects, certificates },
       {
@@ -49,11 +77,7 @@ export default function CertificatesPage() {
           resetProfileDraft();
           router.push("/mypage/profile-management/new/complete");
         },
-        onError: (error) => {
-          setSubmitError(
-            error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
-          );
-        },
+        onError,
       },
     );
   }
@@ -69,7 +93,9 @@ export default function CertificatesPage() {
         >
           <ChevronLeftIcon />
         </button>
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
+          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+        </h1>
         <button
           type="button"
           onClick={() => setIsExitModalOpen(true)}
@@ -125,7 +151,7 @@ export default function CertificatesPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            disabled={createProfileMutation.isPending}
+            disabled={isSubmitting}
             className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
           >
             이전
@@ -133,10 +159,16 @@ export default function CertificatesPage() {
           <button
             type="button"
             onClick={handleNext}
-            disabled={createProfileMutation.isPending}
+            disabled={isSubmitting}
             className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white disabled:opacity-50"
           >
-            {createProfileMutation.isPending ? "등록 중..." : "다음"}
+            {editingProfileId !== null
+              ? isSubmitting
+                ? "수정 중..."
+                : "수정 완료"
+              : isSubmitting
+                ? "등록 중..."
+                : "다음"}
           </button>
         </div>
       </div>
@@ -150,8 +182,12 @@ export default function CertificatesPage() {
 
       <ExitProfileWriteModal
         onExit={() => {
+          const exitDestination =
+            editingProfileId !== null
+              ? `/mypage/profile-management/${editingProfileId}`
+              : "/mypage/profile-management";
           resetProfileDraft();
-          router.push("/mypage/profile-management");
+          router.push(exitDestination);
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

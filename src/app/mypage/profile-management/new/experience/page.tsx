@@ -18,6 +18,7 @@ export default function ProjectExperiencePage() {
   const router = useRouter();
   const draftProjects = useProfileDraftStore((state) => state.projects);
   const setDraftProjects = useProfileDraftStore((state) => state.setProjects);
+  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const [hasNoExperience, setHasNoExperience] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectExperienceInput[]>(draftProjects);
@@ -58,7 +59,9 @@ export default function ProjectExperiencePage() {
         >
           <ChevronLeftIcon />
         </button>
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
+          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+        </h1>
         <button
           type="button"
           onClick={() => setIsExitModalOpen(true)}
@@ -173,8 +176,12 @@ export default function ProjectExperiencePage() {
 
       <ExitProfileWriteModal
         onExit={() => {
+          const exitDestination =
+            editingProfileId !== null
+              ? `/mypage/profile-management/${editingProfileId}`
+              : "/mypage/profile-management";
           useProfileDraftStore.getState().resetProfileDraft();
-          router.push("/mypage/profile-management");
+          router.push(exitDestination);
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

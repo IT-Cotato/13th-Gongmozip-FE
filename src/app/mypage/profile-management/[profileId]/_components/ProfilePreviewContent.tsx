@@ -3,9 +3,12 @@
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon } from "../../_components/icons";
 import { EditIcon } from "@/app/mypage/_components/icons";
-import { useProfileDetailQuery } from "@/queries/useProfileDetailQuery";
+import { useProfileDetailQuery, type ProfileDetail } from "@/queries/useProfileDetailQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { ApiError } from "@/lib/http";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import type { ProjectExperienceInput } from "../../new/experience/_components/ProjectExperienceSheet";
+import type { Certificate } from "../../new/certificates/_components/CertificateCard";
 
 const GENDER_LABEL: Record<string, string> = {
   MALE: "남성",
@@ -48,6 +51,47 @@ function EmptySectionRow() {
   );
 }
 
+const PROJECT_CATEGORY_FALLBACK: ProjectExperienceInput["category"] = "공모전 출품";
+
+// 백엔드는 프로젝트 카테고리를 저장하지 않고, 수상 내역도 프로젝트와 연결해
+// 저장하지 않는다. 수정 진입 시에는 카테고리를 기본값으로 채우고(재선택 필요),
+// 수상 내역은 마법사가 만들 때와 같은 순서(프로젝트당 최대 1개)로 저장됐다고
+// 가정해 배열 순서로 최대한 재연결한다.
+function buildProfileDraftFromDetail(profile: ProfileDetail) {
+  const basicInfo = {
+    nickname: profile.nickname,
+    school: profile.schoolName,
+    grade: String(profile.grade),
+    major: profile.major,
+    doubleMajor: profile.secondaryMajor ?? "",
+    minor: "",
+    gpa: String(profile.gpa),
+    gpaScale: String(profile.gpaScale),
+  };
+
+  const projects: ProjectExperienceInput[] = profile.projects.map((project, index) => {
+    const matchedAward = profile.awards[index];
+    return {
+      name: project.projectName,
+      startMonth: project.startedAt ? project.startedAt.slice(0, 7) : "",
+      endMonth: project.endedAt ? project.endedAt.slice(0, 7) : "",
+      category: PROJECT_CATEGORY_FALLBACK,
+      content: project.description,
+      hasAward: Boolean(matchedAward),
+      awardName: matchedAward?.awardName ?? "",
+    };
+  });
+
+  const certificates: Certificate[] = profile.certifications.map((certification) => ({
+    name: certification.certificateName,
+    category: certification.categoryName,
+    grade: "",
+    year: certification.acquiredAt ? String(new Date(certification.acquiredAt).getFullYear()) : "",
+  }));
+
+  return { basicInfo, projects, certificates };
+}
+
 function calculateAge(birthDate: string) {
   const birth = new Date(birthDate);
   if (Number.isNaN(birth.getTime())) return null;
@@ -66,6 +110,20 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
   const memberQuery = useMemberProfileQuery();
   const profile = profileQuery.data;
   const member = memberQuery.data;
+  const setBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
+  const setProjects = useProfileDraftStore((state) => state.setProjects);
+  const setCertificates = useProfileDraftStore((state) => state.setCertificates);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+
+  function handleEdit() {
+    if (!profile) return;
+    const draft = buildProfileDraftFromDetail(profile);
+    setBasicInfo(draft.basicInfo);
+    setProjects(() => draft.projects);
+    setCertificates(() => draft.certificates);
+    setEditingProfileId(profile.profileId);
+    router.push("/mypage/profile-management/new");
+  }
 
   const isLoading = profileQuery.isLoading;
   const isUnauthorized =
@@ -96,10 +154,9 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
         <button
           type="button"
           aria-label="프로필 수정"
-          onClick={() => {
-            // TODO: 프로필 수정 화면 구현 예정
-          }}
-          className="absolute right-4 flex h-6 w-6 items-center justify-center text-[#1f1f1f]"
+          onClick={handleEdit}
+          disabled={!profile}
+          className="absolute right-4 flex h-6 w-6 items-center justify-center text-[#1f1f1f] disabled:opacity-50"
         >
           <EditIcon />
         </button>

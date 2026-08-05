@@ -30,9 +30,12 @@ type ProfileDraftState = {
   basicInfo: ProfileBasicInfo;
   projects: ProjectExperienceInput[];
   certificates: Certificate[];
+  // Non-null while the wizard is editing an existing profile rather than creating a new one.
+  editingProfileId: number | null;
   setBasicInfo: (info: ProfileBasicInfo) => void;
   setProjects: (updater: (prev: ProjectExperienceInput[]) => ProjectExperienceInput[]) => void;
   setCertificates: (updater: (prev: Certificate[]) => Certificate[]) => void;
+  setEditingProfileId: (profileId: number | null) => void;
   resetProfileDraft: () => void;
 };
 
@@ -42,9 +45,11 @@ export const useProfileDraftStore = create<ProfileDraftState>()((set) => ({
   basicInfo: INITIAL_BASIC_INFO,
   projects: [],
   certificates: [],
+  editingProfileId: null,
   setBasicInfo: (info) => set({ basicInfo: info }),
   setProjects: (updater) => set((state) => ({ projects: updater(state.projects) })),
   setCertificates: (updater) => set((state) => ({ certificates: updater(state.certificates) })),
+  setEditingProfileId: (profileId) => set({ editingProfileId: profileId }),
   resetProfileDraft: () =>
-    set({ basicInfo: INITIAL_BASIC_INFO, projects: [], certificates: [] }),
+    set({ basicInfo: INITIAL_BASIC_INFO, projects: [], certificates: [], editingProfileId: null }),
 }));
