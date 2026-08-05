@@ -7,11 +7,15 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
-import { COLLABORATION_CHARACTER_IMAGE } from "./_lib/collaborationCharacter";
+import {
+  COLLABORATION_CHARACTER_IMAGE,
+  getCollaborationCharacterMeta,
+} from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { ApiError } from "@/lib/http";
 
-const COLLABORATIVE_DISTANCE_MAX = 500;
 const COLLABORATIVE_DISTANCE_STEP = 100;
 
 type MenuItem = { label: string; href?: string; disabled?: boolean };
@@ -43,7 +47,13 @@ const MENU_SECTIONS: MenuSection[] = [
 
 export default function MyPage() {
   const router = useRouter();
-  const { data, isLoading, isError, error, refetch } = useMypageSummaryQuery();
+  const summaryQuery = useMypageSummaryQuery();
+  const profileQuery = useMemberProfileQuery();
+  const profileListQuery = useProfileListQuery();
+  const { data } = summaryQuery;
+  const isLoading = summaryQuery.isLoading || profileQuery.isLoading;
+  const isError = summaryQuery.isError || profileQuery.isError;
+  const error = summaryQuery.error ?? profileQuery.error;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
@@ -53,7 +63,9 @@ export default function MyPage() {
     }
   }, [isUnauthorized, router]);
 
-  const collaborationType = data?.collaborationType ?? null;
+  const collaborationType = data?.character
+    ? { characterKey: data.character.characterType, ...getCollaborationCharacterMeta(data.character.characterType) }
+    : null;
 
   function handleCharacterManageClick() {
     if (collaborationType) {
@@ -63,19 +75,24 @@ export default function MyPage() {
     setIsTestPromptOpen(true);
   }
 
+  function refetch() {
+    summaryQuery.refetch();
+    profileQuery.refetch();
+  }
+
   const statsItems = data
     ? [
         {
           label: "프로필 관리",
-          count: data.stats.profileManagementCount,
+          count: profileListQuery.data?.profileCount ?? 0,
           href: "/mypage/profile-management",
         },
         {
           label: "프로젝트 관리",
-          count: data.stats.projectManagementCount,
+          count: data.ongoingProjectCount + data.completedProjectCount,
           href: "/mypage/projects",
         },
-        { label: "스크랩", count: data.stats.scrapCount, href: "/mypage/scrap" },
+        { label: "스크랩", count: data.scrapContestCount, href: "/mypage/scrap" },
       ]
     : [];
 
@@ -118,7 +135,7 @@ export default function MyPage() {
           </div>
         )}
 
-        {data && (
+        {data && profileQuery.data && (
           <>
             <section className="flex flex-col items-center">
               <div className="flex w-full items-start gap-4 px-6 py-4">
@@ -152,7 +169,7 @@ export default function MyPage() {
                     {collaborationType?.label ?? "검사 전"}
                   </span>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
-                    {data.name}님,
+                    {profileQuery.data.name}님,
                     <br />
                     안녕하세요!
                   </p>
@@ -167,7 +184,10 @@ export default function MyPage() {
                   <p className="text-[13px] leading-[1.25] font-semibold text-[#616161]">
                     협업거리
                   </p>
-                  <CollaborativeDistance currentMeters={data.collaborativeDistanceMeters} />
+                  <CollaborativeDistance
+                    max={data.collaborationDistance.max}
+                    progress={data.collaborationDistance.progress}
+                  />
                 </div>
               </div>
             </section>
@@ -234,7 +254,7 @@ export default function MyPage() {
       </div>
 
       <BottomNavigation />
-      {data && <OnboardingCoachmark />}
+      {data && profileQuery.data && <OnboardingCoachmark />}
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
@@ -279,15 +299,12 @@ function MenuRow({ label, href, disabled }: MenuItem) {
   );
 }
 
-function CollaborativeDistance({ currentMeters }: { currentMeters: number }) {
+function CollaborativeDistance({ max, progress }: { max: number; progress: number }) {
   const milestones = Array.from(
-    { length: COLLABORATIVE_DISTANCE_MAX / COLLABORATIVE_DISTANCE_STEP + 1 },
+    { length: Math.max(1, Math.round(max / COLLABORATIVE_DISTANCE_STEP)) + 1 },
     (_, index) => index * COLLABORATIVE_DISTANCE_STEP,
   );
-  const filledPercent = Math.min(
-    100,
-    Math.max(0, (currentMeters / COLLABORATIVE_DISTANCE_MAX) * 100),
-  );
+  const filledPercent = Math.min(100, Math.max(0, progress));
 
   return (
     <div className="flex w-full flex-col items-center gap-1">

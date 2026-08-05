@@ -6,24 +6,25 @@ import type { CollaborationCharacterType } from "@/types/collaboration";
 export type CollaborationCharacterKey = CollaborationCharacterType;
 
 export type MypageSummary = {
-  name: string;
-  collaborationType: {
-    characterKey: CollaborationCharacterKey;
-    label: string;
-    badgeColor: string;
+  character: {
+    characterType: CollaborationCharacterKey;
+    paletteCode: string;
   } | null;
-  collaborativeDistanceMeters: number;
-  stats: {
-    profileManagementCount: number;
-    projectManagementCount: number;
-    scrapCount: number;
+  collaborationDistance: {
+    current: number;
+    max: number;
+    progress: number;
   };
+  ongoingProjectCount: number;
+  completedProjectCount: number;
+  reviewCount: number;
+  scrapContestCount: number;
 };
 
-export const mypageSummaryQueryKey = ["member", "mypage-summary"] as const;
+export const mypageSummaryQueryKey = ["mypage", "summary"] as const;
 
 export function fetchMypageSummary() {
-  return apiFetch<MypageSummary>("/api/members/me/mypage-summary");
+  return apiFetch<MypageSummary>("/api/mypage");
 }
 
 export function useMypageSummaryQuery() {
