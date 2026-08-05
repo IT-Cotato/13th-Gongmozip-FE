@@ -174,7 +174,7 @@ export default function MyPage() {
                     </Link>
                   </div>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
-                    {profileQuery.data ? `${profileQuery.data.name}님,` : "반가워요,"}
+                    {profileQuery.data?.name ? `${profileQuery.data.name}님,` : "반가워요,"}
                     <br />
                     안녕하세요!
                   </p>
