@@ -21,6 +21,7 @@ export default function ProjectExperiencePage() {
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const [hasNoExperience, setHasNoExperience] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [projects, setProjects] = useState<ProjectExperienceInput[]>(draftProjects);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const hasProjects = projects.length > 0;
@@ -28,10 +29,15 @@ export default function ProjectExperiencePage() {
 
   function handleAddProject() {
     if (hasReachedMaxProjects) return;
+    setEditingIndex(null);
     setIsSheetOpen(true);
   }
 
   function handleSubmitProject(project: ProjectExperienceInput) {
+    if (editingIndex !== null) {
+      setProjects((prev) => prev.map((existing, i) => (i === editingIndex ? project : existing)));
+      return;
+    }
     setProjects((prev) => (prev.length >= MAX_PROJECTS ? prev : [...prev, project]));
   }
 
@@ -39,8 +45,14 @@ export default function ProjectExperiencePage() {
     setProjects((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleEditProject() {
-    // TODO: 기존 값으로 채운 수정용 바텀시트 구현 예정
+  function handleEditProject(index: number) {
+    setEditingIndex(index);
+    setIsSheetOpen(true);
+  }
+
+  function handleCloseSheet() {
+    setIsSheetOpen(false);
+    setEditingIndex(null);
   }
 
   function handleNext() {
@@ -111,7 +123,7 @@ export default function ProjectExperiencePage() {
                 <ProjectExperienceCard
                   key={`${project.name}-${index}`}
                   project={project}
-                  onEdit={handleEditProject}
+                  onEdit={() => handleEditProject(index)}
                   onDelete={() => handleDeleteProject(index)}
                 />
               ))}
@@ -169,8 +181,9 @@ export default function ProjectExperiencePage() {
 
       {isSheetOpen && (
         <ProjectExperienceSheet
-          onClose={() => setIsSheetOpen(false)}
+          onClose={handleCloseSheet}
           onSubmit={handleSubmitProject}
+          initialProject={editingIndex !== null ? projects[editingIndex] : undefined}
         />
       )}
 

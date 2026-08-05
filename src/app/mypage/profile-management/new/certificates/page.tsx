@@ -14,7 +14,6 @@ import {
 } from "@/queries/useCreateProfileWithDetailsMutation";
 import { ApiError } from "@/lib/http";
 
-// TODO: 자격증 수정용 바텀시트 디자인 전달받으면 구현 예정
 export default function CertificatesPage() {
   const router = useRouter();
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
@@ -27,19 +26,33 @@ export default function CertificatesPage() {
   const isSubmitting = createProfileMutation.isPending || updateProfileMutation.isPending;
   const [certificates, setCertificates] = useState<Certificate[]>(draftCertificates);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   function handleAddCertificate() {
+    setEditingIndex(null);
     setIsSheetOpen(true);
   }
 
   function handleSubmitCertificate(certificate: Certificate) {
+    if (editingIndex !== null) {
+      setCertificates((prev) =>
+        prev.map((existing, i) => (i === editingIndex ? certificate : existing)),
+      );
+      return;
+    }
     setCertificates((prev) => [...prev, certificate]);
   }
 
-  function handleEditCertificate() {
-    // TODO: 기존 값으로 채운 수정용 바텀시트 구현 예정
+  function handleEditCertificate(index: number) {
+    setEditingIndex(index);
+    setIsSheetOpen(true);
+  }
+
+  function handleCloseSheet() {
+    setIsSheetOpen(false);
+    setEditingIndex(null);
   }
 
   function handleDeleteCertificate(index: number) {
@@ -135,7 +148,7 @@ export default function CertificatesPage() {
               <CertificateCard
                 key={`${certificate.name}-${index}`}
                 certificate={certificate}
-                onEdit={handleEditCertificate}
+                onEdit={() => handleEditCertificate(index)}
                 onDelete={() => handleDeleteCertificate(index)}
               />
             ))}
@@ -175,8 +188,9 @@ export default function CertificatesPage() {
 
       {isSheetOpen && (
         <CertificateSheet
-          onClose={() => setIsSheetOpen(false)}
+          onClose={handleCloseSheet}
           onSubmit={handleSubmitCertificate}
+          initialCertificate={editingIndex !== null ? certificates[editingIndex] : undefined}
         />
       )}
 

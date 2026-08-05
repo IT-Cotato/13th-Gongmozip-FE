@@ -21,13 +21,15 @@ const MIN_CERTIFICATE_YEAR = 1900;
 type CertificateSheetProps = {
   onClose: () => void;
   onSubmit: (certificate: Certificate) => void;
+  initialCertificate?: Certificate;
 };
 
-export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
-  const [category, setCategory] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [year, setYear] = useState("");
-  const [grade, setGrade] = useState("");
+export function CertificateSheet({ onClose, onSubmit, initialCertificate }: CertificateSheetProps) {
+  const isEditing = initialCertificate !== undefined;
+  const [category, setCategory] = useState<string | null>(initialCertificate?.category ?? null);
+  const [name, setName] = useState(initialCertificate?.name ?? "");
+  const [year, setYear] = useState(initialCertificate?.year ?? "");
+  const [grade, setGrade] = useState(initialCertificate?.grade ?? "");
 
   const hasGradeField = category === "어학";
   const currentYear = new Date().getFullYear();
@@ -58,10 +60,12 @@ export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
   }
 
   return (
-    <BottomSheet onClose={onClose} aria-label="자격증 추가">
+    <BottomSheet onClose={onClose} aria-label={isEditing ? "자격증 수정" : "자격증 추가"}>
       <div className="flex-1 overflow-y-auto px-5 pb-6">
         <div className="flex flex-col gap-2">
-          <h2 className="text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">자격증 추가</h2>
+          <h2 className="text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">
+            {isEditing ? "자격증 수정" : "자격증 추가"}
+          </h2>
           <p className="text-[13px] leading-[1.5] text-[#949494]">
             유효기간이 아직 유효한 자격증만 등록해주세요.
           </p>
@@ -147,7 +151,7 @@ export function CertificateSheet({ onClose, onSubmit }: CertificateSheetProps) {
               : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
           }`}
         >
-          등록하기
+          {isEditing ? "수정하기" : "등록하기"}
         </button>
       </div>
     </BottomSheet>
