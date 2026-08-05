@@ -158,12 +158,21 @@ export default function MyPage() {
                   </button>
                 </div>
                 <div className="flex flex-1 flex-col items-start gap-2">
-                  <span
-                    className="rounded-full px-2 py-1 text-xs font-semibold text-white"
-                    style={{ backgroundColor: collaborationType?.badgeColor ?? "#C8C8C8" }}
-                  >
-                    {collaborationType?.label ?? "검사 전"}
-                  </span>
+                  <div className="flex w-full items-center justify-between">
+                    <span
+                      className="rounded-full px-2 py-1 text-xs font-semibold text-white"
+                      style={{ backgroundColor: collaborationType?.badgeColor ?? "#C8C8C8" }}
+                    >
+                      {collaborationType?.label ?? "검사 전"}
+                    </span>
+                    <Link
+                      href="/collaboration-type"
+                      className="flex items-center text-[13px] font-semibold text-[#616161] underline"
+                    >
+                      협업 유형 검사
+                      <img src="/icons/common/tabler_chevron-right.svg" alt="" className="size-5" />
+                    </Link>
+                  </div>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
                     {profileQuery.data ? `${profileQuery.data.name}님,` : "반가워요,"}
                     <br />
