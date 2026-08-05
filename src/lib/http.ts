@@ -33,7 +33,57 @@ export function isBaseResponse(data: unknown): data is BaseResponse<unknown> {
   );
 }
 
-export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+// 백엔드는 refreshToken을 HttpOnly 쿠키로 내려주고 /api/auth/reissue로 accessToken을
+// 재발급할 수 있는데, 프론트가 이를 호출하지 않아 accessToken 만료 즉시 강제 로그아웃되던
+// 문제가 있었음. 동시에 여러 요청이 401을 받아도 재발급은 한 번만 일어나도록 공유 Promise로 처리.
+let reissuePromise: Promise<string | null> | null = null;
+
+function extractAccessToken(data: unknown): string | null {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "accessToken" in data &&
+    typeof (data as { accessToken: unknown }).accessToken === "string"
+  ) {
+    return (data as { accessToken: string }).accessToken;
+  }
+
+  return null;
+}
+
+function reissueAccessToken(): Promise<string | null> {
+  if (!reissuePromise) {
+    reissuePromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/reissue`, {
+          method: "POST",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const text = await response.text();
+        const data = parseResponseBody(text);
+
+        return extractAccessToken(isBaseResponse(data) ? data.data : data);
+      } catch {
+        return null;
+      } finally {
+        reissuePromise = null;
+      }
+    })();
+  }
+
+  return reissuePromise;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: ApiFetchOptions = {},
+  isRetryAfterReissue = false,
+): Promise<T> {
   const { body, headers, ...rest } = options;
   const accessToken = useAuthStore.getState().accessToken;
   const normalizedAccessToken = normalizeAccessToken(accessToken);
@@ -53,6 +103,15 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   const data = parseResponseBody(text);
 
   if (!response.ok) {
+    if (response.status === 401 && !isRetryAfterReissue && normalizedAccessToken) {
+      const newAccessToken = await reissueAccessToken();
+
+      if (newAccessToken) {
+        useAuthStore.getState().setAccessToken(newAccessToken);
+        return apiFetch<T>(path, options, true);
+      }
+    }
+
     const message = isBaseResponse(data) ? data.message : "요청 처리 중 오류가 발생했습니다.";
     const code = isBaseResponse(data) ? data.code : undefined;
 
