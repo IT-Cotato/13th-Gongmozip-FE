@@ -7,10 +7,7 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
-import {
-  COLLABORATION_CHARACTER_IMAGE,
-  getCollaborationCharacterMeta,
-} from "./_lib/collaborationCharacter";
+import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
@@ -142,10 +139,10 @@ export default function MyPage() {
                   <div className="absolute inset-[3%_5%]">
                     <AvatarPlaceholderIcon />
                   </div>
-                  {collaborationType && (
+                  {collaborationType?.imageSrc && (
                     <div className="absolute inset-0 overflow-hidden rounded-full">
                       <img
-                        src={COLLABORATION_CHARACTER_IMAGE[collaborationType.characterKey]}
+                        src={collaborationType.imageSrc}
                         alt={collaborationType.label}
                         className="absolute inset-[11.67%_11%_11.33%_11%] size-full object-contain"
                       />
