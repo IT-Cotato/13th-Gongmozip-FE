@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
-export type CollaborationKeywordType = "DEPENDABLE" | "CARING" | "SINCERE";
-
-export type CollaborationKeywordReview = {
-  type: CollaborationKeywordType;
+export type ReviewKeywordItem = {
+  keyword: string;
   count: number;
 };
 
+type ReviewStatisticsResponse = {
+  totalReviewCount: number;
+  keywords: ReviewKeywordItem[];
+};
+
 function fetchCollaborationReviewKeywords() {
-  return apiFetch<CollaborationKeywordReview[]>("/api/members/me/reviews/keywords");
+  return apiFetch<ReviewStatisticsResponse>("/api/mypage/reviews");
 }
 
 export function useCollaborationReviewKeywordsQuery() {

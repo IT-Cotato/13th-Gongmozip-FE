@@ -1,8 +1,8 @@
-import type { CollaborationKeywordReview } from "@/queries/useCollaborationReviewKeywordsQuery";
-import { REVIEW_KEYWORD_CONFIG } from "../_lib/reviewKeyword";
+import type { ReviewKeywordItem } from "@/queries/useCollaborationReviewKeywordsQuery";
+import { getReviewKeywordConfig } from "../_lib/reviewKeyword";
 
-export function CollaborationReviewChip({ review }: { review: CollaborationKeywordReview }) {
-  const config = REVIEW_KEYWORD_CONFIG[review.type];
+export function CollaborationReviewChip({ review }: { review: ReviewKeywordItem }) {
+  const config = getReviewKeywordConfig(review.keyword);
 
   return (
     <div

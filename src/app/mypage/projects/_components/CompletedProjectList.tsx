@@ -30,7 +30,7 @@ export function CompletedProjectList() {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!data || data.projects.length === 0) {
     return (
       <EmptyState
         icon="👟"
@@ -42,8 +42,8 @@ export function CompletedProjectList() {
 
   return (
     <div className="flex w-full flex-col items-start gap-2 px-4">
-      {data.map((project) => (
-        <CompletedProjectCard key={project.id} project={project} />
+      {data.projects.map((project) => (
+        <CompletedProjectCard key={project.contestId} project={project} />
       ))}
     </div>
   );

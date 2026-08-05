@@ -1,20 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
-export type ProjectTeammate = {
-  id: string;
-  profileImageUrl: string | null;
+export type OngoingProject = {
+  teamId: number;
+  contestId: number;
+  contestTitle: string;
+  contestImageUrl: string | null;
+  startedAt: string;
+  deadline: string;
+  memberCount: number;
 };
 
-export type OngoingProject = {
-  id: string;
-  projectName: string;
-  startDate: string;
-  teammates: ProjectTeammate[];
+type OngoingProjectsResponse = {
+  projects: OngoingProject[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 };
 
 function fetchOngoingProjects() {
-  return apiFetch<OngoingProject[]>("/api/members/me/projects/ongoing");
+  return apiFetch<OngoingProjectsResponse>("/api/mypage/projects/ongoing?size=50");
 }
 
 export function useOngoingProjectsQuery() {
