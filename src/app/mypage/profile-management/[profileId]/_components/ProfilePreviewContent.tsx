@@ -27,6 +27,27 @@ function formatMonth(isoDate: string | null) {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function EmptySectionCard() {
+  return (
+    <div className="flex w-full flex-col items-start gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4">
+      <p className="px-1 text-[17px] leading-[1.35] font-medium text-[#949494]">
+        👟 첫 레이스 준비중...
+      </p>
+    </div>
+  );
+}
+
+function EmptySectionRow() {
+  return (
+    <div className="flex gap-2 px-7">
+      <div className="flex shrink-0 items-start py-2">
+        <span className="mt-2 size-[5px] rounded-full bg-[#ac4a35] opacity-50" />
+      </div>
+      <p className="text-[17px] leading-[1.5] text-[#949494]">👟 첫 레이스 준비중...</p>
+    </div>
+  );
+}
+
 function calculateAge(birthDate: string) {
   const birth = new Date(birthDate);
   if (Number.isNaN(birth.getTime())) return null;
@@ -160,11 +181,11 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
             </div>
           </section>
 
-          {profile.projects.length > 0 && (
-            <section className="flex flex-col gap-3 pt-8">
-              <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
-                프로젝트 경험
-              </h2>
+          <section className="flex flex-col gap-3 pt-8">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              프로젝트 경험
+            </h2>
+            {profile.projects.length > 0 ? (
               <div className="flex flex-col gap-4 px-5">
                 {profile.projects.map((project) => (
                   <div
@@ -189,14 +210,18 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
                   </div>
                 ))}
               </div>
-            </section>
-          )}
+            ) : (
+              <div className="px-5">
+                <EmptySectionCard />
+              </div>
+            )}
+          </section>
 
-          {profile.awards.length > 0 && (
-            <section className="flex flex-col gap-3 pt-8">
-              <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
-                프로젝트 수상 내용
-              </h2>
+          <section className="flex flex-col gap-3 pt-8">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              프로젝트 수상 내용
+            </h2>
+            {profile.awards.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {profile.awards.map((award) => (
                   <div key={award.awardId} className="flex gap-2 px-7">
@@ -214,14 +239,16 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
                   </div>
                 ))}
               </div>
-            </section>
-          )}
+            ) : (
+              <EmptySectionRow />
+            )}
+          </section>
 
-          {profile.certifications.length > 0 && (
-            <section className="flex flex-col gap-3 pt-8">
-              <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
-                보유 자격증
-              </h2>
+          <section className="flex flex-col gap-3 pt-8">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              보유 자격증
+            </h2>
+            {profile.certifications.length > 0 ? (
               <div className="flex flex-col items-center gap-2 px-5">
                 {profile.certifications.map((certification) => (
                   <div
@@ -242,8 +269,12 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
                   </div>
                 ))}
               </div>
-            </section>
-          )}
+            ) : (
+              <div className="px-5">
+                <EmptySectionCard />
+              </div>
+            )}
+          </section>
         </div>
       )}
     </div>
