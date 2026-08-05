@@ -11,6 +11,8 @@ export type MemberProfile = {
   birthDate: string;
   snsType: "KAKAO" | null;
   snsLinked: boolean;
+  marketingConsentEmail: boolean;
+  marketingConsentSms: boolean;
 };
 
 export const MEMBER_PROFILE_QUERY_KEY = ["member", "profile"] as const;
