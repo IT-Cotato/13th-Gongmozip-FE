@@ -10,15 +10,17 @@ import {
   ProjectExperienceSheet,
   type ProjectExperienceInput,
 } from "./_components/ProjectExperienceSheet";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
 
 const MAX_PROJECTS = 10;
 
-// TODO: 프로필 작성 최종 제출(API 연동) 예정
 export default function ProjectExperiencePage() {
   const router = useRouter();
+  const draftProjects = useProfileDraftStore((state) => state.projects);
+  const setDraftProjects = useProfileDraftStore((state) => state.setProjects);
   const [hasNoExperience, setHasNoExperience] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [projects, setProjects] = useState<ProjectExperienceInput[]>([]);
+  const [projects, setProjects] = useState<ProjectExperienceInput[]>(draftProjects);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const hasProjects = projects.length > 0;
   const hasReachedMaxProjects = projects.length >= MAX_PROJECTS;
@@ -41,6 +43,7 @@ export default function ProjectExperiencePage() {
   }
 
   function handleNext() {
+    setDraftProjects(() => projects);
     router.push("/mypage/profile-management/new/certificates");
   }
 
@@ -169,7 +172,10 @@ export default function ProjectExperiencePage() {
       )}
 
       <ExitProfileWriteModal
-        onExit={() => router.push("/mypage/profile-management")}
+        onExit={() => {
+          useProfileDraftStore.getState().resetProfileDraft();
+          router.push("/mypage/profile-management");
+        }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}
       />

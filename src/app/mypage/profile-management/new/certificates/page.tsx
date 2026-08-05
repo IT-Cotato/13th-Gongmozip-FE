@@ -7,13 +7,21 @@ import { ChevronLeftIcon, CloseIcon, PlusIcon } from "../../_components/icons";
 import { ExitProfileWriteModal } from "../../_components/ExitProfileWriteModal";
 import { CertificateCard, type Certificate } from "./_components/CertificateCard";
 import { CertificateSheet } from "./_components/CertificateSheet";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import { useCreateProfileWithDetailsMutation } from "@/queries/useCreateProfileWithDetailsMutation";
+import { ApiError } from "@/lib/http";
 
 // TODO: 자격증 수정용 바텀시트 디자인 전달받으면 구현 예정
 export default function CertificatesPage() {
   const router = useRouter();
+  const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
+  const draftProjects = useProfileDraftStore((state) => state.projects);
+  const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
+  const createProfileMutation = useCreateProfileWithDetailsMutation();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function handleAddCertificate() {
     setIsSheetOpen(true);
@@ -32,7 +40,22 @@ export default function CertificatesPage() {
   }
 
   function handleNext() {
-    router.push("/mypage/profile-management/new/complete");
+    if (createProfileMutation.isPending) return;
+    setSubmitError(null);
+    createProfileMutation.mutate(
+      { basicInfo: draftBasicInfo, projects: draftProjects, certificates },
+      {
+        onSuccess: () => {
+          resetProfileDraft();
+          router.push("/mypage/profile-management/new/complete");
+        },
+        onError: (error) => {
+          setSubmitError(
+            error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
   return (
@@ -94,21 +117,28 @@ export default function CertificatesPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 flex gap-2.5 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161]"
-        >
-          이전
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
-        >
-          다음
-        </button>
+      <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        {submitError && (
+          <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>
+        )}
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={createProfileMutation.isPending}
+            className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
+          >
+            이전
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={createProfileMutation.isPending}
+            className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white disabled:opacity-50"
+          >
+            {createProfileMutation.isPending ? "등록 중..." : "다음"}
+          </button>
+        </div>
       </div>
 
       {isSheetOpen && (
@@ -119,7 +149,10 @@ export default function CertificatesPage() {
       )}
 
       <ExitProfileWriteModal
-        onExit={() => router.push("/mypage/profile-management")}
+        onExit={() => {
+          resetProfileDraft();
+          router.push("/mypage/profile-management");
+        }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}
       />
