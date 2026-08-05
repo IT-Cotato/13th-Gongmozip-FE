@@ -65,7 +65,7 @@ export default function MyPage() {
 
   function handleCharacterManageClick() {
     if (collaborationType) {
-      // TODO: 검사 완료 후 캐릭터 관리(재검사/변경 등) 동작 구현 예정
+      router.push("/mypage/character-management");
       return;
     }
     setIsTestPromptOpen(true);
