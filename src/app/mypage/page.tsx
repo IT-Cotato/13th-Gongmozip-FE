@@ -51,11 +51,10 @@ export default function MyPage() {
   const profileQuery = useMemberProfileQuery();
   const profileListQuery = useProfileListQuery();
   const { data } = summaryQuery;
-  const isLoading = summaryQuery.isLoading || profileQuery.isLoading;
-  const isError = summaryQuery.isError || profileQuery.isError;
-  const error = summaryQuery.error ?? profileQuery.error;
+  const isLoading = summaryQuery.isLoading;
+  const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
-  const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const isUnauthorized = summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
   useEffect(() => {
     if (isUnauthorized) {
@@ -135,7 +134,7 @@ export default function MyPage() {
           </div>
         )}
 
-        {data && profileQuery.data && (
+        {data && (
           <>
             <section className="flex flex-col items-center">
               <div className="flex w-full items-start gap-4 px-6 py-4">
@@ -169,7 +168,7 @@ export default function MyPage() {
                     {collaborationType?.label ?? "검사 전"}
                   </span>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
-                    {profileQuery.data.name}님,
+                    {profileQuery.data ? `${profileQuery.data.name}님,` : "반가워요,"}
                     <br />
                     안녕하세요!
                   </p>
@@ -254,7 +253,7 @@ export default function MyPage() {
       </div>
 
       <BottomNavigation />
-      {data && profileQuery.data && <OnboardingCoachmark />}
+      {data && <OnboardingCoachmark />}
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
