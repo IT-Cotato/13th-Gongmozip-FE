@@ -30,9 +30,9 @@ export default function TeamMatchingActionBar({
         </Link>
       )}
       {disabled ? (
-        <span aria-disabled="true" className={previousHref ? `${className} flex-1` : className}>
+        <button className={previousHref ? `${className} flex-1` : className} disabled type="button">
           {label}
-        </span>
+        </button>
       ) : (
         <Link className={previousHref ? `${className} flex-1` : className} href={href}>
           {label}
