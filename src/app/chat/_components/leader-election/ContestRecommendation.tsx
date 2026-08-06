@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import { ChatbotAvatar, MessageMeta } from "./ChatbotMessage";
+import { ChatbotAvatar, ChatbotUsageGuideMessage, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
 
 const voteTimerText = "01 : 24 : 30";
@@ -193,7 +193,13 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
   );
 }
 
-export function ContestVoteNoticeBanner({ onVote }: { onVote: () => void }) {
+export function ContestVoteNoticeBanner({
+  isVoteSubmitted,
+  onAction,
+}: {
+  isVoteSubmitted: boolean;
+  onAction: () => void;
+}) {
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
       <div className="relative shrink-0">
@@ -213,12 +219,61 @@ export function ContestVoteNoticeBanner({ onVote }: { onVote: () => void }) {
 남았어요!`}
         </p>
         <button
-          className="mt-2 flex h-9 w-full items-center justify-center rounded-[10px] bg-color-gray-650 text-[13px] leading-[1.25] font-semibold text-white"
-          onClick={onVote}
+          className={`mt-2 flex h-9 w-full items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
+            isVoteSubmitted
+              ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+              : "bg-color-gray-650 text-white"
+          }`}
+          onClick={onAction}
           type="button"
         >
-          투표하기
+          {isVoteSubmitted ? "결과 확인하기" : "투표하기"}
         </button>
+      </div>
+    </section>
+  );
+}
+
+export function ProjectSubmissionReminderBanner({
+  onComplete,
+  onIncomplete,
+}: {
+  onComplete: () => void;
+  onIncomplete: () => void;
+}) {
+  return (
+    <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <p className="text-center text-[15px] leading-[1.35] text-color-gray-750">
+          프로젝트가 진행완료되었으면, 진행완료 버튼을 눌러주세요.
+        </p>
+        <div className="flex h-9 w-full gap-2">
+          <button
+            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-[rgba(97,97,97,0.10)] px-3 text-[13px] leading-[1.25] font-semibold text-color-gray-650"
+            onClick={onIncomplete}
+            type="button"
+          >
+            미완료
+          </button>
+          <button
+            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-color-gray-650 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+            onClick={onComplete}
+            type="button"
+          >
+            진행 완료
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -275,33 +330,7 @@ export function ContestVoteResultMessage({
         </div>
       </article>
 
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
-
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <div className="max-w-[230px] rounded-[16px] rounded-tl-none bg-color-gray-150 px-3 py-2 text-[13px] leading-[1.5] text-color-coral-900">
-              <p className="font-semibold text-[#AC4A35]">활용 예시</p>
-              <div className="mt-1 flex gap-2.5 py-1">
-                <span className="w-0.5 rounded-full bg-color-coral-500" />
-                <div>
-                  <p>저를 사용할 수 있는 예시입니다.</p>
-                  <p>@챗봇 우리 역할 분담 추천해줘</p>
-                  <p>@챗봇 우리 타임라인 추천해줘</p>
-                </div>
-              </div>
-            </div>
-            <MessageMeta />
-          </div>
-          <button
-            className="mt-1 flex h-9 w-[230px] items-center justify-center rounded-[10px] bg-color-coral-500 px-3 text-[13px] leading-[1.25] font-semibold text-white"
-            type="button"
-          >
-            @챗봇에게 말하기
-          </button>
-        </div>
-      </article>
+      <ChatbotUsageGuideMessage />
 
       <div className="flex w-full items-center gap-1 text-[9px] leading-[1.35] text-color-gray-650">
         <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
