@@ -1,22 +1,6 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 
-const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-export const API_BASE_URL = RAW_API_BASE_URL?.trim().replace(/\/+$/, "") ?? "";
-
-export function getApiBaseUrl() {
-  if (!API_BASE_URL) {
-    throw new Error(
-      "NEXT_PUBLIC_API_BASE_URL 환경변수가 설정되지 않았습니다. Vercel Project Settings > Environment Variables에 값을 추가한 뒤 다시 배포해 주세요.",
-    );
-  }
-
-  return API_BASE_URL;
-}
-
-export function buildApiUrl(path: string) {
-  return `${getApiBaseUrl()}/${path.replace(/^\/+/, "")}`;
-}
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   status: number;
@@ -71,7 +55,7 @@ function reissueAccessToken(): Promise<string | null> {
   if (!reissuePromise) {
     reissuePromise = (async () => {
       try {
-        const response = await fetch(buildApiUrl("/api/auth/reissue"), {
+        const response = await fetch(`${API_BASE_URL}/api/auth/reissue`, {
           method: "POST",
           credentials: "include",
         });
@@ -104,7 +88,7 @@ export async function apiFetch<T>(
   const accessToken = useAuthStore.getState().accessToken;
   const normalizedAccessToken = normalizeAccessToken(accessToken);
 
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
     credentials: "include",
     headers: {
