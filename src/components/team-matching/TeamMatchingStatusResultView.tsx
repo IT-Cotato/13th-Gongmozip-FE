@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { useTeamMatchingProposalStore } from "@/stores/teamMatchingProposalStore";
 
 type MatchingReason = {
   label: string;
@@ -66,6 +69,8 @@ const badgeClassName: Record<MatchedMember["badgeTone"], string> = {
   green: "bg-[#41AD61]",
   orange: "bg-[#FFAD62]",
 };
+
+const MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
 
 function MatchingSummaryCard() {
   return (
@@ -199,6 +204,20 @@ function MatchedMemberCard({ member }: { member: MatchedMember }) {
 }
 
 export default function TeamMatchingStatusResultView() {
+  const router = useRouter();
+  const acceptProposal = useTeamMatchingProposalStore((state) => state.acceptProposal);
+  const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
+
+  function handlePassClick() {
+    setPendingProposalId(MATCHING_PROPOSAL_ID);
+    router.push("/team-matching/status/pass/leave");
+  }
+
+  function handleAcceptClick() {
+    acceptProposal(MATCHING_PROPOSAL_ID);
+    router.push("/team-matching/status/waiting");
+  }
+
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader backHref="/team-matching" title="나의 매칭현황" />
@@ -214,18 +233,20 @@ export default function TeamMatchingStatusResultView() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 z-20 flex items-stretch gap-4 bg-white px-4 pb-9 pt-3">
-        <Link
+        <button
           className="flex h-[50px] w-[174px] items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
-          href="/team-matching/status/pass"
+          onClick={handlePassClick}
+          type="button"
         >
           패스
-        </Link>
-        <Link
+        </button>
+        <button
           className="flex h-[50px] w-[174px] items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-          href="/team-matching/status/waiting"
+          onClick={handleAcceptClick}
+          type="button"
         >
           수락
-        </Link>
+        </button>
       </div>
     </main>
   );

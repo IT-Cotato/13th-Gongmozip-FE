@@ -1,7 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import {
+  TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
+  useTeamMatchingProposalStore,
+} from "@/stores/teamMatchingProposalStore";
 
 type PassIllustrationProps = {
   className?: string;
@@ -68,6 +74,12 @@ function AiMatchingNoticeCard() {
 }
 
 export default function TeamMatchingPassView() {
+  const lastResult = useTeamMatchingProposalStore((state) => state.lastResult);
+  const distanceReductionMeters =
+    lastResult?.status === "passed"
+      ? (lastResult.distanceReductionMeters ?? TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS)
+      : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
+
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader backHref="/team-matching/status" title="나의 매칭현황" />
@@ -75,7 +87,7 @@ export default function TeamMatchingPassView() {
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-6">
         <section className="pt-[52px] text-center">
           <h1 className="font-[Pretendard] text-[20px] font-bold not-italic leading-[135%] text-[#1F1F1F]">
-            협업거리가 3m 줄어들었어요 :(
+            협업거리가 {distanceReductionMeters}m 줄어들었어요 :(
           </h1>
         </section>
 
@@ -93,7 +105,7 @@ export default function TeamMatchingPassView() {
         <div className="space-y-3">
           <Link
             className="flex h-[51px] w-full items-center justify-center self-stretch rounded-[14px] bg-[rgba(97,97,97,0.10)] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
-            href="/team-matching/status/pass/leave"
+            href="/team-matching"
           >
             나가기
           </Link>

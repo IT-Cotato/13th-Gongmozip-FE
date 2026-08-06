@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { PassIllustration } from "@/components/team-matching/TeamMatchingPassView";
+import { useTeamMatchingProposalStore } from "@/stores/teamMatchingProposalStore";
+
+const FALLBACK_MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
 
 function PassLeaveNoticeCard() {
   return (
@@ -34,6 +40,15 @@ function PassLeaveNoticeCard() {
 }
 
 export default function TeamMatchingPassLeaveConfirmView() {
+  const router = useRouter();
+  const passProposal = useTeamMatchingProposalStore((state) => state.passProposal);
+  const pendingProposalId = useTeamMatchingProposalStore((state) => state.pendingProposalId);
+
+  function handlePassClick() {
+    passProposal(pendingProposalId ?? FALLBACK_MATCHING_PROPOSAL_ID);
+    router.push("/team-matching/status/pass");
+  }
+
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader backHref="/team-matching/status" title="나의 매칭현황" />
@@ -64,12 +79,13 @@ export default function TeamMatchingPassLeaveConfirmView() {
         >
           뒤로가기
         </Link>
-        <Link
+        <button
           className="flex h-[50px] flex-1 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-          href="/team-matching"
+          onClick={handlePassClick}
+          type="button"
         >
           패스하기
-        </Link>
+        </button>
       </div>
     </main>
   );
