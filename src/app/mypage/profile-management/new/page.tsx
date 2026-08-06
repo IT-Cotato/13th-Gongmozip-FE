@@ -7,6 +7,7 @@ import { EditIcon } from "../../_components/icons";
 import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -38,6 +39,9 @@ export default function CreateProfilePage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const defaultBasicInfo = useProfileDefaultInfoStore((state) => state.defaultBasicInfo);
+  const setDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.setDefaultBasicInfo);
+  const clearDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.clearDefaultBasicInfo);
 
   const [nickname, setNickname] = useState(draftBasicInfo.nickname);
   const [school, setSchool] = useState(draftBasicInfo.school);
@@ -50,6 +54,30 @@ export default function CreateProfilePage() {
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
+  // 새 프로필을 처음 작성하는 시점(수정 아님 + 아직 아무것도 안 입력함)에만
+  // 저장된 기본값을 불러온다. persist 스토어의 localStorage 복원이 마운트 이후
+  // 비동기로 끝나기 때문에, 값이 바뀔 때 렌더 중에 반영한다("Adjusting state
+  // when a prop changes" 패턴 - useEffect로 하면 리렌더가 한 번 더 발생함).
+  const [appliedDefaultBasicInfo, setAppliedDefaultBasicInfo] = useState(defaultBasicInfo);
+  if (
+    defaultBasicInfo !== appliedDefaultBasicInfo &&
+    editingProfileId === null &&
+    defaultBasicInfo &&
+    !nickname &&
+    !school &&
+    !major
+  ) {
+    setAppliedDefaultBasicInfo(defaultBasicInfo);
+    setNickname(defaultBasicInfo.nickname);
+    setSchool(defaultBasicInfo.school);
+    setGrade(defaultBasicInfo.grade);
+    setMajor(defaultBasicInfo.major);
+    setDoubleMajor(defaultBasicInfo.doubleMajor);
+    setMinor(defaultBasicInfo.minor);
+    setGpa(defaultBasicInfo.gpa);
+    setGpaScale(defaultBasicInfo.gpaScale);
+  }
+
   const isGpaValid =
     GPA_FORMAT_REGEX.test(gpa.trim()) &&
     GPA_FORMAT_REGEX.test(gpaScale.trim()) &&
@@ -60,7 +88,15 @@ export default function CreateProfilePage() {
 
   function handleNext() {
     if (!isFormValid) return;
-    setDraftBasicInfo({ nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale });
+    const basicInfo = { nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale };
+    setDraftBasicInfo(basicInfo);
+
+    if (saveAsDefault) {
+      setDefaultBasicInfo(basicInfo);
+    } else {
+      clearDefaultBasicInfo();
+    }
+
     router.push("/mypage/profile-management/new/experience");
   }
 
