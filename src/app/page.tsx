@@ -1,6 +1,7 @@
 import { Sulphur_Point } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/http";
 
 const sulphurPoint = Sulphur_Point({
   subsets: ["latin"],
@@ -39,8 +40,8 @@ export default function Home() {
         </div>
 
         <div className="flex w-full max-w-[300px] flex-col items-center gap-4">
-          <button
-            type="button"
+          <a
+            href={`${API_BASE_URL}/oauth2/authorization/kakao`}
             className="relative flex h-12 w-full items-center justify-center rounded-[6px] bg-[#FEE500] px-3.5"
           >
             <Image
@@ -51,10 +52,10 @@ export default function Home() {
               src="/icons/auth/kakao.svg"
             />
             <span className="text-[15px] font-semibold text-black/85">카카오 로그인</span>
-          </button>
+          </a>
 
-          <button
-            type="button"
+          <a
+            href={`${API_BASE_URL}/oauth2/authorization/google`}
             className="relative flex h-12 w-full items-center justify-center rounded-[6px] border border-[#E7E7E7] bg-white px-4"
           >
             <Image
@@ -65,7 +66,7 @@ export default function Home() {
               src="/icons/auth/Google.svg"
             />
             <span className="text-[14px] font-medium text-[#121212]">Google 계정으로 로그인</span>
-          </button>
+          </a>
 
           <div className="flex items-center gap-3 text-[13px] font-semibold text-[#616161]">
             <Link href="/signup">회원가입</Link>
