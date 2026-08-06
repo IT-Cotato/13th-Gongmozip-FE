@@ -3,18 +3,19 @@ import { CHAT_MEMBER_COUNT, CHAT_ROOM_TITLE } from "../_data/mockMessages";
 import { ChevronLeftIcon, MenuIcon } from "./icons";
 
 type ChatTopBarProps = {
+  backHref?: string;
   roomId: string;
   title?: string;
 };
 
-export function ChatTopBar({ roomId, title }: ChatTopBarProps) {
+export function ChatTopBar({ backHref = "/chat", roomId, title }: ChatTopBarProps) {
   const topBarTitle = title ?? CHAT_ROOM_TITLE;
 
   return (
     <header className="border-b border-[rgba(97,97,97,0.08)] bg-white">
       <div className="relative flex h-[46px] items-center justify-center px-4">
         <Link
-          href="/chat"
+          href={backHref}
           aria-label="뒤로가기"
           className="absolute left-4 flex size-[38px] items-center justify-center rounded-[14px] text-color-gray-850"
         >
