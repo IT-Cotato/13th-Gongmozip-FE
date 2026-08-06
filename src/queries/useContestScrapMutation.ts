@@ -6,10 +6,7 @@ import { useContestScrapStore } from "@/stores/contestScrapStore";
 import { contestDetailQueryKey } from "./useContestDetailQuery";
 import type { ContestsResponse } from "./useContestsQuery";
 import { mypageSummaryQueryKey } from "./useMypageSummaryQuery";
-import {
-  contestScrapStatusQueryKey,
-  type ContestScrapStatus,
-} from "./useContestScrapStatusQuery";
+import { contestScrapStatusQueryKey, type ContestScrapStatus } from "./useContestScrapStatusQuery";
 
 type UpdateContestScrapStatusRequest = {
   contestId: string;
@@ -75,10 +72,7 @@ async function updateContestScrapStatus({
   } satisfies ContestScrapStatus;
 }
 
-function mapContestScrapResponse(
-  data: unknown,
-  fallback: ContestScrapStatus,
-) {
+function mapContestScrapResponse(data: unknown, fallback: ContestScrapStatus) {
   if (!isContestScrapResponse(data)) {
     return fallback;
   }
@@ -158,13 +152,12 @@ export function useContestScrapMutation() {
         contestScrapStatusQueryKey(context.contestId),
         context.previousScrapStatus,
       );
-      queryClient.setQueryData<ContestDetail>(contestDetailQueryKey(context.contestId), (current) =>
-        current ? { ...current, isScrapped: context.previousIsScrapped } : current,
+      queryClient.setQueryData<ContestDetail>(
+        contestDetailQueryKey(context.contestId),
+        (current) => (current ? { ...current, isScrapped: context.previousIsScrapped } : current),
       );
       queryClient.invalidateQueries({ queryKey: ["contests"] });
-      useContestScrapStore
-        .getState()
-        .setScrapStatus(context.contestId, context.previousIsScrapped);
+      useContestScrapStore.getState().setScrapStatus(context.contestId, context.previousIsScrapped);
     },
     onSuccess: (data) => {
       queryClient.setQueryData(contestScrapStatusQueryKey(data.contestId), data);

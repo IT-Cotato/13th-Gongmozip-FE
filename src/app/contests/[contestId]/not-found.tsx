@@ -18,8 +18,12 @@ export default function ContestNotFound() {
       </header>
 
       <section className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <h2 className="text-xl leading-[135%] font-semibold text-color-gray-900">공모전을 찾을 수 없어요</h2>
-        <p className="text-sm leading-[150%] text-color-gray-500">삭제되었거나 존재하지 않는 공모전입니다.</p>
+        <h2 className="text-xl leading-[135%] font-semibold text-color-gray-900">
+          공모전을 찾을 수 없어요
+        </h2>
+        <p className="text-sm leading-[150%] text-color-gray-500">
+          삭제되었거나 존재하지 않는 공모전입니다.
+        </p>
         <Link
           href="/contests"
           className="mt-3 rounded-full bg-color-gray-900 px-5 py-3 text-sm font-semibold text-white"

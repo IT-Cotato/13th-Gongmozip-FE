@@ -10,25 +10,34 @@ import {
   ProjectExperienceSheet,
   type ProjectExperienceInput,
 } from "./_components/ProjectExperienceSheet";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
 
 const MAX_PROJECTS = 10;
 
-// TODO: 프로필 작성 최종 제출(API 연동) 예정
 export default function ProjectExperiencePage() {
   const router = useRouter();
+  const draftProjects = useProfileDraftStore((state) => state.projects);
+  const setDraftProjects = useProfileDraftStore((state) => state.setProjects);
+  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const [hasNoExperience, setHasNoExperience] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [projects, setProjects] = useState<ProjectExperienceInput[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [projects, setProjects] = useState<ProjectExperienceInput[]>(draftProjects);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const hasProjects = projects.length > 0;
   const hasReachedMaxProjects = projects.length >= MAX_PROJECTS;
 
   function handleAddProject() {
     if (hasReachedMaxProjects) return;
+    setEditingIndex(null);
     setIsSheetOpen(true);
   }
 
   function handleSubmitProject(project: ProjectExperienceInput) {
+    if (editingIndex !== null) {
+      setProjects((prev) => prev.map((existing, i) => (i === editingIndex ? project : existing)));
+      return;
+    }
     setProjects((prev) => (prev.length >= MAX_PROJECTS ? prev : [...prev, project]));
   }
 
@@ -36,11 +45,18 @@ export default function ProjectExperiencePage() {
     setProjects((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleEditProject() {
-    // TODO: 기존 값으로 채운 수정용 바텀시트 구현 예정
+  function handleEditProject(index: number) {
+    setEditingIndex(index);
+    setIsSheetOpen(true);
+  }
+
+  function handleCloseSheet() {
+    setIsSheetOpen(false);
+    setEditingIndex(null);
   }
 
   function handleNext() {
+    setDraftProjects(() => projects);
     router.push("/mypage/profile-management/new/certificates");
   }
 
@@ -55,7 +71,9 @@ export default function ProjectExperiencePage() {
         >
           <ChevronLeftIcon />
         </button>
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
+          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+        </h1>
         <button
           type="button"
           onClick={() => setIsExitModalOpen(true)}
@@ -70,7 +88,9 @@ export default function ProjectExperiencePage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-4 pt-[22px] pb-10">
-          <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">프로젝트 경험</h2>
+          <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">
+            프로젝트 경험
+          </h2>
 
           <div className="flex flex-col gap-3 px-6">
             <p className="w-full text-[17px] leading-[1.35] font-medium text-[#1f1f1f]">
@@ -105,7 +125,7 @@ export default function ProjectExperiencePage() {
                 <ProjectExperienceCard
                   key={`${project.name}-${index}`}
                   project={project}
-                  onEdit={handleEditProject}
+                  onEdit={() => handleEditProject(index)}
                   onDelete={() => handleDeleteProject(index)}
                 />
               ))}
@@ -163,13 +183,21 @@ export default function ProjectExperiencePage() {
 
       {isSheetOpen && (
         <ProjectExperienceSheet
-          onClose={() => setIsSheetOpen(false)}
+          onClose={handleCloseSheet}
           onSubmit={handleSubmitProject}
+          initialProject={editingIndex !== null ? projects[editingIndex] : undefined}
         />
       )}
 
       <ExitProfileWriteModal
-        onExit={() => router.push("/mypage/profile-management")}
+        onExit={() => {
+          const exitDestination =
+            editingProfileId !== null
+              ? `/mypage/profile-management/${editingProfileId}`
+              : "/mypage/profile-management";
+          useProfileDraftStore.getState().resetProfileDraft();
+          router.push(exitDestination);
+        }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}
       />

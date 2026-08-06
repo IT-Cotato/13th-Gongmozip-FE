@@ -1,25 +1,38 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
-export type ProjectTeammate = {
-  id: string;
-  profileImageUrl: string | null;
-};
-
 export type OngoingProject = {
-  id: string;
-  projectName: string;
-  startDate: string;
-  teammates: ProjectTeammate[];
+  teamId: number;
+  contestId: number;
+  contestTitle: string;
+  contestImageUrl: string | null;
+  startedAt: string;
+  deadline: string;
+  memberCount: number;
 };
 
-function fetchOngoingProjects() {
-  return apiFetch<OngoingProject[]>("/api/members/me/projects/ongoing");
+type OngoingProjectsResponse = {
+  projects: OngoingProject[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+const PAGE_SIZE = 50;
+
+function fetchOngoingProjects(page: number) {
+  return apiFetch<OngoingProjectsResponse>(
+    `/api/mypage/projects/ongoing?page=${page}&size=${PAGE_SIZE}`,
+  );
 }
 
 export function useOngoingProjectsQuery() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["member", "projects", "ongoing"],
-    queryFn: fetchOngoingProjects,
+    queryFn: ({ pageParam }) => fetchOngoingProjects(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.page + 1 < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
 }

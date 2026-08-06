@@ -194,7 +194,10 @@ export default function ResetPasswordPage() {
           </h2>
 
           <div className="flex flex-col gap-1 p-4">
-            <label htmlFor="reset-email" className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">
+            <label
+              htmlFor="reset-email"
+              className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]"
+            >
               아이디(이메일)
             </label>
             <input
@@ -240,7 +243,12 @@ export default function ResetPasswordPage() {
           </h2>
 
           <div className="flex flex-col gap-1 p-4">
-            <label htmlFor="reset-code" className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">인증코드</label>
+            <label
+              htmlFor="reset-code"
+              className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]"
+            >
+              인증코드
+            </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -309,12 +317,16 @@ export default function ResetPasswordPage() {
         <div className="flex flex-1 flex-col">
           <h2 className="px-6 pt-8 pb-2 text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
             로그인에 사용할
-            <br />
-            새 비밀번호를 입력해주세요.
+            <br />새 비밀번호를 입력해주세요.
           </h2>
 
           <div className="flex flex-col gap-1 p-4">
-            <label htmlFor="reset-new-password" className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]">새 비밀번호</label>
+            <label
+              htmlFor="reset-new-password"
+              className="px-1 text-[17px] leading-[1.25] font-medium text-[#1F1F1F]"
+            >
+              새 비밀번호
+            </label>
             <input
               id="reset-new-password"
               type="password"

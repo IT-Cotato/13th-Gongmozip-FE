@@ -17,11 +17,7 @@ export default function TeamMatchingContestFieldPage() {
   const [selectedField, setSelectedField] = useState(contestFields[0]);
 
   return (
-    <TeamMatchingStepLayout
-      actionHref="/team-matching/leader"
-      actionLabel="다음"
-      currentStep={3}
-    >
+    <TeamMatchingStepLayout actionHref="/team-matching/leader" actionLabel="다음" currentStep={3}>
       <section>
         <h2 className="-mt-px font-[Roboto] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
           관심있는 공모전 분야를 선택해주세요.
@@ -37,9 +33,7 @@ export default function TeamMatchingContestFieldPage() {
             return (
               <button
                 className={`flex h-8 items-center justify-center rounded-full px-[10px] py-2 text-center font-[Roboto] text-[15px] font-semibold leading-[125%] ${
-                  isSelected
-                    ? "bg-[#1F1F1F] text-white"
-                    : "bg-[rgba(97,97,97,0.10)] text-[#616161]"
+                  isSelected ? "bg-[#1F1F1F] text-white" : "bg-[rgba(97,97,97,0.10)] text-[#616161]"
                 }`}
                 key={field}
                 aria-pressed={isSelected}

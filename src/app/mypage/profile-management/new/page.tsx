@@ -6,6 +6,7 @@ import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgres
 import { EditIcon } from "../../_components/icons";
 import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -32,18 +33,20 @@ function FieldLabel({
   );
 }
 
-// TODO: 프로필 목록 조회 API 연동 및 다음 단계(자기소개 등) 화면 구현 예정
 export default function CreateProfilePage() {
   const router = useRouter();
+  const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
+  const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
+  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
 
-  const [nickname, setNickname] = useState("");
-  const [school, setSchool] = useState("");
-  const [grade, setGrade] = useState("");
-  const [major, setMajor] = useState("");
-  const [doubleMajor, setDoubleMajor] = useState("");
-  const [minor, setMinor] = useState("");
-  const [gpa, setGpa] = useState("");
-  const [gpaScale, setGpaScale] = useState("");
+  const [nickname, setNickname] = useState(draftBasicInfo.nickname);
+  const [school, setSchool] = useState(draftBasicInfo.school);
+  const [grade, setGrade] = useState(draftBasicInfo.grade);
+  const [major, setMajor] = useState(draftBasicInfo.major);
+  const [doubleMajor, setDoubleMajor] = useState(draftBasicInfo.doubleMajor);
+  const [minor, setMinor] = useState(draftBasicInfo.minor);
+  const [gpa, setGpa] = useState(draftBasicInfo.gpa);
+  const [gpaScale, setGpaScale] = useState(draftBasicInfo.gpaScale);
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
@@ -53,21 +56,20 @@ export default function CreateProfilePage() {
     Number(gpa) <= Number(gpaScale);
 
   const isFormValid =
-    nickname.trim().length > 0 &&
-    school.trim().length > 0 &&
-    major.trim().length > 0 &&
-    isGpaValid;
+    nickname.trim().length > 0 && school.trim().length > 0 && major.trim().length > 0 && isGpaValid;
 
   function handleNext() {
     if (!isFormValid) return;
-    // TODO: 입력값을 다음 단계로 전달(상태 관리 도입) 구현 예정
+    setDraftBasicInfo({ nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale });
     router.push("/mypage/profile-management/new/experience");
   }
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
+          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+        </h1>
         <button
           type="button"
           onClick={() => setIsExitModalOpen(true)}
@@ -243,7 +245,16 @@ export default function CreateProfilePage() {
       </div>
 
       <ExitProfileWriteModal
-        onExit={() => router.back()}
+        onExit={() => {
+          const exitDestination =
+            editingProfileId !== null ? `/mypage/profile-management/${editingProfileId}` : null;
+          useProfileDraftStore.getState().resetProfileDraft();
+          if (exitDestination) {
+            router.push(exitDestination);
+          } else {
+            router.back();
+          }
+        }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}
       />

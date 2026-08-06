@@ -28,9 +28,7 @@ export function LeaderCandidatePreviewCard({
       <div className="mt-6 grid w-full grid-cols-2 justify-items-center gap-x-[34px] gap-y-5">
         {leaders.map((leader, index) => (
           <LeaderCandidatePreviewProfile
-            className={
-              leaders.length % 2 === 1 && index === leaders.length - 1 ? "col-span-2" : ""
-            }
+            className={leaders.length % 2 === 1 && index === leaders.length - 1 ? "col-span-2" : ""}
             key={leader.id}
             leader={leader}
           />
@@ -85,8 +83,8 @@ export function LeaderElectedMessage({ leader }: { leader: LeaderCandidate }) {
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
           <p className="max-w-[230px] rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            투표 결과, {leader.name}님이 이번 공모전 출품의 팀장으로 선출되셨습니다🎉
-            이제 팀원들과 함께 공모전 준비를 시작해 보세요.
+            투표 결과, {leader.name}님이 이번 공모전 출품의 팀장으로 선출되셨습니다🎉 이제 팀원들과
+            함께 공모전 준비를 시작해 보세요.
           </p>
           <MessageMeta />
         </div>

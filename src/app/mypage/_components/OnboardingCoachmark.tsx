@@ -175,6 +175,7 @@ export function OnboardingCoachmark() {
   const isActive = !hasSeenOnboarding && !isDismissed;
   const step = STEPS[stepIndex];
   const rect = useTargetRect(step.targetSelector, isActive);
+  const frameRect = useTargetRect("[data-mobile-frame]", isActive);
 
   useEffect(() => {
     if (!isActive) return;
@@ -208,14 +209,26 @@ export function OnboardingCoachmark() {
 
   const isLastStep = stepIndex === STEPS.length - 1;
 
-  // Center the popup on the target, but clamp it to stay fully on-screen; the arrow
-  // shifts back by the clamp amount so it still points at the (possibly off-center) target.
+  // The mobile frame ancestor uses a CSS transform (see MobileFrame.tsx), which per spec makes
+  // it the containing block for `position: fixed`/`absolute` descendants — so this overlay's
+  // top/left/bottom values are resolved relative to the FRAME's box, not the true browser
+  // viewport. rect/frameRect come from getBoundingClientRect(), which is always viewport-relative,
+  // so we convert everything into frame-relative coordinates before using it in inline styles.
+  const frameOffsetX = frameRect?.left ?? 0;
+  const frameOffsetY = frameRect?.top ?? 0;
+  const frameWidth = frameRect?.width ?? window.innerWidth;
+  const frameHeight = frameRect?.height ?? window.innerHeight;
+  const targetTop = rect.top - frameOffsetY;
+  const targetLeft = rect.left - frameOffsetX;
+
+  // Center the popup on the target, but clamp it to stay within the frame; the arrow shifts
+  // back by the clamp amount so it still points at the (possibly off-center) target.
   const sideMargin = 16;
-  const popupWidth = Math.min(350, window.innerWidth - sideMargin * 2);
-  const targetCenterX = rect.left + rect.width / 2;
+  const popupWidth = Math.min(350, frameWidth - sideMargin * 2);
+  const targetCenterX = targetLeft + rect.width / 2;
   const popupCenterX = Math.min(
     Math.max(targetCenterX, sideMargin + popupWidth / 2),
-    window.innerWidth - sideMargin - popupWidth / 2,
+    frameWidth - sideMargin - popupWidth / 2,
   );
   const arrowMaxOffset = popupWidth / 2 - 24;
   const arrowOffsetX = Math.min(
@@ -230,8 +243,8 @@ export function OnboardingCoachmark() {
         aria-hidden="true"
         className="pointer-events-none absolute rounded-2xl"
         style={{
-          top: rect.top - HIGHLIGHT_PADDING,
-          left: rect.left - HIGHLIGHT_PADDING,
+          top: targetTop - HIGHLIGHT_PADDING,
+          left: targetLeft - HIGHLIGHT_PADDING,
           width: rect.width + HIGHLIGHT_PADDING * 2,
           height: rect.height + HIGHLIGHT_PADDING * 2,
           boxShadow: "0 0 0 9999px rgba(31,31,31,0.6)",
@@ -245,8 +258,8 @@ export function OnboardingCoachmark() {
           left: popupCenterX,
           transform: "translateX(-50%)",
           ...(step.popupSide === "below"
-            ? { top: rect.top + rect.height + HIGHLIGHT_PADDING + ARROW_CLEARANCE }
-            : { bottom: window.innerHeight - (rect.top - HIGHLIGHT_PADDING) + ARROW_CLEARANCE }),
+            ? { top: targetTop + rect.height + HIGHLIGHT_PADDING + ARROW_CLEARANCE }
+            : { bottom: frameHeight - (targetTop - HIGHLIGHT_PADDING) + ARROW_CLEARANCE }),
         }}
       >
         {step.popupSide === "below" && <ArrowPointer offsetX={arrowOffsetX} />}

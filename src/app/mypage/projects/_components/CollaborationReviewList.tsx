@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  useCollaborationReviewKeywordsQuery,
-  type CollaborationKeywordType,
-} from "@/queries/useCollaborationReviewKeywordsQuery";
+import { useCollaborationReviewKeywordsQuery } from "@/queries/useCollaborationReviewKeywordsQuery";
 import { CollaborationReviewChip } from "./CollaborationReviewChip";
 import { EmptyState } from "./EmptyState";
-
-const KEYWORD_DISPLAY_ORDER: CollaborationKeywordType[] = ["DEPENDABLE", "CARING", "SINCERE"];
 
 export function CollaborationReviewList() {
   const { data, isLoading, isError, refetch } = useCollaborationReviewKeywordsQuery();
@@ -35,10 +30,9 @@ export function CollaborationReviewList() {
     );
   }
 
-  const countByType = new Map((data ?? []).map((review) => [review.type, review.count]));
-  const hasAnyReview = Array.from(countByType.values()).some((count) => count > 0);
+  const keywords = (data?.keywords ?? []).filter((review) => review.count > 0);
 
-  if (!hasAnyReview) {
+  if (keywords.length === 0) {
     return (
       <EmptyState
         icon="📬"
@@ -50,11 +44,9 @@ export function CollaborationReviewList() {
 
   return (
     <div className="flex w-full flex-col items-start gap-2 px-4">
-      {KEYWORD_DISPLAY_ORDER.map((type) => {
-        const count = countByType.get(type) ?? 0;
-        if (count === 0) return null;
-        return <CollaborationReviewChip key={type} review={{ type, count }} />;
-      })}
+      {keywords.map((review) => (
+        <CollaborationReviewChip key={review.keyword} review={review} />
+      ))}
     </div>
   );
 }

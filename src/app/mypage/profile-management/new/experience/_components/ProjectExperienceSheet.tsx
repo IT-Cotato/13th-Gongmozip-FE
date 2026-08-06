@@ -53,17 +53,25 @@ function FieldLabel({
 type ProjectExperienceSheetProps = {
   onClose: () => void;
   onSubmit: (project: ProjectExperienceInput) => void;
+  initialProject?: ProjectExperienceInput;
 };
 
-export function ProjectExperienceSheet({ onClose, onSubmit }: ProjectExperienceSheetProps) {
-  const [name, setName] = useState("");
-  const [startMonth, setStartMonth] = useState("");
-  const [endMonth, setEndMonth] = useState("");
-  const [category, setCategory] = useState<ProjectCategory | null>(null);
+export function ProjectExperienceSheet({
+  onClose,
+  onSubmit,
+  initialProject,
+}: ProjectExperienceSheetProps) {
+  const isEditing = initialProject !== undefined;
+  const [name, setName] = useState(initialProject?.name ?? "");
+  const [startMonth, setStartMonth] = useState(initialProject?.startMonth ?? "");
+  const [endMonth, setEndMonth] = useState(initialProject?.endMonth ?? "");
+  const [category, setCategory] = useState<ProjectCategory | null>(
+    initialProject?.category ?? null,
+  );
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-  const [content, setContent] = useState("");
-  const [hasAward, setHasAward] = useState(false);
-  const [awardName, setAwardName] = useState("");
+  const [content, setContent] = useState(initialProject?.content ?? "");
+  const [hasAward, setHasAward] = useState(initialProject?.hasAward ?? false);
+  const [awardName, setAwardName] = useState(initialProject?.awardName ?? "");
   const [activeDateField, setActiveDateField] = useState<"start" | "end" | null>(null);
 
   const isPeriodValid = !startMonth || !endMonth || startMonth <= endMonth;
@@ -89,7 +97,10 @@ export function ProjectExperienceSheet({ onClose, onSubmit }: ProjectExperienceS
   }
 
   return (
-    <BottomSheet onClose={onClose} aria-label="프로젝트 경험 추가">
+    <BottomSheet
+      onClose={onClose}
+      aria-label={isEditing ? "프로젝트 경험 수정" : "프로젝트 경험 추가"}
+    >
       <div className="flex-1 overflow-y-auto px-5 pb-6">
         <div className="flex flex-col gap-2">
           <h2 className="text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">프로젝트 경험</h2>
@@ -272,7 +283,7 @@ export function ProjectExperienceSheet({ onClose, onSubmit }: ProjectExperienceS
               : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
           }`}
         >
-          등록하기
+          {isEditing ? "수정하기" : "등록하기"}
         </button>
       </div>
     </BottomSheet>

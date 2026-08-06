@@ -118,6 +118,7 @@ export function MemberReviewFlow({
   const leaveReview = () => {
     setIsStopOpen(false);
     onLeave?.(answers);
+    router.push(`/chat/${roomId}`);
   };
 
   const goHome = () => {
@@ -131,10 +132,10 @@ export function MemberReviewFlow({
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
       {phase === "complete" ? (
-        <MemberReviewCompleteScreen onGoHome={goHome} onLeave={() => onLeave?.(answers)} />
+        <MemberReviewCompleteScreen onGoHome={goHome} onLeave={leaveReview} />
       ) : (
         <>
-          <ChatTopBar roomId={roomId} title="팀원 리뷰" />
+          <ChatTopBar backHref={`/chat/${roomId}`} roomId={roomId} title="팀원 리뷰" />
 
           <section
             aria-label="팀원 리뷰"
@@ -206,9 +207,7 @@ export function MemberReviewFlow({
           </button>
           <button
             className={`flex h-[51px] flex-1 items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
-              canSubmit
-                ? "bg-color-coral-500 text-white"
-                : "bg-color-gray-200 text-color-gray-350"
+              canSubmit ? "bg-color-coral-500 text-white" : "bg-color-gray-200 text-color-gray-350"
             }`}
             disabled={!canSubmit}
             onClick={submitCurrentReview}

@@ -43,12 +43,6 @@ export function ArrowUpIcon() {
 
 export function SettingsIcon() {
   return (
-    <Image
-      src="/icons/chat/tabler_settings.svg"
-      alt=""
-      width={20}
-      height={20}
-      aria-hidden="true"
-    />
+    <Image src="/icons/chat/tabler_settings.svg" alt="" width={20} height={20} aria-hidden="true" />
   );
 }

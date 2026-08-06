@@ -5,7 +5,16 @@ import { CompletedProjectCard } from "./CompletedProjectCard";
 import { EmptyState } from "./EmptyState";
 
 export function CompletedProjectList() {
-  const { data, isLoading, isError, refetch } = useCompletedProjectsQuery();
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useCompletedProjectsQuery();
+  const projects = data?.pages.flatMap((page) => page.projects) ?? [];
 
   if (isLoading) {
     return (
@@ -30,7 +39,7 @@ export function CompletedProjectList() {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (projects.length === 0) {
     return (
       <EmptyState
         icon="👟"
@@ -42,9 +51,19 @@ export function CompletedProjectList() {
 
   return (
     <div className="flex w-full flex-col items-start gap-2 px-4">
-      {data.map((project) => (
-        <CompletedProjectCard key={project.id} project={project} />
+      {projects.map((project) => (
+        <CompletedProjectCard key={project.contestId} project={project} />
       ))}
+      {hasNextPage && (
+        <button
+          type="button"
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          className="w-full rounded-full bg-[#F5F5F5] px-4 py-2 text-[13px] font-medium text-[#1F1F1F] disabled:opacity-50"
+        >
+          {isFetchingNextPage ? "불러오는 중..." : "더보기"}
+        </button>
+      )}
     </div>
   );
 }

@@ -45,7 +45,11 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "요즘 날씨 너무 좋아서 야외 활동하기 딱이야!",
     lastMessageAt: "15시간 전",
     unreadCount: 9,
-    avatarSrcs: ["/icons/chat/character1.svg", "/icons/chat/character2.svg", "/icons/chat/character3.svg"],
+    avatarSrcs: [
+      "/icons/chat/character1.svg",
+      "/icons/chat/character2.svg",
+      "/icons/chat/character3.svg",
+    ],
   },
   {
     id: "team-brand-02",
@@ -54,7 +58,11 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "요즘 날씨 너무 좋아서 야외 활동하기 딱이야!",
     lastMessageAt: "15시간 전",
     unreadCount: 0,
-    avatarSrcs: ["/icons/chat/character1.svg", "/icons/chat/character2.svg", "/icons/chat/character3.svg"],
+    avatarSrcs: [
+      "/icons/chat/character1.svg",
+      "/icons/chat/character2.svg",
+      "/icons/chat/character3.svg",
+    ],
   },
   {
     id: "team-service-03",
@@ -63,7 +71,11 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     lastMessage: "요즘 날씨 너무 좋아서 야외 활동하기 딱이야!",
     lastMessageAt: "15시간 전",
     unreadCount: 0,
-    avatarSrcs: ["/icons/chat/character1.svg", "/icons/chat/character2.svg", "/icons/chat/character3.svg"],
+    avatarSrcs: [
+      "/icons/chat/character1.svg",
+      "/icons/chat/character2.svg",
+      "/icons/chat/character3.svg",
+    ],
   },
 ];
 

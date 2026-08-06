@@ -7,11 +7,12 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
-import { COLLABORATION_CHARACTER_IMAGE } from "./_lib/collaborationCharacter";
+import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { ApiError } from "@/lib/http";
 
-const COLLABORATIVE_DISTANCE_MAX = 500;
 const COLLABORATIVE_DISTANCE_STEP = 100;
 
 type MenuItem = { label: string; href?: string; disabled?: boolean };
@@ -43,9 +44,15 @@ const MENU_SECTIONS: MenuSection[] = [
 
 export default function MyPage() {
   const router = useRouter();
-  const { data, isLoading, isError, error, refetch } = useMypageSummaryQuery();
+  const summaryQuery = useMypageSummaryQuery();
+  const profileQuery = useMemberProfileQuery();
+  const profileListQuery = useProfileListQuery();
+  const { data } = summaryQuery;
+  const isLoading = summaryQuery.isLoading;
+  const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
-  const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const isUnauthorized =
+    summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
   useEffect(() => {
     if (isUnauthorized) {
@@ -53,29 +60,46 @@ export default function MyPage() {
     }
   }, [isUnauthorized, router]);
 
-  const collaborationType = data?.collaborationType ?? null;
+  const collaborationType = data?.character
+    ? {
+        characterKey: data.character.characterType,
+        ...getCollaborationCharacterMeta(data.character.characterType),
+      }
+    : null;
 
   function handleCharacterManageClick() {
     if (collaborationType) {
-      // TODO: 검사 완료 후 캐릭터 관리(재검사/변경 등) 동작 구현 예정
+      router.push("/mypage/character-management");
       return;
     }
     setIsTestPromptOpen(true);
   }
 
+  function refetch() {
+    summaryQuery.refetch();
+    profileQuery.refetch();
+    profileListQuery.refetch();
+  }
+
+  const isProfileListUnavailable = profileListQuery.isLoading || profileListQuery.isError;
+
   const statsItems = data
     ? [
         {
           label: "프로필 관리",
-          count: data.stats.profileManagementCount,
+          count: isProfileListUnavailable
+            ? profileListQuery.isLoading
+              ? "···"
+              : "-"
+            : (profileListQuery.data?.profileCount ?? 0),
           href: "/mypage/profile-management",
         },
         {
           label: "프로젝트 관리",
-          count: data.stats.projectManagementCount,
+          count: data.ongoingProjectCount + data.completedProjectCount,
           href: "/mypage/projects",
         },
-        { label: "스크랩", count: data.stats.scrapCount, href: "/mypage/scrap" },
+        { label: "스크랩", count: data.scrapContestCount, href: "/mypage/scrap" },
       ]
     : [];
 
@@ -126,10 +150,10 @@ export default function MyPage() {
                   <div className="absolute inset-[3%_5%]">
                     <AvatarPlaceholderIcon />
                   </div>
-                  {collaborationType && (
+                  {collaborationType?.imageSrc && (
                     <div className="absolute inset-0 overflow-hidden rounded-full">
                       <img
-                        src={COLLABORATION_CHARACTER_IMAGE[collaborationType.characterKey]}
+                        src={collaborationType.imageSrc}
                         alt={collaborationType.label}
                         className="absolute inset-[11.67%_11%_11.33%_11%] size-full object-contain"
                       />
@@ -145,14 +169,23 @@ export default function MyPage() {
                   </button>
                 </div>
                 <div className="flex flex-1 flex-col items-start gap-2">
-                  <span
-                    className="rounded-full px-2 py-1 text-xs font-semibold text-white"
-                    style={{ backgroundColor: collaborationType?.badgeColor ?? "#C8C8C8" }}
-                  >
-                    {collaborationType?.label ?? "검사 전"}
-                  </span>
+                  <div className="flex w-full items-center justify-between">
+                    <span
+                      className="rounded-full px-2 py-1 text-xs font-semibold text-white"
+                      style={{ backgroundColor: collaborationType?.badgeColor ?? "#C8C8C8" }}
+                    >
+                      {collaborationType?.label ?? "검사 전"}
+                    </span>
+                    <Link
+                      href="/collaboration-type"
+                      className="flex items-center text-[13px] font-semibold text-[#616161] underline"
+                    >
+                      협업 유형 검사
+                      <img src="/icons/common/tabler_chevron-right.svg" alt="" className="size-5" />
+                    </Link>
+                  </div>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
-                    {data.name}님,
+                    {profileQuery.data?.name ? `${profileQuery.data.name}님,` : "반가워요,"}
                     <br />
                     안녕하세요!
                   </p>
@@ -167,7 +200,10 @@ export default function MyPage() {
                   <p className="text-[13px] leading-[1.25] font-semibold text-[#616161]">
                     협업거리
                   </p>
-                  <CollaborativeDistance currentMeters={data.collaborativeDistanceMeters} />
+                  <CollaborativeDistance
+                    max={data.collaborationDistance.max}
+                    progress={data.collaborationDistance.progress}
+                  />
                 </div>
               </div>
             </section>
@@ -279,15 +315,16 @@ function MenuRow({ label, href, disabled }: MenuItem) {
   );
 }
 
-function CollaborativeDistance({ currentMeters }: { currentMeters: number }) {
+function CollaborativeDistance({ max, progress }: { max: number; progress: number }) {
+  const stepCount = Math.floor(max / COLLABORATIVE_DISTANCE_STEP);
   const milestones = Array.from(
-    { length: COLLABORATIVE_DISTANCE_MAX / COLLABORATIVE_DISTANCE_STEP + 1 },
+    { length: stepCount + 1 },
     (_, index) => index * COLLABORATIVE_DISTANCE_STEP,
   );
-  const filledPercent = Math.min(
-    100,
-    Math.max(0, (currentMeters / COLLABORATIVE_DISTANCE_MAX) * 100),
-  );
+  if (milestones[milestones.length - 1] !== max) {
+    milestones.push(max);
+  }
+  const filledPercent = Math.min(100, Math.max(0, progress));
 
   return (
     <div className="flex w-full flex-col items-center gap-1">

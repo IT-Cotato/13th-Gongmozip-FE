@@ -35,32 +35,29 @@ export function ContestScrapsContent() {
   const scrapStatusQueries = useContestScrapStatusesQuery(contestIds, {
     enabled: isAuthenticated && !hasNextPage && contestIds.length > 0,
   });
-  const scrappedContestIds = useMemo(
-    () => {
-      const scrappedIds = new Set(storeScrappedContestIds);
+  const scrappedContestIds = useMemo(() => {
+    const scrappedIds = new Set(storeScrappedContestIds);
 
-      contests.forEach((contest) => {
-        if (contest.isScrapped) {
-          scrappedIds.add(contest.id);
-        }
-      });
+    contests.forEach((contest) => {
+      if (contest.isScrapped) {
+        scrappedIds.add(contest.id);
+      }
+    });
 
-      scrapStatusQueries.forEach((query) => {
-        if (!query.data) {
-          return;
-        }
+    scrapStatusQueries.forEach((query) => {
+      if (!query.data) {
+        return;
+      }
 
-        if (query.data.isScrapped) {
-          scrappedIds.add(query.data.contestId);
-        } else {
-          scrappedIds.delete(query.data.contestId);
-        }
-      });
+      if (query.data.isScrapped) {
+        scrappedIds.add(query.data.contestId);
+      } else {
+        scrappedIds.delete(query.data.contestId);
+      }
+    });
 
-      return Array.from(scrappedIds);
-    },
-    [contests, scrapStatusQueries, storeScrappedContestIds],
-  );
+    return Array.from(scrappedIds);
+  }, [contests, scrapStatusQueries, storeScrappedContestIds]);
 
   useEffect(() => {
     if (!isAuthenticated || !hasNextPage || isFetchingNextPage) {
