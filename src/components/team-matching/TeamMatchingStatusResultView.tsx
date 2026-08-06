@@ -214,12 +214,12 @@ export default function TeamMatchingStatusResultView() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 z-20 flex items-stretch gap-4 bg-white px-4 pb-9 pt-3">
-        <button
+        <Link
           className="flex h-[50px] w-[174px] items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
-          type="button"
+          href="/team-matching/status/pass"
         >
           패스
-        </button>
+        </Link>
         <Link
           className="flex h-[50px] w-[174px] items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
           href="/team-matching/status/waiting"
