@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
@@ -11,11 +12,13 @@ import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
+import { useLogoutMutation } from "@/queries/useLogoutMutation";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiError } from "@/lib/http";
 
 const COLLABORATIVE_DISTANCE_STEP = 100;
 
-type MenuItem = { label: string; href?: string; disabled?: boolean };
+type MenuItem = { label: string; href?: string; disabled?: boolean; onClick?: () => void };
 type MenuSection = { title?: string; items: MenuItem[] };
 
 const MENU_SECTIONS: MenuSection[] = [
@@ -37,16 +40,15 @@ const MENU_SECTIONS: MenuSection[] = [
       { label: "개인정보 처리방침", href: "/privacy" },
     ],
   },
-  {
-    items: [{ label: "로그아웃", disabled: true }],
-  },
 ];
 
 export default function MyPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const summaryQuery = useMypageSummaryQuery();
   const profileQuery = useMemberProfileQuery();
   const profileListQuery = useProfileListQuery();
+  const logoutMutation = useLogoutMutation();
   const { data } = summaryQuery;
   const isLoading = summaryQuery.isLoading;
   const isError = summaryQuery.isError;
@@ -80,6 +82,23 @@ export default function MyPage() {
     profileQuery.refetch();
     profileListQuery.refetch();
   }
+
+  function handleLogout() {
+    if (logoutMutation.isPending) return;
+
+    logoutMutation.mutate(undefined, {
+      onSettled: () => {
+        useAuthStore.getState().clearAccessToken();
+        queryClient.clear();
+        router.replace("/");
+      },
+    });
+  }
+
+  const menuSections: MenuSection[] = [
+    ...MENU_SECTIONS,
+    { items: [{ label: "로그아웃", onClick: handleLogout }] },
+  ];
 
   const isProfileListUnavailable = profileListQuery.isLoading || profileListQuery.isError;
 
@@ -246,7 +265,7 @@ export default function MyPage() {
             <div className="flex flex-col items-center">
               <div className="h-[6px] w-full bg-[rgba(97,97,97,0.08)]" />
               <div className="flex w-full flex-col items-start px-4">
-                {MENU_SECTIONS.map((section) => (
+                {menuSections.map((section) => (
                   <div
                     key={section.title ?? section.items[0].label}
                     className="flex w-full flex-col gap-4 border-b border-[rgba(97,97,97,0.16)] pt-6 pb-4"
@@ -281,7 +300,7 @@ export default function MyPage() {
   );
 }
 
-function MenuRow({ label, href, disabled }: MenuItem) {
+function MenuRow({ label, href, disabled, onClick }: MenuItem) {
   const className = "w-full text-left text-[15px] leading-[1.25] font-medium text-[#1F1F1F]";
 
   if (href) {
@@ -309,7 +328,7 @@ function MenuRow({ label, href, disabled }: MenuItem) {
   }
 
   return (
-    <button type="button" className={className}>
+    <button type="button" onClick={onClick} className={className}>
       {label}
     </button>
   );

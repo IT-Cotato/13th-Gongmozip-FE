@@ -7,13 +7,17 @@ import { ChevronLeftIcon } from "./_components/icons";
 import { SuccessModal } from "./_components/SuccessModal";
 import { LeaveConfirmModal } from "./_components/LeaveConfirmModal";
 import { ContactHistoryCard } from "./_components/ContactHistoryCard";
-import { MOCK_CONTACT_HISTORY } from "./_data/mockHistory";
+import { useCreateInquiryMutation } from "@/queries/useCreateInquiryMutation";
+import { useInquiryListMutation, type InquirySummary } from "@/queries/useInquiryListMutation";
+import { useContactInquiryAuthStore } from "@/stores/contactInquiryAuthStore";
+import { ApiError } from "@/lib/http";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TITLE_MAX_LENGTH = 20;
 const CONTENT_MAX_LENGTH = 1000;
 const PASSWORD_LENGTH = 4;
 const HISTORY_LIST_RETURN_TO = "/contact?tab=history&step=list";
+const INQUIRY_NOT_FOUND_CODE = "INQUIRY_404_1";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -63,6 +67,9 @@ function ContactPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const createInquiryMutation = useCreateInquiryMutation();
+  const inquiryListMutation = useInquiryListMutation();
+  const setContactInquiryAuth = useContactInquiryAuthStore((state) => state.setContactInquiryAuth);
 
   const [activeTab, setActiveTab] = useState<"write" | "history">(() =>
     searchParams.get("tab") === "history" ? "history" : "write",
@@ -79,9 +86,12 @@ function ContactPageInner() {
   const [isDetailOpen, setIsDetailOpen] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [historyEmail, setHistoryEmail] = useState("");
   const [historyPassword, setHistoryPassword] = useState("");
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [inquiries, setInquiries] = useState<InquirySummary[]>([]);
 
   const isFormValid =
     title.trim().length > 0 &&
@@ -125,9 +135,20 @@ function ContactPageInner() {
   }
 
   function handleSubmit() {
-    if (!isFormValid) return;
-    // TODO(backend): 문의 접수 API 연동 전까지 성공 팝업만 임시로 표시
-    setShowSuccessModal(true);
+    if (!isFormValid || createInquiryMutation.isPending) return;
+    setSubmitError(null);
+
+    createInquiryMutation.mutate(
+      { email, password, title, content },
+      {
+        onSuccess: () => setShowSuccessModal(true),
+        onError: (error) => {
+          setSubmitError(
+            error instanceof ApiError ? error.message : "문의 접수에 실패했어요. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
   function handleCloseSuccessModal() {
@@ -137,16 +158,40 @@ function ContactPageInner() {
     setEmail("");
     setPassword("");
     setAgreePrivacy(false);
+    createInquiryMutation.reset();
   }
 
   function handleHistoryConfirm() {
-    if (!isHistoryFormValid) return;
-    // TODO(backend): 문의 내역 조회 API 연동 전까지 목데이터로 임시 표시
-    setHistoryStep("list");
+    if (!isHistoryFormValid || inquiryListMutation.isPending) return;
+    setHistoryError(null);
+
+    inquiryListMutation.mutate(
+      { email: historyEmail, password: historyPassword },
+      {
+        onSuccess: (data) => {
+          setContactInquiryAuth(historyEmail, historyPassword);
+          setInquiries(data.inquiries);
+          setHistoryStep("list");
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.code === INQUIRY_NOT_FOUND_CODE) {
+            setHistoryError("이메일 또는 비밀번호가 일치하지 않아요.");
+            return;
+          }
+          setHistoryError(
+            error instanceof ApiError
+              ? error.message
+              : "문의 내역을 불러오지 못했어요. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
-  function handleOpenHistoryDetail(id: string) {
-    router.push(`/contact/history/${id}?returnTo=${encodeURIComponent(HISTORY_LIST_RETURN_TO)}`);
+  function handleOpenHistoryDetail(inquiryId: number) {
+    router.push(
+      `/contact/history/${inquiryId}?returnTo=${encodeURIComponent(HISTORY_LIST_RETURN_TO)}`,
+    );
   }
 
   return (
@@ -306,38 +351,50 @@ function ContactPageInner() {
               className={INPUT_CLASS}
             />
           </div>
+          {historyError && (
+            <p className="px-5 text-xs leading-[1.35] text-[#BB5260]">{historyError}</p>
+          )}
         </div>
+      ) : inquiries.length === 0 ? (
+        <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
+          접수된 문의 내역이 없어요.
+        </p>
       ) : (
         <div className="flex flex-1 flex-col gap-4 p-4">
-          {MOCK_CONTACT_HISTORY.map((item) => (
+          {inquiries.map((item) => (
             <ContactHistoryCard
-              key={item.id}
+              key={item.inquiryId}
               item={item}
-              onClick={() => handleOpenHistoryDetail(item.id)}
+              onClick={() => handleOpenHistoryDetail(item.inquiryId)}
             />
           ))}
         </div>
       )}
 
       {(activeTab === "write" || historyStep === "verify") && (
-        <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
           {activeTab === "write" ? (
-            <button
-              type="button"
-              disabled={!isFormValid}
-              onClick={handleSubmit}
-              className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-                isFormValid
-                  ? "bg-[#FF7658] text-white"
-                  : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-              }`}
-            >
-              제출하기
-            </button>
+            <>
+              {submitError && (
+                <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>
+              )}
+              <button
+                type="button"
+                disabled={!isFormValid || createInquiryMutation.isPending}
+                onClick={handleSubmit}
+                className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+                  isFormValid
+                    ? "bg-[#FF7658] text-white"
+                    : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+                }`}
+              >
+                {createInquiryMutation.isPending ? "접수 중..." : "제출하기"}
+              </button>
+            </>
           ) : (
             <button
               type="button"
-              disabled={!isHistoryFormValid}
+              disabled={!isHistoryFormValid || inquiryListMutation.isPending}
               onClick={handleHistoryConfirm}
               className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
                 isHistoryFormValid
@@ -345,7 +402,7 @@ function ContactPageInner() {
                   : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
               }`}
             >
-              확인
+              {inquiryListMutation.isPending ? "확인 중..." : "확인"}
             </button>
           )}
         </div>
