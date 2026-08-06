@@ -182,13 +182,7 @@ function CandidateProfileCard({
   );
 }
 
-function BottomSheet({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+function BottomSheet({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <section
       className={`flex w-full flex-col rounded-t-[16px] bg-white ${className}`}

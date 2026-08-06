@@ -14,11 +14,7 @@ type ShareContestModalProps = {
 
 const CHARACTER_IMAGE_SRC = "/images/contests/cha.png";
 
-export function ShareContestModal({
-  onOpenChange,
-  onShareComplete,
-  open,
-}: ShareContestModalProps) {
+export function ShareContestModal({ onOpenChange, onShareComplete, open }: ShareContestModalProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedRoomIds, setSelectedRoomIds] = useState<Set<string>>(new Set());
 
@@ -83,7 +79,10 @@ export function ShareContestModal({
       open={open}
     >
       <div className="flex h-full max-h-[76vh] flex-col px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-[13px]">
-        <div aria-hidden="true" className="mx-auto h-1 w-12 rounded-full bg-[rgba(97,97,97,0.22)]" />
+        <div
+          aria-hidden="true"
+          className="mx-auto h-1 w-12 rounded-full bg-[rgba(97,97,97,0.22)]"
+        />
 
         <label className="mt-5 flex h-[38px] w-full items-center justify-between rounded-[30px] bg-color-gray-150 px-4 py-2">
           <span className="sr-only">공유하고 싶은 채팅방 검색</span>
@@ -102,7 +101,10 @@ export function ShareContestModal({
           />
         </label>
 
-        <section aria-label="공유할 채팅방 선택" className="-mx-4 mt-[22px] min-h-0 flex-1 overflow-y-auto pb-4">
+        <section
+          aria-label="공유할 채팅방 선택"
+          className="-mx-4 mt-[22px] min-h-0 flex-1 overflow-y-auto pb-4"
+        >
           {filteredRooms.length > 0 ? (
             <ul className="flex flex-col">
               {filteredRooms.map((room) => {
@@ -126,7 +128,9 @@ export function ShareContestModal({
                         </span>
                       </span>
                       <Image
-                        src={isSelected ? "/icons/common/clickedcheck.svg" : "/icons/common/check.svg"}
+                        src={
+                          isSelected ? "/icons/common/clickedcheck.svg" : "/icons/common/check.svg"
+                        }
                         alt=""
                         width={24}
                         height={24}

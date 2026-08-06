@@ -56,11 +56,7 @@ function ProfileVisibilityToggle({
           <Image
             alt=""
             height={12}
-            src={
-              isPublic
-                ? "/icons/team-matching/icon-6.svg"
-                : "/icons/team-matching/icon-7.svg"
-            }
+            src={isPublic ? "/icons/team-matching/icon-6.svg" : "/icons/team-matching/icon-7.svg"}
             width={12}
           />
         </span>
@@ -104,10 +100,7 @@ function ProfileCard({
     >
       <div className="flex flex-col items-end gap-6 self-stretch p-5">
         <div className="flex w-full items-center justify-between gap-3">
-          <label
-            className="flex min-w-0 cursor-pointer items-center gap-1"
-            htmlFor={inputId}
-          >
+          <label className="flex min-w-0 cursor-pointer items-center gap-1" htmlFor={inputId}>
             <input
               aria-label={`${date} 프로필 선택`}
               checked={isSelected}
@@ -139,9 +132,7 @@ function ProfileCard({
               <span className="line-clamp-2 overflow-hidden text-ellipsis text-[#AC4A35]">
                 {projects}
               </span>
-              <span className="line-clamp-2 overflow-hidden text-ellipsis text-[#1F1F1F]">
-                개
-              </span>
+              <span className="line-clamp-2 overflow-hidden text-ellipsis text-[#1F1F1F]">개</span>
             </span>
           </h2>
           <p className="line-clamp-1 mt-2 flex-1 overflow-hidden text-ellipsis pl-[6px] font-[Pretendard] text-[13px] font-medium leading-[125%] text-[#616161]">
@@ -162,9 +153,7 @@ function ProfileCard({
 
 export default function TeamMatchingProfilePage() {
   const [profiles, setProfiles] = useState(initialProfiles);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
-    null,
-  );
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   const handleAddProfile = () => {
     setProfiles((currentProfiles) => [
@@ -202,12 +191,7 @@ export default function TeamMatchingProfilePage() {
           onClick={handleAddProfile}
           type="button"
         >
-          <Image
-            alt=""
-            height={24}
-            src="/icons/team-matching/tabler_plus.svg"
-            width={24}
-          />
+          <Image alt="" height={24} src="/icons/team-matching/tabler_plus.svg" width={24} />
           프로필 추가
         </button>
       </section>

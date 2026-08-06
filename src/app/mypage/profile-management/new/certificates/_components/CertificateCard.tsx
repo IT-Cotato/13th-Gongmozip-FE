@@ -29,7 +29,9 @@ export function CertificateCard({ certificate, onEdit, onDelete }: CertificateCa
           {certificate.grade && (
             <>
               <span className="font-semibold">{certificate.grade}</span>
-              {certificate.year && <span className="size-[2px] shrink-0 rounded-full bg-[#616161]" />}
+              {certificate.year && (
+                <span className="size-[2px] shrink-0 rounded-full bg-[#616161]" />
+              )}
             </>
           )}
           {certificate.year && <span>{certificate.year}</span>}

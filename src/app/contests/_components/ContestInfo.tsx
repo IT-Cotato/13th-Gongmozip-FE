@@ -311,9 +311,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
           ) : null}
 
-          {showScrapErrorToast ? (
-            <ContestActionToast message="스크랩 처리에 실패했습니다" />
-          ) : null}
+          {showScrapErrorToast ? <ContestActionToast message="스크랩 처리에 실패했습니다" /> : null}
 
           {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
 

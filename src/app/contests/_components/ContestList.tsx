@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 
-import {
-  contestDetailQueryKey,
-  fetchContestDetail,
-} from "@/queries/useContestDetailQuery";
+import { contestDetailQueryKey, fetchContestDetail } from "@/queries/useContestDetailQuery";
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusesQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
@@ -94,7 +91,10 @@ export function ContestList({ contests }: ContestListProps) {
                 className="contents"
               >
                 {contest.posterImageUrl ? (
-                  <ContestPosterImage src={contest.posterImageUrl} alt={`${contest.title} 포스터`} />
+                  <ContestPosterImage
+                    src={contest.posterImageUrl}
+                    alt={`${contest.title} 포스터`}
+                  />
                 ) : (
                   <div className="flex h-[113px] w-[85px] items-center justify-center bg-color-gray-300 text-sm font-semibold text-color-gray-650">
                     이미지 {index + 1}

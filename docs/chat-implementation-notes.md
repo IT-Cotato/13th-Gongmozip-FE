@@ -77,7 +77,7 @@ type ChatMessage = {
   senderId: number | null;
   senderNickname: string | null;
   content: string;
-  messageType: 'TALK' | 'SYSTEM' | 'BOT';
+  messageType: "TALK" | "SYSTEM" | "BOT";
   createdAt: string;
 };
 ```

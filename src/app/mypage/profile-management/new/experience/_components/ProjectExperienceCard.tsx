@@ -21,7 +21,8 @@ type ProjectExperienceCardProps = {
 };
 
 export function ProjectExperienceCard({ project, onEdit, onDelete }: ProjectExperienceCardProps) {
-  const chipStyle = CATEGORY_CHIP_STYLE[project.category] ?? CATEGORY_CHIP_STYLE["대외활동 프로젝트"];
+  const chipStyle =
+    CATEGORY_CHIP_STYLE[project.category] ?? CATEGORY_CHIP_STYLE["대외활동 프로젝트"];
 
   return (
     <div className="relative flex w-full flex-col items-start gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4">

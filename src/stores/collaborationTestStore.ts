@@ -29,8 +29,7 @@ export const useCollaborationTestStore = create<CollaborationTestState>()(
       responses: {},
       resetCollaborationTest: () => set({ responses: {}, submittedCharacterType: null }),
       resetResponses: () => set({ responses: {} }),
-      setSubmittedCharacterType: (characterType) =>
-        set({ submittedCharacterType: characterType }),
+      setSubmittedCharacterType: (characterType) => set({ submittedCharacterType: characterType }),
       setResponse: (questionId, optionId, optionValue) =>
         set((state) => ({
           responses: {

@@ -29,10 +29,7 @@ export async function fetchContestScrapStatus(contestId: string) {
   } satisfies ContestScrapStatus;
 }
 
-export function useContestScrapStatusQuery(
-  contestId: string,
-  options: { enabled?: boolean } = {},
-) {
+export function useContestScrapStatusQuery(contestId: string, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: contestScrapStatusQueryKey(contestId),
     queryFn: () => fetchContestScrapStatus(contestId),

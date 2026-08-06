@@ -11,7 +11,7 @@ export function CompletedProjectSection() {
     <section className="flex w-full flex-col items-start gap-4">
       <SectionHeader
         title="진행 완료한 프로젝트"
-        count={!isLoading && !isError ? (data?.length ?? 0) : undefined}
+        count={!isLoading && !isError ? (data?.pages[0]?.totalElements ?? 0) : undefined}
       />
       <CompletedProjectList />
     </section>

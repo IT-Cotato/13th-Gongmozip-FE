@@ -107,7 +107,7 @@ function EditProfileForm({ profile }: { profile: MemberProfile }) {
   const router = useRouter();
   const updateProfileMutation = useUpdateMemberProfileMutation();
 
-  const [name, setName] = useState(profile.name);
+  const [name, setName] = useState(profile.name ?? "");
   const [gender, setGender] = useState<MemberGender | null>(profile.gender);
   const [birthdate, setBirthdate] = useState(toDigits(profile.birthDate));
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -160,7 +160,7 @@ function EditProfileForm({ profile }: { profile: MemberProfile }) {
           >
             {profile.email}
           </div>
-          {profile.loginProvider === "KAKAO" && (
+          {profile.snsType === "KAKAO" && (
             <p className="px-1 text-xs leading-[1.35] text-[#949494]">카카오톡 로그인 사용중</p>
           )}
         </div>

@@ -7,24 +7,52 @@ import { ChevronLeftIcon, CloseIcon, PlusIcon } from "../../_components/icons";
 import { ExitProfileWriteModal } from "../../_components/ExitProfileWriteModal";
 import { CertificateCard, type Certificate } from "./_components/CertificateCard";
 import { CertificateSheet } from "./_components/CertificateSheet";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import {
+  useCreateProfileWithDetailsMutation,
+  useUpdateProfileWithDetailsMutation,
+} from "@/queries/useCreateProfileWithDetailsMutation";
+import { ApiError } from "@/lib/http";
 
-// TODO: 자격증 수정용 바텀시트 디자인 전달받으면 구현 예정
 export default function CertificatesPage() {
   const router = useRouter();
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
+  const draftProjects = useProfileDraftStore((state) => state.projects);
+  const draftCertificates = useProfileDraftStore((state) => state.certificates);
+  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
+  const createProfileMutation = useCreateProfileWithDetailsMutation();
+  const updateProfileMutation = useUpdateProfileWithDetailsMutation();
+  const isSubmitting = createProfileMutation.isPending || updateProfileMutation.isPending;
+  const [certificates, setCertificates] = useState<Certificate[]>(draftCertificates);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function handleAddCertificate() {
+    setEditingIndex(null);
     setIsSheetOpen(true);
   }
 
   function handleSubmitCertificate(certificate: Certificate) {
+    if (editingIndex !== null) {
+      setCertificates((prev) =>
+        prev.map((existing, i) => (i === editingIndex ? certificate : existing)),
+      );
+      return;
+    }
     setCertificates((prev) => [...prev, certificate]);
   }
 
-  function handleEditCertificate() {
-    // TODO: 기존 값으로 채운 수정용 바텀시트 구현 예정
+  function handleEditCertificate(index: number) {
+    setEditingIndex(index);
+    setIsSheetOpen(true);
+  }
+
+  function handleCloseSheet() {
+    setIsSheetOpen(false);
+    setEditingIndex(null);
   }
 
   function handleDeleteCertificate(index: number) {
@@ -32,7 +60,46 @@ export default function CertificatesPage() {
   }
 
   function handleNext() {
-    router.push("/mypage/profile-management/new/complete");
+    if (isSubmitting) return;
+    setSubmitError(null);
+
+    const onError = (error: unknown) => {
+      setSubmitError(
+        error instanceof ApiError
+          ? error.message
+          : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
+      );
+    };
+
+    if (editingProfileId !== null) {
+      updateProfileMutation.mutate(
+        {
+          profileId: editingProfileId,
+          basicInfo: draftBasicInfo,
+          projects: draftProjects,
+          certificates,
+        },
+        {
+          onSuccess: () => {
+            resetProfileDraft();
+            router.push(`/mypage/profile-management/${editingProfileId}`);
+          },
+          onError,
+        },
+      );
+      return;
+    }
+
+    createProfileMutation.mutate(
+      { basicInfo: draftBasicInfo, projects: draftProjects, certificates },
+      {
+        onSuccess: () => {
+          resetProfileDraft();
+          router.push("/mypage/profile-management/new/complete");
+        },
+        onError,
+      },
+    );
   }
 
   return (
@@ -46,7 +113,9 @@ export default function CertificatesPage() {
         >
           <ChevronLeftIcon />
         </button>
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 작성</h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
+          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+        </h1>
         <button
           type="button"
           onClick={() => setIsExitModalOpen(true)}
@@ -86,7 +155,7 @@ export default function CertificatesPage() {
               <CertificateCard
                 key={`${certificate.name}-${index}`}
                 certificate={certificate}
-                onEdit={handleEditCertificate}
+                onEdit={() => handleEditCertificate(index)}
                 onDelete={() => handleDeleteCertificate(index)}
               />
             ))}
@@ -94,32 +163,51 @@ export default function CertificatesPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 flex gap-2.5 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161]"
-        >
-          이전
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
-        >
-          다음
-        </button>
+      <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        {submitError && <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>}
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+            className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
+          >
+            이전
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={isSubmitting}
+            className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white disabled:opacity-50"
+          >
+            {editingProfileId !== null
+              ? isSubmitting
+                ? "수정 중..."
+                : "수정 완료"
+              : isSubmitting
+                ? "등록 중..."
+                : "다음"}
+          </button>
+        </div>
       </div>
 
       {isSheetOpen && (
         <CertificateSheet
-          onClose={() => setIsSheetOpen(false)}
+          onClose={handleCloseSheet}
           onSubmit={handleSubmitCertificate}
+          initialCertificate={editingIndex !== null ? certificates[editingIndex] : undefined}
         />
       )}
 
       <ExitProfileWriteModal
-        onExit={() => router.push("/mypage/profile-management")}
+        onExit={() => {
+          const exitDestination =
+            editingProfileId !== null
+              ? `/mypage/profile-management/${editingProfileId}`
+              : "/mypage/profile-management";
+          resetProfileDraft();
+          router.push(exitDestination);
+        }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}
       />

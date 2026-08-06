@@ -14,7 +14,12 @@ type ContestDetailContentProps = {
 export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const isAuthenticated = Boolean(accessToken);
-  const { data: contest, error, isError, isLoading } = useContestDetailQuery(contestId, {
+  const {
+    data: contest,
+    error,
+    isError,
+    isLoading,
+  } = useContestDetailQuery(contestId, {
     enabled: isAuthenticated,
   });
   const isNotFound = error instanceof ApiError && error.status === 404;
@@ -52,16 +57,18 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
 
         {isAuthenticated && isError ? (
           <ContestDetailStatus
-            actionLabel={error instanceof ApiError && error.status === 401 ? "로그인하기" : "목록으로 돌아가기"}
+            actionLabel={
+              error instanceof ApiError && error.status === 401 ? "로그인하기" : "목록으로 돌아가기"
+            }
             href={error instanceof ApiError && error.status === 401 ? "/login/email" : "/contests"}
             message={
               isNotFound
                 ? "삭제되었거나 존재하지 않는 공모전입니다."
                 : error instanceof ApiError && error.status === 401
                   ? "로그인 후 공모전 상세 정보를 확인할 수 있습니다."
-                : error instanceof Error
-                  ? error.message
-                  : "공모전 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+                  : error instanceof Error
+                    ? error.message
+                    : "공모전 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
             }
             title={
               isNotFound
@@ -74,7 +81,9 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
           />
         ) : null}
 
-        {isAuthenticated && !isError && contest ? <ContestInfo contest={contest} posterIndex={1} /> : null}
+        {isAuthenticated && !isError && contest ? (
+          <ContestInfo contest={contest} posterIndex={1} />
+        ) : null}
       </div>
     </main>
   );

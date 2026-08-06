@@ -487,10 +487,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           ) : null}
 
           {sheetState === "complete" ? (
-            <VoteCompleteSheet
-              isResultReady={isLeaderResultReady}
-              onShowResult={showVoteResult}
-            />
+            <VoteCompleteSheet isResultReady={isLeaderResultReady} onShowResult={showVoteResult} />
           ) : null}
 
           {sheetState === "leaderResult" ? (

@@ -2,14 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
 export type MemberGender = "MALE" | "FEMALE";
-export type LoginProvider = "EMAIL" | "KAKAO";
 
 export type MemberProfile = {
   email: string;
-  name: string;
+  // 이름을 아직 입력하지 않은 회원(주로 SNS 간편가입 직후)은 null로 내려옴
+  name: string | null;
   gender: MemberGender;
   birthDate: string;
-  loginProvider: LoginProvider;
+  snsType: "KAKAO" | null;
+  snsLinked: boolean;
+  marketingConsentEmail: boolean;
+  marketingConsentSms: boolean;
 };
 
 export const MEMBER_PROFILE_QUERY_KEY = ["member", "profile"] as const;

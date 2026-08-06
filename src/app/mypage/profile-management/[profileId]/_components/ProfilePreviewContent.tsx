@@ -1,0 +1,335 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { ChevronLeftIcon } from "../../_components/icons";
+import { EditIcon } from "@/app/mypage/_components/icons";
+import { useProfileDetailQuery, type ProfileDetail } from "@/queries/useProfileDetailQuery";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { ApiError } from "@/lib/http";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import type { ProjectExperienceInput } from "../../new/experience/_components/ProjectExperienceSheet";
+import type { Certificate } from "../../new/certificates/_components/CertificateCard";
+
+const GENDER_LABEL: Record<string, string> = {
+  MALE: "남성",
+  FEMALE: "여성",
+};
+
+function formatDate(isoDate: string) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function formatMonth(isoDate: string | null) {
+  if (!isoDate) return "";
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function EmptySectionCard() {
+  return (
+    <div className="flex w-full flex-col items-start gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4">
+      <p className="px-1 text-[17px] leading-[1.35] font-medium text-[#949494]">
+        👟 첫 레이스 준비중...
+      </p>
+    </div>
+  );
+}
+
+function EmptySectionRow() {
+  return (
+    <div className="flex gap-2 px-7">
+      <div className="flex shrink-0 items-start py-2">
+        <span className="mt-2 size-[5px] rounded-full bg-[#ac4a35] opacity-50" />
+      </div>
+      <p className="text-[17px] leading-[1.5] text-[#949494]">👟 첫 레이스 준비중...</p>
+    </div>
+  );
+}
+
+const PROJECT_CATEGORY_FALLBACK: ProjectExperienceInput["category"] = "공모전 출품";
+
+// 백엔드는 프로젝트 카테고리를 저장하지 않고, 수상 내역도 프로젝트와 연결해
+// 저장하지 않는다. 수정 진입 시에는 카테고리를 기본값으로 채우고(재선택 필요),
+// 수상 내역은 마법사가 만들 때와 같은 순서(프로젝트당 최대 1개)로 저장됐다고
+// 가정해 배열 순서로 최대한 재연결한다.
+function buildProfileDraftFromDetail(profile: ProfileDetail) {
+  const basicInfo = {
+    nickname: profile.nickname,
+    school: profile.schoolName,
+    grade: String(profile.grade),
+    major: profile.major,
+    doubleMajor: profile.secondaryMajor ?? "",
+    minor: "",
+    gpa: String(profile.gpa),
+    gpaScale: String(profile.gpaScale),
+  };
+
+  const projects: ProjectExperienceInput[] = profile.projects.map((project, index) => {
+    const matchedAward = profile.awards[index];
+    return {
+      name: project.projectName,
+      startMonth: project.startedAt ? project.startedAt.slice(0, 7) : "",
+      endMonth: project.endedAt ? project.endedAt.slice(0, 7) : "",
+      category: PROJECT_CATEGORY_FALLBACK,
+      content: project.description,
+      hasAward: Boolean(matchedAward),
+      awardName: matchedAward?.awardName ?? "",
+    };
+  });
+
+  const certificates: Certificate[] = profile.certifications.map((certification) => ({
+    name: certification.certificateName,
+    category: certification.categoryName,
+    grade: "",
+    year: certification.acquiredAt ? String(new Date(certification.acquiredAt).getFullYear()) : "",
+  }));
+
+  return { basicInfo, projects, certificates };
+}
+
+function calculateAge(birthDate: string) {
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+export function ProfilePreviewContent({ profileId }: { profileId: string }) {
+  const router = useRouter();
+  const profileQuery = useProfileDetailQuery(profileId);
+  const memberQuery = useMemberProfileQuery();
+  const profile = profileQuery.data;
+  const member = memberQuery.data;
+  const setBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
+  const setProjects = useProfileDraftStore((state) => state.setProjects);
+  const setCertificates = useProfileDraftStore((state) => state.setCertificates);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+
+  function handleEdit() {
+    if (!profile) return;
+    const draft = buildProfileDraftFromDetail(profile);
+    setBasicInfo(draft.basicInfo);
+    setProjects(() => draft.projects);
+    setCertificates(() => draft.certificates);
+    setEditingProfileId(profile.profileId);
+    router.push("/mypage/profile-management/new");
+  }
+
+  const isLoading = profileQuery.isLoading;
+  const isUnauthorized =
+    profileQuery.error instanceof ApiError && profileQuery.error.status === 401;
+  const isError = profileQuery.isError && !isUnauthorized;
+
+  if (isUnauthorized) {
+    router.replace("/login/email");
+  }
+
+  const age = member ? calculateAge(member.birthDate) : null;
+  const birthYear = member ? new Date(member.birthDate).getFullYear() : null;
+
+  return (
+    <div className="flex h-full w-full flex-col bg-white">
+      <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="뒤로가기"
+          className="absolute left-4 flex h-6 w-6 items-center justify-center"
+        >
+          <ChevronLeftIcon />
+        </button>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 미리보기</h1>
+        <button
+          type="button"
+          aria-label="프로필 수정"
+          onClick={handleEdit}
+          disabled={!profile}
+          className="absolute right-4 flex h-6 w-6 items-center justify-center text-[#1f1f1f] disabled:opacity-50"
+        >
+          <EditIcon />
+        </button>
+      </div>
+
+      {isLoading && (
+        <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
+          프로필을 불러오는 중이에요...
+        </p>
+      )}
+
+      {isError && (
+        <div className="flex flex-col items-center gap-3 px-4 py-16">
+          <p className="text-[13px] text-[#949494]">프로필 정보를 불러오지 못했어요.</p>
+          <button
+            type="button"
+            onClick={() => profileQuery.refetch()}
+            className="rounded-full bg-[#F5F5F5] px-4 py-2 text-[13px] font-medium text-[#1F1F1F]"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
+      {profile && (
+        <div className="flex-1 overflow-y-auto pb-10">
+          <p className="px-6 pt-2 text-[13px] leading-[1.25] font-medium text-[#616161]">
+            <span className="font-semibold text-[#616161]">{formatDate(profile.updatedAt)}</span>{" "}
+            수정
+          </p>
+
+          <div className="flex items-center gap-4 px-6 py-4">
+            <div className="size-[70px] shrink-0 rounded-full bg-[#efefef]" />
+            <div className="flex flex-col items-start gap-2">
+              <p className="text-[17px] leading-[1.35] font-medium text-black">
+                {profile.nickname}
+              </p>
+              {member && (
+                <div className="flex items-center gap-1 text-[13px] leading-[1.5] text-[#616161]">
+                  <span>{GENDER_LABEL[member.gender] ?? member.gender}</span>
+                  <span>·</span>
+                  {age !== null && <span>{age}세</span>}
+                  <span className="text-[rgba(97,97,97,0.6)]">/</span>
+                  {birthYear !== null && <span>{birthYear}년생</span>}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <section className="flex flex-col gap-3 pt-4">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              학적 정보
+            </h2>
+            <div className="flex gap-2 px-7">
+              <div className="flex shrink-0 items-start py-2">
+                <span className="mt-2 size-[5px] rounded-full bg-[#1f1f1f]" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-3 text-[17px] leading-[1.5] text-[#1f1f1f]">
+                  <span>{profile.schoolName}</span>
+                  <span>{profile.grade}학년</span>
+                </div>
+                <div className="flex items-center gap-1 text-[13px] leading-[1.5] text-[#616161]">
+                  <span>{profile.major}</span>
+                  {profile.secondaryMajor && (
+                    <>
+                      <span className="size-[2px] rounded-full bg-[#616161]" />
+                      <span>{profile.secondaryMajor}</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-[13px] leading-[1.5] text-[#616161]">
+                  <span>학점</span>
+                  <span>
+                    {profile.gpa} / {profile.gpaScale}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3 pt-8">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              프로젝트 경험
+            </h2>
+            {profile.projects.length > 0 ? (
+              <div className="flex flex-col gap-4 px-5">
+                {profile.projects.map((project) => (
+                  <div
+                    key={project.projectId}
+                    className="flex w-full flex-col gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <p className="px-1 text-[17px] leading-[1.35] font-medium text-[#1f1f1f]">
+                        {project.projectName}
+                      </p>
+                      <div className="flex items-center gap-1 px-1 text-xs leading-[1.35] text-[#616161]">
+                        <span>{formatMonth(project.startedAt)}</span>
+                        <span>~</span>
+                        <span>{project.isOngoing ? "진행중" : formatMonth(project.endedAt)}</span>
+                      </div>
+                    </div>
+                    <div className="w-full rounded-xl bg-[#f5f5f5] px-2 py-4">
+                      <p className="px-1 text-[13px] leading-[1.5] text-[#616161]">
+                        {project.aiSummary || project.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5">
+                <EmptySectionCard />
+              </div>
+            )}
+          </section>
+
+          <section className="flex flex-col gap-3 pt-8">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              프로젝트 수상 내용
+            </h2>
+            {profile.awards.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {profile.awards.map((award) => (
+                  <div key={award.awardId} className="flex gap-2 px-7">
+                    <div className="flex shrink-0 items-start py-2">
+                      <span className="mt-2 size-[5px] rounded-full bg-[#ac4a35]" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[17px] leading-[1.5] text-[#1f1f1f]">{award.awardName}</p>
+                      <p className="text-[13px] leading-[1.5] text-[#616161]">
+                        {[award.organizationName, award.awardRank].filter(Boolean).join(" ")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptySectionRow />
+            )}
+          </section>
+
+          <section className="flex flex-col gap-3 pt-8">
+            <h2 className="px-6 text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+              보유 자격증
+            </h2>
+            {profile.certifications.length > 0 ? (
+              <div className="flex flex-col items-center gap-2 px-5">
+                {profile.certifications.map((certification) => (
+                  <div
+                    key={certification.certificationId}
+                    className="flex w-full flex-col gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4"
+                  >
+                    <span className="w-fit rounded-full bg-[#616161] px-2 py-1 text-xs font-semibold text-white">
+                      {certification.categoryName}
+                    </span>
+                    <div className="flex flex-col gap-1 px-1">
+                      <p className="text-[17px] leading-[1.35] font-medium text-[#1f1f1f]">
+                        {certification.certificateName}
+                      </p>
+                      <div className="flex items-center gap-1 text-xs leading-[1.35] text-[#616161]">
+                        <span>{new Date(certification.acquiredAt).getFullYear()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5">
+                <EmptySectionCard />
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
