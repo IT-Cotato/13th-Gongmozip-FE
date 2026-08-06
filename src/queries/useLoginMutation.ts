@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ApiError, API_BASE_URL, isBaseResponse } from "@/lib/http";
+import { ApiError, buildApiUrl, isBaseResponse } from "@/lib/http";
 
 export type LoginRequest = {
   email: string;
@@ -40,7 +40,7 @@ function getAccessTokenFromHeaders(response: Response) {
 }
 
 async function login(payload: LoginRequest) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const response = await fetch(buildApiUrl("/api/auth/login"), {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
