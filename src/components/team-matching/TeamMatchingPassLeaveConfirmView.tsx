@@ -50,7 +50,7 @@ export default function TeamMatchingPassLeaveConfirmView() {
         <PassIllustration className="mt-[-26px]" />
 
         <section className="relative z-30 mx-auto mt-[38px] w-[300px] text-center font-[Pretendard] text-[13px] font-normal not-italic leading-[150%] text-[#616161]">
-          <p>매칭을 패스하는 경우 협업 거리가 10m씩 줄어들어요.</p>
+          <p>매칭을 패스하는 경우 협업 거리가 3m씩 줄어들어요.</p>
           <p className="mt-1">다시 한번 생각해보시겠어요?</p>
         </section>
 
