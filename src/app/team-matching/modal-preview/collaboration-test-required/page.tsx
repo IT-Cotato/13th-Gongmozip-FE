@@ -9,6 +9,7 @@ export default function CollaborationTestRequiredModalPreviewPage() {
           label: "협업 유형 검사 바로가기",
         },
       ]}
+      fixedHeight="short"
       showCloseButton
       title={`AI 분석 매칭은\n협업 유형 검사가 완료되어야\n매칭 신청이 가능합니다.`}
     />
