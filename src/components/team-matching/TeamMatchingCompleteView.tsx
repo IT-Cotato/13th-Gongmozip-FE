@@ -17,7 +17,7 @@ export default function TeamMatchingCompleteView() {
       />
 
       <TeamMatchingHeader
-        backHref="/team-matching/status/waiting"
+        backHref="/team-matching"
         className="relative z-10 bg-white"
         title="나의 매칭현황"
       />
