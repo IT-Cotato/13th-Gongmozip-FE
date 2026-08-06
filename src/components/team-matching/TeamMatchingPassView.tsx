@@ -3,12 +3,18 @@ import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 
-function PassIllustration() {
+type PassIllustrationProps = {
+  className?: string;
+};
+
+export function PassIllustration({ className = "mt-px" }: PassIllustrationProps) {
   return (
-    <div className="isolate relative mx-auto mt-px h-[237px] w-full max-w-[362px] overflow-visible">
+    <div
+      className={`isolate relative mx-auto h-[237px] w-full max-w-[362px] overflow-visible ${className}`}
+    >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-[146px] top-[40px] -z-10 h-[300px] w-[351px] overflow-hidden"
+        className="pointer-events-none absolute left-[146px] top-[40px] -z-10 h-[349px] w-[351px] overflow-hidden"
       >
         <Image
           alt=""
@@ -87,7 +93,7 @@ export default function TeamMatchingPassView() {
         <div className="space-y-3">
           <Link
             className="flex h-[51px] w-full items-center justify-center self-stretch rounded-[14px] bg-[rgba(97,97,97,0.10)] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
-            href="/team-matching"
+            href="/team-matching/status/pass/leave"
           >
             나가기
           </Link>
