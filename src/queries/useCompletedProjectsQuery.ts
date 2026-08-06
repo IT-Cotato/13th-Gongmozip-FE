@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
 export type CompletedProject = {
+  teamId: number;
   contestId: number;
   contestTitle: string;
   completedAt: string;

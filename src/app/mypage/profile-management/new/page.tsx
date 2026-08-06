@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
 import { EditIcon } from "../../_components/icons";
@@ -8,6 +8,8 @@ import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
 import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useUpdateProfileImageMutation } from "@/queries/useUpdateProfileImageMutation";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -53,6 +55,29 @@ export default function CreateProfilePage() {
   const [gpaScale, setGpaScale] = useState(draftBasicInfo.gpaScale);
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+
+  const memberProfileQuery = useMemberProfileQuery();
+  const updateProfileImageMutation = useUpdateProfileImageMutation();
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const displayedImageUrl = previewImageUrl ?? memberProfileQuery.data?.profileImageUrl ?? null;
+
+  function handlePhotoButtonClick() {
+    photoInputRef.current?.click();
+  }
+
+  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewImageUrl(objectUrl);
+
+    updateProfileImageMutation.mutate(file, {
+      onError: () => setPreviewImageUrl(null),
+    });
+  }
 
   // 새 프로필을 처음 작성하는 시점(수정 아님 + 아직 아무것도 안 입력함)에만
   // 저장된 기본값을 불러온다. persist 스토어의 localStorage 복원이 마운트 이후
@@ -124,14 +149,32 @@ export default function CreateProfilePage() {
             <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">기본 정보</h2>
             <div className="flex items-center gap-4 px-6">
               <div className="relative shrink-0">
-                <div className="size-[70px] rounded-full bg-[#efefef]" />
+                {displayedImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={displayedImageUrl}
+                    alt=""
+                    className="size-[70px] rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="size-[70px] rounded-full bg-[#efefef]" />
+                )}
                 <button
                   type="button"
+                  onClick={handlePhotoButtonClick}
+                  disabled={updateProfileImageMutation.isPending}
                   aria-label="프로필 사진 변경"
-                  className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border border-[rgba(97,97,97,0.22)] bg-white"
+                  className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border border-[rgba(97,97,97,0.22)] bg-white disabled:opacity-50"
                 >
                   <EditIcon />
                 </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
               </div>
               <div className="flex flex-1 flex-col gap-1">
                 <FieldLabel label="닉네임" htmlFor="nickname" required />
@@ -144,6 +187,11 @@ export default function CreateProfilePage() {
                 />
               </div>
             </div>
+            {updateProfileImageMutation.isError && (
+              <p className="px-6 text-xs leading-[1.35] text-[#BB5260]">
+                프로필 사진 업로드에 실패했어요. 다시 시도해주세요.
+              </p>
+            )}
           </section>
 
           <section className="flex flex-col gap-4">

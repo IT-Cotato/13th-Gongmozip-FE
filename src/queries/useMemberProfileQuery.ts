@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export type MemberGender = "MALE" | "FEMALE";
 
@@ -13,6 +14,7 @@ export type MemberProfile = {
   snsLinked: boolean;
   marketingConsentEmail: boolean;
   marketingConsentSms: boolean;
+  profileImageUrl: string | null;
 };
 
 export const MEMBER_PROFILE_QUERY_KEY = ["member", "profile"] as const;
@@ -22,8 +24,11 @@ function fetchMemberProfile() {
 }
 
 export function useMemberProfileQuery() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
   return useQuery({
     queryKey: MEMBER_PROFILE_QUERY_KEY,
     queryFn: fetchMemberProfile,
+    enabled: Boolean(accessToken),
   });
 }

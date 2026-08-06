@@ -88,9 +88,13 @@ export default function MyPage() {
 
     logoutMutation.mutate(undefined, {
       onSettled: () => {
+        // /mypage가 아직 마운트된 상태에서 캐시를 지우면 이 페이지의 쿼리들이
+        // 즉시 재요청되고, 그 401 응답이 "인증 필요 시 /login/email로 이동"
+        // 로직을 같이 건드려서 라우팅이 충돌한다. 먼저 화면을 벗어난 뒤에
+        // 토큰/캐시를 정리한다.
+        router.replace("/");
         useAuthStore.getState().clearAccessToken();
         queryClient.clear();
-        router.replace("/");
       },
     });
   }

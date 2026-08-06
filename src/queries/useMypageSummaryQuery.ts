@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { CollaborationCharacterType } from "@/types/collaboration";
 
 export type CollaborationCharacterKey = CollaborationCharacterType;
@@ -28,8 +29,11 @@ export function fetchMypageSummary() {
 }
 
 export function useMypageSummaryQuery() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
   return useQuery({
     queryKey: mypageSummaryQueryKey,
     queryFn: fetchMypageSummary,
+    enabled: Boolean(accessToken),
   });
 }

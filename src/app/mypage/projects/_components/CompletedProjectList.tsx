@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useCompletedProjectsQuery } from "@/queries/useCompletedProjectsQuery";
+import { useDeleteCompletedProjectMutation } from "@/queries/useDeleteCompletedProjectMutation";
 import { CompletedProjectCard } from "./CompletedProjectCard";
+import { DeleteCompletedProjectConfirmModal } from "./DeleteCompletedProjectConfirmModal";
 import { EmptyState } from "./EmptyState";
 
 export function CompletedProjectList() {
@@ -14,7 +17,16 @@ export function CompletedProjectList() {
     hasNextPage,
     isFetchingNextPage,
   } = useCompletedProjectsQuery();
+  const deleteMutation = useDeleteCompletedProjectMutation();
+  const [pendingDeleteTeamId, setPendingDeleteTeamId] = useState<number | null>(null);
   const projects = data?.pages.flatMap((page) => page.projects) ?? [];
+
+  function handleConfirmDelete() {
+    if (pendingDeleteTeamId === null) return;
+    deleteMutation.mutate(pendingDeleteTeamId, {
+      onSuccess: () => setPendingDeleteTeamId(null),
+    });
+  }
 
   if (isLoading) {
     return (
@@ -52,7 +64,11 @@ export function CompletedProjectList() {
   return (
     <div className="flex w-full flex-col items-start gap-2 px-4">
       {projects.map((project) => (
-        <CompletedProjectCard key={project.contestId} project={project} />
+        <CompletedProjectCard
+          key={project.teamId}
+          project={project}
+          onDelete={() => setPendingDeleteTeamId(project.teamId)}
+        />
       ))}
       {hasNextPage && (
         <button
@@ -63,6 +79,14 @@ export function CompletedProjectList() {
         >
           {isFetchingNextPage ? "불러오는 중..." : "더보기"}
         </button>
+      )}
+
+      {pendingDeleteTeamId !== null && (
+        <DeleteCompletedProjectConfirmModal
+          onCancel={() => setPendingDeleteTeamId(null)}
+          onConfirm={handleConfirmDelete}
+          isDeleting={deleteMutation.isPending}
+        />
       )}
     </div>
   );

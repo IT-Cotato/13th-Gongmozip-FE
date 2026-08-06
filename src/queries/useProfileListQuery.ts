@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export type ProfileListItem = {
   profileId: number;
@@ -25,8 +26,11 @@ export function fetchProfileList() {
 }
 
 export function useProfileListQuery() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
   return useQuery({
     queryKey: profileListQueryKey,
     queryFn: fetchProfileList,
+    enabled: Boolean(accessToken),
   });
 }
