@@ -17,7 +17,10 @@ export type MemberProfile = {
   profileImageUrl: string | null;
 };
 
-export const MEMBER_PROFILE_QUERY_KEY = ["member", "profile"] as const;
+// accessToken을 키에 포함시켜, 로그아웃 없이 다른 계정으로 로그인해도
+// 이전 계정의 캐시된 데이터가 잠깐 보이는 일이 없도록 세션별로 캐시를 분리한다.
+export const memberProfileQueryKey = (accessToken: string | null) =>
+  ["member", "profile", accessToken] as const;
 
 function fetchMemberProfile() {
   return apiFetch<MemberProfile>("/api/members/me");
@@ -27,7 +30,7 @@ export function useMemberProfileQuery() {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   return useQuery({
-    queryKey: MEMBER_PROFILE_QUERY_KEY,
+    queryKey: memberProfileQueryKey(accessToken),
     queryFn: fetchMemberProfile,
     enabled: Boolean(accessToken),
   });

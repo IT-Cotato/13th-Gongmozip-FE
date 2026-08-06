@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
-  MEMBER_PROFILE_QUERY_KEY,
+  memberProfileQueryKey,
   type MemberGender,
   type MemberProfile,
 } from "./useMemberProfileQuery";
@@ -21,11 +22,12 @@ function updateMemberProfile(payload: UpdateMemberProfileRequest) {
 
 export function useUpdateMemberProfileMutation() {
   const queryClient = useQueryClient();
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   return useMutation({
     mutationFn: updateMemberProfile,
     onSuccess: (data) => {
-      queryClient.setQueryData(MEMBER_PROFILE_QUERY_KEY, data);
+      queryClient.setQueryData(memberProfileQueryKey(accessToken), data);
     },
   });
 }

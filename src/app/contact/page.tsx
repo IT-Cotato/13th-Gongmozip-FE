@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon } from "./_components/icons";
 import { SuccessModal } from "./_components/SuccessModal";
@@ -70,6 +70,8 @@ function ContactPageInner() {
   const createInquiryMutation = useCreateInquiryMutation();
   const inquiryListMutation = useInquiryListMutation();
   const setContactInquiryAuth = useContactInquiryAuthStore((state) => state.setContactInquiryAuth);
+  const contactAuthEmail = useContactInquiryAuthStore((state) => state.email);
+  const contactAuthPassword = useContactInquiryAuthStore((state) => state.password);
 
   const [activeTab, setActiveTab] = useState<"write" | "history">(() =>
     searchParams.get("tab") === "history" ? "history" : "write",
@@ -161,15 +163,14 @@ function ContactPageInner() {
     createInquiryMutation.reset();
   }
 
-  function handleHistoryConfirm() {
-    if (!isHistoryFormValid || inquiryListMutation.isPending) return;
+  function fetchInquiryList(email: string, password: string) {
     setHistoryError(null);
 
     inquiryListMutation.mutate(
-      { email: historyEmail, password: historyPassword },
+      { email, password },
       {
         onSuccess: (data) => {
-          setContactInquiryAuth(historyEmail, historyPassword);
+          setContactInquiryAuth(email, password);
           setInquiries(data.inquiries);
           setHistoryStep("list");
         },
@@ -187,6 +188,38 @@ function ContactPageInner() {
       },
     );
   }
+
+  function handleHistoryConfirm() {
+    if (!isHistoryFormValid || inquiryListMutation.isPending) return;
+    fetchInquiryList(historyEmail, historyPassword);
+  }
+
+  function handleRetryHistoryVerify() {
+    setInquiries([]);
+    setHistoryError(null);
+    setHistoryStep("verify");
+  }
+
+  // step=list로 새로고침되거나(URL 진입) 상세 화면에서 SPA 네비게이션으로
+  // 돌아오면 inquiries state가 초기화돼 있음. 인증 정보가 메모리에 남아있다면
+  // 한 번만 자동으로 다시 조회해서 목록을 복원한다.
+  const hasAttemptedListRestoreRef = useRef(false);
+  useEffect(() => {
+    if (
+      historyStep !== "list" ||
+      inquiries.length > 0 ||
+      !contactAuthEmail ||
+      !contactAuthPassword ||
+      hasAttemptedListRestoreRef.current
+    ) {
+      return;
+    }
+    hasAttemptedListRestoreRef.current = true;
+    fetchInquiryList(contactAuthEmail, contactAuthPassword);
+    // fetchInquiryList는 매 렌더 재생성되는 클로저라 deps에 넣으면 위 ref 가드가
+    // 무의미해짐 - ref로 단 한 번만 실행되도록 이미 보장하고 있음.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyStep, inquiries.length, contactAuthEmail, contactAuthPassword]);
 
   function handleOpenHistoryDetail(inquiryId: number) {
     router.push(
@@ -355,10 +388,23 @@ function ContactPageInner() {
             <p className="px-5 text-xs leading-[1.35] text-[#BB5260]">{historyError}</p>
           )}
         </div>
-      ) : inquiries.length === 0 ? (
+      ) : inquiryListMutation.isPending ? (
         <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
-          접수된 문의 내역이 없어요.
+          문의 내역을 불러오는 중이에요...
         </p>
+      ) : inquiries.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 px-4 py-16">
+          <p className="text-[13px] text-[#949494]">
+            {historyError ?? "접수된 문의 내역이 없어요."}
+          </p>
+          <button
+            type="button"
+            onClick={handleRetryHistoryVerify}
+            className="rounded-full bg-[#F5F5F5] px-4 py-2 text-[13px] font-medium text-[#1F1F1F]"
+          >
+            다시 조회
+          </button>
+        </div>
       ) : (
         <div className="flex flex-1 flex-col gap-4 p-4">
           {inquiries.map((item) => (

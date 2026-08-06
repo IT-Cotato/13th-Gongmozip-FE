@@ -6,6 +6,7 @@ type DeleteCompletedProjectConfirmModalProps = {
   onCancel: () => void;
   onConfirm: () => void;
   isDeleting: boolean;
+  errorMessage?: string | null;
 };
 
 const FOCUSABLE_SELECTOR =
@@ -15,6 +16,7 @@ export function DeleteCompletedProjectConfirmModal({
   onCancel,
   onConfirm,
   isDeleting,
+  errorMessage,
 }: DeleteCompletedProjectConfirmModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +29,7 @@ export function DeleteCompletedProjectConfirmModal({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        onCancel();
+        if (!isDeleting) onCancel();
         return;
       }
       if (event.key !== "Tab" || !dialog) return;
@@ -55,12 +57,16 @@ export function DeleteCompletedProjectConfirmModal({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel]);
+  }, [onCancel, isDeleting]);
+
+  function handleBackdropClick() {
+    if (!isDeleting) onCancel();
+  }
 
   return (
     <div
       role="presentation"
-      onClick={onCancel}
+      onClick={handleBackdropClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(31,31,31,0.6)] px-8"
     >
       <div
@@ -83,6 +89,11 @@ export function DeleteCompletedProjectConfirmModal({
             삭제한 기록은 목록에서 다시 볼 수 없어요.
           </p>
         </div>
+        {errorMessage && (
+          <p role="alert" aria-live="assertive" className="w-full px-1 text-xs text-[#BB5260]">
+            {errorMessage}
+          </p>
+        )}
         <div className="flex h-[60px] w-full items-center gap-2 px-2 py-1">
           <button
             type="button"

@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
-import { MEMBER_PROFILE_QUERY_KEY } from "./useMemberProfileQuery";
 
 type PresignedUrlResponse = {
   uploadUrl: string;
@@ -42,7 +41,9 @@ export function useUpdateProfileImageMutation() {
   return useMutation({
     mutationFn: uploadProfileImage,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MEMBER_PROFILE_QUERY_KEY });
+      // invalidateQueries는 키 접두사로 매칭되므로, 세션별로 뒤에 accessToken이
+      // 붙는 실제 쿼리키(memberProfileQueryKey)까지 그대로 무효화된다.
+      queryClient.invalidateQueries({ queryKey: ["member", "profile"] });
     },
   });
 }

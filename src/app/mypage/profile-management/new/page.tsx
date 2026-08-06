@@ -8,6 +8,7 @@ import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
 import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useUpdateProfileImageMutation } from "@/queries/useUpdateProfileImageMutation";
 
@@ -41,9 +42,16 @@ export default function CreateProfilePage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
-  const defaultBasicInfo = useProfileDefaultInfoStore((state) => state.defaultBasicInfo);
-  const setDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.setDefaultBasicInfo);
-  const clearDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.clearDefaultBasicInfo);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const defaultBasicInfo = useProfileDefaultInfoStore((state) =>
+    accessToken ? state.defaultBasicInfoByAccount[accessToken] ?? null : null,
+  );
+  const setDefaultBasicInfoForAccount = useProfileDefaultInfoStore(
+    (state) => state.setDefaultBasicInfo,
+  );
+  const clearDefaultBasicInfoForAccount = useProfileDefaultInfoStore(
+    (state) => state.clearDefaultBasicInfo,
+  );
 
   const [nickname, setNickname] = useState(draftBasicInfo.nickname);
   const [school, setSchool] = useState(draftBasicInfo.school);
@@ -83,16 +91,14 @@ export default function CreateProfilePage() {
   // 저장된 기본값을 불러온다. persist 스토어의 localStorage 복원이 마운트 이후
   // 비동기로 끝나기 때문에, 값이 바뀔 때 렌더 중에 반영한다("Adjusting state
   // when a prop changes" 패턴 - useEffect로 하면 리렌더가 한 번 더 발생함).
-  const [appliedDefaultBasicInfo, setAppliedDefaultBasicInfo] = useState(defaultBasicInfo);
-  if (
-    defaultBasicInfo !== appliedDefaultBasicInfo &&
-    editingProfileId === null &&
-    defaultBasicInfo &&
-    !nickname &&
-    !school &&
-    !major
-  ) {
-    setAppliedDefaultBasicInfo(defaultBasicInfo);
+  // "적용 여부"는 defaultBasicInfo와의 값 비교가 아니라 별도 플래그로 추적한다 -
+  // 하이드레이션이 마운트 전에 이미 끝나있는 재진입 시나리오에서는 초기 렌더부터
+  // defaultBasicInfo와 baseline이 같아져서 값 비교로는 절대 적용되지 않는 문제가 있었음.
+  const [hasAppliedDefault, setHasAppliedDefault] = useState(false);
+  const areBasicFieldsEmpty =
+    !nickname && !school && !grade && !major && !doubleMajor && !minor && !gpa && !gpaScale;
+  if (!hasAppliedDefault && editingProfileId === null && defaultBasicInfo && areBasicFieldsEmpty) {
+    setHasAppliedDefault(true);
     setNickname(defaultBasicInfo.nickname);
     setSchool(defaultBasicInfo.school);
     setGrade(defaultBasicInfo.grade);
@@ -116,10 +122,12 @@ export default function CreateProfilePage() {
     const basicInfo = { nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale };
     setDraftBasicInfo(basicInfo);
 
-    if (saveAsDefault) {
-      setDefaultBasicInfo(basicInfo);
-    } else {
-      clearDefaultBasicInfo();
+    if (accessToken) {
+      if (saveAsDefault) {
+        setDefaultBasicInfoForAccount(accessToken, basicInfo);
+      } else {
+        clearDefaultBasicInfoForAccount(accessToken);
+      }
     }
 
     router.push("/mypage/profile-management/new/experience");

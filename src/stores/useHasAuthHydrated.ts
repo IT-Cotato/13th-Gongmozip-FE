@@ -15,6 +15,14 @@ export function useHasAuthHydrated() {
   );
 
   useEffect(() => {
+    // hydrate()는 마이크로태스크로 끝나서, useState 초기화 이후 이 effect가
+    // 붙기 전에 이미 완료돼버리면 onFinishHydration 콜백은 놓친 이벤트라 다시
+    // 안 불린다. 그래서 구독 직후 한 번 더 확인해서 그 사이 끝났으면 반영한다 -
+    // zustand persist를 외부 스토어로 구독하는 경우라 이 setState는 필요하다.
+    if (useAuthStore.persist?.hasHydrated()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHasHydrated(true);
+    }
     return useAuthStore.persist?.onFinishHydration(() => setHasHydrated(true));
   }, []);
 
