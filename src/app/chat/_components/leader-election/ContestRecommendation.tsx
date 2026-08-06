@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 import { ChatbotAvatar, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
@@ -221,25 +224,126 @@ export function ContestVoteNoticeBanner({ onVote }: { onVote: () => void }) {
   );
 }
 
-export function ContestVoteResultMessage({ contest }: { contest: RecommendedContest }) {
-  return (
-    <article className="flex w-full items-start gap-2">
-      <ChatbotAvatar />
+export function ContestVoteResultMessage({
+  contest,
+  onMidtermSubmit,
+}: {
+  contest: RecommendedContest;
+  onMidtermSubmit: () => void;
+}) {
+  const [midtermProgress, setMidtermProgress] = useState(0);
 
-      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-        <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            {`투표 결과, ${contest.title}이 이번 팀 공모전으로 선택되었어요.
-이제 팀원들과 함께 공모전 준비를 시작해보세요.`}
-          </p>
-          <MessageMeta />
+  const submitMidtermCheck = (value: number) => {
+    setMidtermProgress(value);
+
+    if (value > 0) {
+      onMidtermSubmit();
+    }
+  };
+
+  return (
+    <>
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+              {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
+            </p>
+            <MessageMeta />
+          </div>
+          <div className="mt-1 w-[290px] rounded-[10px] bg-color-orange-50">
+            <CompactContestListItem contest={contest} />
+          </div>
         </div>
-        <div className="mt-1 w-[230px] rounded-[12px] bg-color-gray-200 p-3">
-          <CompactContestListItem contest={contest} />
+      </article>
+
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+              {`언제든 저의 도움이 필요하면
+태그해주세요.`}
+            </p>
+            <MessageMeta />
+          </div>
         </div>
+      </article>
+
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <div className="max-w-[230px] rounded-[16px] rounded-tl-none bg-color-gray-150 px-3 py-2 text-[13px] leading-[1.5] text-color-coral-900">
+              <p className="font-semibold text-[#AC4A35]">활용 예시</p>
+              <div className="mt-1 flex gap-2.5 py-1">
+                <span className="w-0.5 rounded-full bg-color-coral-500" />
+                <div>
+                  <p>저를 사용할 수 있는 예시입니다.</p>
+                  <p>@챗봇 우리 역할 분담 추천해줘</p>
+                  <p>@챗봇 우리 타임라인 추천해줘</p>
+                </div>
+              </div>
+            </div>
+            <MessageMeta />
+          </div>
+          <button
+            className="mt-1 flex h-9 w-[230px] items-center justify-center rounded-[10px] bg-color-coral-500 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+            type="button"
+          >
+            @챗봇에게 말하기
+          </button>
+        </div>
+      </article>
+
+      <div className="flex w-full items-center gap-1 text-[9px] leading-[1.35] text-color-gray-650">
+        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
+        <span className="shrink-0">오늘 오후 2:30</span>
+        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
       </div>
-    </article>
+
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+              {`팀원들과 회의를 잘 진행하고 있나요?
+현재 진행률을 체크해주세요 :)
+진행률 체크는 팀장님만 할 수 있습니다.`}
+            </p>
+            <MessageMeta />
+          </div>
+          <div className="relative mt-1 h-[23px] w-[230px] overflow-hidden rounded-[40px] bg-color-gray-200">
+            <div
+              className="absolute inset-y-0 left-0 rounded-[40px] bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)]"
+              style={{ width: midtermProgress > 0 ? `${midtermProgress}%` : "26px" }}
+            />
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[8px] leading-[1.35] font-semibold text-color-gray-500">
+              드래그 해주세요
+            </span>
+            <input
+              aria-label="중간점검 진행률"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              max={100}
+              min={0}
+              onChange={(event) => submitMidtermCheck(Number(event.target.value))}
+              type="range"
+              value={midtermProgress}
+            />
+          </div>
+        </div>
+      </article>
+
+    </>
   );
 }
 
