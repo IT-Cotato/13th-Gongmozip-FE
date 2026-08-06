@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
 export type CompletedProject = {
@@ -19,13 +19,20 @@ type CompletedProjectsResponse = {
 
 export const COMPLETED_PROJECTS_QUERY_KEY = ["member", "projects", "completed"] as const;
 
-function fetchCompletedProjects() {
-  return apiFetch<CompletedProjectsResponse>("/api/mypage/projects/completed?size=50");
+const PAGE_SIZE = 50;
+
+function fetchCompletedProjects(page: number) {
+  return apiFetch<CompletedProjectsResponse>(
+    `/api/mypage/projects/completed?page=${page}&size=${PAGE_SIZE}`,
+  );
 }
 
 export function useCompletedProjectsQuery() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: COMPLETED_PROJECTS_QUERY_KEY,
-    queryFn: fetchCompletedProjects,
+    queryFn: ({ pageParam }) => fetchCompletedProjects(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.page + 1 < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
 }
