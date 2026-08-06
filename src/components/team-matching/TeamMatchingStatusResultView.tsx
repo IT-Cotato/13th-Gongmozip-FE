@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 
@@ -219,12 +220,12 @@ export default function TeamMatchingStatusResultView() {
         >
           패스
         </button>
-        <button
+        <Link
           className="flex h-[50px] w-[174px] items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-          type="button"
+          href="/team-matching/status/waiting"
         >
           수락
-        </button>
+        </Link>
       </div>
     </main>
   );
