@@ -118,6 +118,7 @@ export function MemberReviewFlow({
   const leaveReview = () => {
     setIsStopOpen(false);
     onLeave?.(answers);
+    router.push(`/chat/${roomId}`);
   };
 
   const goHome = () => {
@@ -131,10 +132,10 @@ export function MemberReviewFlow({
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
       {phase === "complete" ? (
-        <MemberReviewCompleteScreen onGoHome={goHome} onLeave={() => onLeave?.(answers)} />
+        <MemberReviewCompleteScreen onGoHome={goHome} onLeave={leaveReview} />
       ) : (
         <>
-          <ChatTopBar roomId={roomId} title="팀원 리뷰" />
+          <ChatTopBar backHref={`/chat/${roomId}`} roomId={roomId} title="팀원 리뷰" />
 
           <section
             aria-label="팀원 리뷰"

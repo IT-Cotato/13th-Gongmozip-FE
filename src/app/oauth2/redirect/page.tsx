@@ -17,12 +17,12 @@ export default function OAuthRedirectPage() {
     const accessToken = readCookie("accessToken");
 
     if (!accessToken) {
-      router.replace("/login/email");
+      router.replace("/login");
       return;
     }
 
     setAccessToken(accessToken);
-    router.replace("/mypage");
+    router.replace("/");
   }, [router, setAccessToken]);
 
   return (

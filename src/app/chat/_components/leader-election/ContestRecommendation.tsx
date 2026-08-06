@@ -1,6 +1,9 @@
-import Image from "next/image";
+"use client";
 
-import { ChatbotAvatar, MessageMeta } from "./ChatbotMessage";
+import Image from "next/image";
+import { useState } from "react";
+
+import { ChatbotAvatar, ChatbotUsageGuideMessage, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
 
 const voteTimerText = "01 : 24 : 30";
@@ -190,7 +193,13 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
   );
 }
 
-export function ContestVoteNoticeBanner({ onVote }: { onVote: () => void }) {
+export function ContestVoteNoticeBanner({
+  isVoteSubmitted,
+  onAction,
+}: {
+  isVoteSubmitted: boolean;
+  onAction: () => void;
+}) {
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
       <div className="relative shrink-0">
@@ -210,36 +219,160 @@ export function ContestVoteNoticeBanner({ onVote }: { onVote: () => void }) {
 남았어요!`}
         </p>
         <button
-          className="mt-2 flex h-9 w-full items-center justify-center rounded-[10px] bg-color-gray-650 text-[13px] leading-[1.25] font-semibold text-white"
-          onClick={onVote}
+          className={`mt-2 flex h-9 w-full items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
+            isVoteSubmitted
+              ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+              : "bg-color-gray-650 text-white"
+          }`}
+          onClick={onAction}
           type="button"
         >
-          투표하기
+          {isVoteSubmitted ? "결과 확인하기" : "투표하기"}
         </button>
       </div>
     </section>
   );
 }
 
-export function ContestVoteResultMessage({ contest }: { contest: RecommendedContest }) {
+export function ProjectSubmissionReminderBanner({
+  onComplete,
+  onIncomplete,
+}: {
+  onComplete: () => void;
+  onIncomplete: () => void;
+}) {
   return (
-    <article className="flex w-full items-start gap-2">
-      <ChatbotAvatar />
-
-      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-        <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            {`투표 결과, ${contest.title}이 이번 팀 공모전으로 선택되었어요.
-이제 팀원들과 함께 공모전 준비를 시작해보세요.`}
-          </p>
-          <MessageMeta />
-        </div>
-        <div className="mt-1 w-[230px] rounded-[12px] bg-color-gray-200 p-3">
-          <CompactContestListItem contest={contest} />
+    <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <p className="text-center text-[15px] leading-[1.35] text-color-gray-750">
+          프로젝트가 진행완료되었으면, 진행완료 버튼을 눌러주세요.
+        </p>
+        <div className="flex h-9 w-full gap-2">
+          <button
+            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-[rgba(97,97,97,0.10)] px-3 text-[13px] leading-[1.25] font-semibold text-color-gray-650"
+            onClick={onIncomplete}
+            type="button"
+          >
+            미완료
+          </button>
+          <button
+            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-color-gray-650 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+            onClick={onComplete}
+            type="button"
+          >
+            진행 완료
+          </button>
         </div>
       </div>
-    </article>
+    </section>
+  );
+}
+
+export function ContestVoteResultMessage({
+  contest,
+  onMidtermSubmit,
+}: {
+  contest: RecommendedContest;
+  onMidtermSubmit: () => void;
+}) {
+  const [midtermProgress, setMidtermProgress] = useState(0);
+
+  const submitMidtermCheck = (value: number) => {
+    setMidtermProgress(value);
+
+    if (value > 0) {
+      onMidtermSubmit();
+    }
+  };
+
+  return (
+    <>
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+              {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
+            </p>
+            <MessageMeta />
+          </div>
+          <div className="mt-1 w-[290px] rounded-[10px] bg-color-orange-50">
+            <CompactContestListItem contest={contest} />
+          </div>
+        </div>
+      </article>
+
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+              {`언제든 저의 도움이 필요하면
+태그해주세요.`}
+            </p>
+            <MessageMeta />
+          </div>
+        </div>
+      </article>
+
+      <ChatbotUsageGuideMessage />
+
+      <div className="flex w-full items-center gap-1 text-[9px] leading-[1.35] text-color-gray-650">
+        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
+        <span className="shrink-0">오늘 오후 2:30</span>
+        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
+      </div>
+
+      <article className="flex w-full items-start gap-2">
+        <ChatbotAvatar />
+
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+          <div className="flex w-full items-end gap-2">
+            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+              {`팀원들과 회의를 잘 진행하고 있나요?
+현재 진행률을 체크해주세요 :)
+진행률 체크는 팀장님만 할 수 있습니다.`}
+            </p>
+            <MessageMeta />
+          </div>
+          <div className="relative mt-1 h-[23px] w-[230px] overflow-hidden rounded-[40px] bg-color-gray-200">
+            <div
+              className="absolute inset-y-0 left-0 rounded-[40px] bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)]"
+              style={{ width: midtermProgress > 0 ? `${midtermProgress}%` : "26px" }}
+            />
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[8px] leading-[1.35] font-semibold text-color-gray-500">
+              드래그 해주세요
+            </span>
+            <input
+              aria-label="중간점검 진행률"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              max={100}
+              min={0}
+              onChange={(event) => submitMidtermCheck(Number(event.target.value))}
+              type="range"
+              value={midtermProgress}
+            />
+          </div>
+        </div>
+      </article>
+
+    </>
   );
 }
 
