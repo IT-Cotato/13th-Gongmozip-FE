@@ -1,3 +1,192 @@
+import BottomNavigation from "@/components/layout/BottomNavigation";
+import Image from "next/image";
+import Link from "next/link";
+
+const heroContest = {
+  title: "2026년 『KB Dream Wave 2030』\nKB라스쿨 중등 4기 멘토링 멘토 모집",
+  organizer: "KB국민은행 / 아이들과미래재단",
+  period: "2026년 05월 26일 ~ 2026년 06월 17일",
+};
+
+function Header() {
+  return (
+    <header className="flex h-[46px] shrink-0 items-center justify-between bg-white px-4 py-1">
+      <span className="size-[38px]" aria-hidden="true" />
+      <h1 className="flex h-[38px] items-center justify-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
+        공모집
+      </h1>
+      <div className="flex items-center">
+        <Link
+          href="/alarm"
+          aria-label="알림"
+          className="relative flex size-[38px] items-center justify-center rounded-[14px]"
+        >
+          <Image
+            src="/icons/home/bell.svg"
+            alt=""
+            width={15}
+            height={17}
+            className="h-[16.667px] w-[15px]"
+          />
+          <span className="absolute top-[7px] right-[7px] size-3 rounded-full border-2 border-white bg-color-coral-500" />
+        </Link>
+        <Link
+          href="/contests/scraps"
+          aria-label="스크랩한 공모전"
+          className="flex size-[38px] items-center justify-center rounded-[14px]"
+        >
+          <Image
+            src="/icons/home/bookmark.svg"
+            alt=""
+            width={12}
+            height={17}
+            className="h-[16.667px] w-[11.667px]"
+          />
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function HeroCard() {
+  return (
+    <section className="relative h-[268.5px] w-full overflow-hidden rounded-2xl bg-white shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]">
+      <Image
+        src="/images/home/hero-kb-dream-wave.png"
+        alt=""
+        fill
+        priority
+        sizes="358px"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-color-gray-850/0 from-[10%] to-color-gray-850/90 to-[70%]" />
+      <div className="absolute inset-x-4 bottom-7 flex flex-col gap-3 text-white">
+        <h2 className="whitespace-pre-line text-[17px] leading-[1.35] font-bold">
+          {heroContest.title}
+        </h2>
+        <div className="flex flex-col gap-1 text-xs leading-[1.35] font-semibold text-white/70">
+          <p className="truncate">{heroContest.organizer}</p>
+          <p className="truncate">{heroContest.period}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HeroIndicator() {
+  return (
+    <div className="flex items-center gap-1" aria-label="추천 공모전 1 / 3">
+      <span className="size-1 rounded-full bg-color-gray-850" />
+      <span className="size-1 rounded-full bg-color-gray-400" />
+      <span className="size-1 rounded-full bg-color-gray-400" />
+    </div>
+  );
+}
+
+function SearchBar() {
+  return (
+    <Link
+      href="/contests"
+      className="flex h-[43px] w-full items-center rounded-full bg-color-gray-150 px-4 py-3"
+      aria-label="공모전 검색"
+    >
+      <span className="text-[15px] leading-[1.25] font-medium text-color-gray-850/40">
+        원하는 공모전을 검색하세요
+      </span>
+      <span className="ml-auto flex size-[38px] items-center justify-center rounded-[14px]">
+        <Image src="/icons/home/search.svg" alt="" width={20} height={20} className="size-5" />
+      </span>
+    </Link>
+  );
+}
+
+function MatchingCard() {
+  return (
+    <section className="flex flex-col gap-[10px] px-4 py-2">
+      <h2 className="px-2 text-[20px] leading-[1.35] font-medium text-black">
+        오늘의 AI 팀원 매칭
+      </h2>
+
+      <div className="relative h-[177px] overflow-hidden rounded-[14px] bg-color-khaki-50 px-[18px] py-4">
+        <Image
+          src="/images/home/matching-flag-shape.svg"
+          alt=""
+          width={234}
+          height={265}
+          className="pointer-events-none absolute top-[-72px] right-[-82px] h-[265px] w-[234px] rotate-[30.51deg]"
+        />
+        <Image
+          src="/images/home/matching-character.png"
+          alt=""
+          width={180}
+          height={182}
+          className="pointer-events-none absolute right-[-23px] bottom-[-24px] h-[182px] w-[180px] rotate-[-12.72deg] object-cover"
+        />
+
+        <div className="relative z-10 flex h-full w-[190px] flex-col justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="w-fit rounded-[10px] bg-color-coral-500 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
+              팀원 매칭 마감까지
+            </span>
+            <p className="flex items-center gap-[3px] px-1 text-center text-color-coral-700">
+              <span className="text-[30px] leading-[1.35] font-bold">01</span>
+              <span className="text-[17px] leading-[1.35] font-semibold text-color-coral-600/50">
+                :
+              </span>
+              <span className="text-[30px] leading-[1.35] font-bold">24</span>
+              <span className="text-[17px] leading-[1.35] font-semibold text-color-coral-600/50">
+                :
+              </span>
+              <span className="text-[30px] leading-[1.35] font-bold">30</span>
+            </p>
+          </div>
+
+          <div className="flex w-[179px] flex-wrap gap-y-1 rounded-[10px] px-0.5 py-1 text-[15px] leading-[1.25] font-medium text-color-khaki-900">
+            <span>지금&nbsp;</span>
+            <span className="rounded-[10px] bg-color-gray-650/10 px-1">000</span>
+            <span>명이</span>
+            <span className="w-full">함께할 팀을 찾고 있어요!</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex h-[50px] gap-[7px]">
+        <Link
+          href="/team-matching/profile"
+          className="flex min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
+        >
+          매칭 신청하기
+        </Link>
+        <Link
+          href="/team-matching"
+          className="flex w-[102px] shrink-0 items-center justify-center rounded-[14px] border border-color-gray-650/50 px-2 py-[9px] text-[15px] leading-[1.25] font-semibold text-color-gray-650"
+        >
+          나의 매칭현황
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
-  return <main className="min-h-screen bg-background text-foreground" />;
+  return (
+    <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
+      <Header />
+
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto pb-4">
+        <div className="flex flex-col items-center gap-2 px-4 pt-[14px]">
+          <HeroCard />
+          <HeroIndicator />
+        </div>
+
+        <div className="px-4 py-3">
+          <SearchBar />
+        </div>
+
+        <MatchingCard />
+      </div>
+
+      <BottomNavigation unreadChatCount={9} />
+    </main>
+  );
 }

@@ -1,0 +1,427 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+
+import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
+import { useContestScrapStatusQuery } from "@/queries/useContestScrapStatusQuery";
+import { useContestScrapStore } from "@/stores/contestScrapStore";
+import type { ContestDetail } from "../_types";
+import { ShareContestModal } from "./ShareContestModal";
+
+type ContestInfoProps = {
+  contest: ContestDetail;
+  posterIndex: number;
+};
+
+const detailRows = [
+  { label: "접수기간", key: "applicationPeriod" },
+  { label: "결과발표", key: "announcementDate" },
+  { label: "공모전 분야", key: "category" },
+  { label: "지원자격", key: "eligibility" },
+  { label: "시상내역", key: "prize" },
+  { label: "진행장소", key: "location" },
+  { label: "참가방식", key: "teamParticipation" },
+  { label: "공모전 내용", key: "description" },
+] as const;
+
+const websiteLinkClassName =
+  "flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand";
+
+export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
+  const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
+  const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
+  const { data: scrapStatus } = useContestScrapStatusQuery(contest.id);
+  const contestScrapMutation = useContestScrapMutation();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [showScrapToast, setShowScrapToast] = useState(false);
+  const [showScrapErrorToast, setShowScrapErrorToast] = useState(false);
+  const [showShareToast, setShowShareToast] = useState(false);
+  const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
+  const [isWebSharePending, setIsWebSharePending] = useState(false);
+  const scrapToastTimerRef = useRef<number | null>(null);
+  const scrapErrorToastTimerRef = useRef<number | null>(null);
+  const shareToastTimerRef = useRef<number | null>(null);
+  const linkCopiedToastTimerRef = useRef<number | null>(null);
+  const isScrapped =
+    scrapStatus?.isScrapped ?? (scrappedContestIds.includes(contest.id) || contest.isScrapped);
+
+  useEffect(() => {
+    if (!scrapStatus) {
+      return;
+    }
+
+    setScrapStatus(contest.id, scrapStatus.isScrapped);
+  }, [contest.id, scrapStatus, setScrapStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (scrapToastTimerRef.current !== null) {
+        window.clearTimeout(scrapToastTimerRef.current);
+      }
+
+      if (shareToastTimerRef.current !== null) {
+        window.clearTimeout(shareToastTimerRef.current);
+      }
+
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+
+      if (linkCopiedToastTimerRef.current !== null) {
+        window.clearTimeout(linkCopiedToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleScrapClick = async () => {
+    if (contestScrapMutation.isPending) {
+      return;
+    }
+
+    const nextIsScrapped = !isScrapped;
+
+    if (scrapToastTimerRef.current !== null) {
+      window.clearTimeout(scrapToastTimerRef.current);
+    }
+
+    if (scrapErrorToastTimerRef.current !== null) {
+      window.clearTimeout(scrapErrorToastTimerRef.current);
+    }
+
+    setShowScrapErrorToast(false);
+
+    try {
+      await contestScrapMutation.mutateAsync({
+        contestId: contest.id,
+        isScrapped: nextIsScrapped,
+      });
+
+      if (nextIsScrapped) {
+        setShowScrapToast(true);
+        scrapToastTimerRef.current = window.setTimeout(() => {
+          setShowScrapToast(false);
+          scrapToastTimerRef.current = null;
+        }, 2000);
+      } else {
+        setShowScrapToast(false);
+        scrapToastTimerRef.current = null;
+      }
+    } catch {
+      setShowScrapToast(false);
+      scrapToastTimerRef.current = null;
+      setShowScrapErrorToast(true);
+
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+
+      scrapErrorToastTimerRef.current = window.setTimeout(() => {
+        setShowScrapErrorToast(false);
+        scrapErrorToastTimerRef.current = null;
+      }, 2000);
+    }
+  };
+
+  const handleShareComplete = () => {
+    if (shareToastTimerRef.current !== null) {
+      window.clearTimeout(shareToastTimerRef.current);
+    }
+
+    setShowShareToast(true);
+    shareToastTimerRef.current = window.setTimeout(() => {
+      setShowShareToast(false);
+      shareToastTimerRef.current = null;
+    }, 2000);
+  };
+
+  const showLinkCopiedMessage = () => {
+    if (linkCopiedToastTimerRef.current !== null) {
+      window.clearTimeout(linkCopiedToastTimerRef.current);
+    }
+
+    setShowLinkCopiedToast(true);
+    linkCopiedToastTimerRef.current = window.setTimeout(() => {
+      setShowLinkCopiedToast(false);
+      linkCopiedToastTimerRef.current = null;
+    }, 2000);
+  };
+
+  const copyShareUrlToClipboard = async (shareUrl: string) => {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        return;
+      } catch {
+        // Fall back to the textarea copy path below.
+      }
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = shareUrl;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.top = "0";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  };
+
+  const handleWebShareClick = async () => {
+    if (isWebSharePending) {
+      return;
+    }
+
+    const shareUrl = window.location.href;
+    const shareData: ShareData = {
+      title: contest.title,
+      text: contest.description || `${contest.organizer} ${contest.category} 공모전`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      setIsWebSharePending(true);
+
+      try {
+        await navigator.share(shareData);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      } finally {
+        setIsWebSharePending(false);
+      }
+
+      return;
+    }
+
+    await copyShareUrlToClipboard(shareUrl);
+    showLinkCopiedMessage();
+  };
+
+  return (
+    <section aria-label="공모전 정보" className="flex min-h-full flex-col">
+      <div className="px-[27px] pt-[13px]">
+        <span className="inline-flex items-center justify-center rounded-[85px] bg-color-coral-100 px-2 py-1 text-center text-[12px] leading-[135%] font-semibold text-semantic-line-brand">
+          {contest.category}
+        </span>
+
+        <div className="mt-[14px] flex justify-center">
+          {contest.posterImageUrl ? (
+            <ContestImage
+              src={contest.posterImageUrl}
+              alt={`${contest.title} 포스터`}
+              className="h-[222px] w-[159px] object-cover"
+              width={159}
+              height={222}
+            />
+          ) : (
+            <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
+              이미지 {posterIndex}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-[27px] flex flex-1 flex-col items-start gap-2 self-stretch bg-white px-6 py-4">
+        <div className="flex w-full items-start justify-between">
+          <span className="inline-flex items-center justify-center rounded bg-color-coral-500 px-4 py-1 text-[15px] leading-[125%] font-semibold text-white">
+            {contest.dDay}
+          </span>
+          <span className="mt-[11px] inline-flex items-center gap-1 text-[12px] leading-[135%] font-semibold text-color-gray-650">
+            <Image
+              src="/icons/contests/tabler_eye-filled.svg"
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 aspect-square shrink-0"
+            />
+            {contest.viewCount.toLocaleString("ko-KR")}
+          </span>
+        </div>
+
+        <p className="mt-3 w-[252px] text-[17px] leading-[150%] font-medium text-color-gray-650">
+          {contest.organizer}
+        </p>
+
+        <div className="mt-[11px] grid w-full grid-cols-[minmax(0,1fr)_48px] gap-4">
+          <div className="min-w-0">
+            <h2 className="w-[228px] text-[24px] leading-[135%] font-bold break-keep text-color-gray-900">
+              {contest.title}
+            </h2>
+          </div>
+          <button
+            type="button"
+            aria-label={`${contest.title} 스크랩`}
+            aria-pressed={isScrapped}
+            className="relative mt-1 flex h-12 w-12 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)]"
+            disabled={contestScrapMutation.isPending}
+            onClick={handleScrapClick}
+          >
+            <Image
+              src="/icons/contests/Button/_Asset/tabler_bookmark-filled.svg"
+              alt=""
+              width={24}
+              height={24}
+              className={`absolute top-3 left-3 flex size-6 shrink-0 items-center justify-center ${
+                isScrapped ? "opacity-100" : "opacity-30 grayscale"
+              }`}
+            />
+          </button>
+        </div>
+
+        <dl className="mt-8 flex w-full flex-col gap-4">
+          {detailRows.map((row) => (
+            <div key={row.key} className="flex w-full items-start gap-0">
+              <dt className="h-[18px] w-[106px] shrink-0 text-[15px] leading-[125%] font-semibold text-color-gray-650">
+                {row.label}
+              </dt>
+              <dd className="min-w-0 flex-1 whitespace-pre-line text-[13px] leading-[135%] font-medium break-keep text-color-gray-700">
+                {contest[row.key]}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        {contest.detailImageUrls.length > 0 ? (
+          <div className="mt-6 flex w-full flex-col gap-3">
+            {contest.detailImageUrls.map((imageUrl, index) => (
+              <ContestImage
+                key={`${imageUrl}-${index}`}
+                src={imageUrl}
+                alt={`${contest.title} 상세 이미지 ${index + 1}`}
+                className="h-auto w-full rounded-lg object-cover"
+                width={342}
+                height={456}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        <div className="relative mt-8 w-full max-w-[358px]">
+          {showShareToast ? (
+            <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
+          ) : null}
+
+          {showScrapToast ? (
+            <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
+          ) : null}
+
+          {showScrapErrorToast ? <ContestActionToast message="스크랩 처리에 실패했습니다" /> : null}
+
+          {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
+
+          {contest.websiteUrl ? (
+            <Link
+              href={contest.websiteUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={websiteLinkClassName}
+            >
+              <Image
+                src="/icons/contests/Button/tabler_external-link.svg"
+                alt=""
+                width={16}
+                height={16}
+                className="size-4 shrink-0"
+              />
+              웹사이트
+            </Link>
+          ) : (
+            <span role="link" aria-disabled="true" className={websiteLinkClassName}>
+              <Image
+                src="/icons/contests/Button/tabler_external-link.svg"
+                alt=""
+                width={16}
+                height={16}
+                className="size-4 shrink-0"
+              />
+              웹사이트
+            </span>
+          )}
+        </div>
+
+        <div className="mt-[18px] flex w-full items-start gap-[13px] self-stretch bg-white">
+          <button
+            type="button"
+            aria-label="공모전 공유하기"
+            className="relative flex h-[47px] w-12 shrink-0 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)] aspect-[48/47]"
+            disabled={isWebSharePending}
+            onClick={() => {
+              void handleWebShareClick();
+            }}
+          >
+            <Image
+              src="/icons/contests/Button/Button/Button/_Asset/share.svg"
+              alt=""
+              width={24}
+              height={24}
+              className="absolute left-3 top-[11.75px] h-[23.5px] w-6 shrink-0"
+            />
+          </button>
+          <button
+            type="button"
+            className="flex h-[50px] min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-center text-[17px] leading-[125%] font-semibold whitespace-nowrap text-white"
+            onClick={() => setIsShareModalOpen(true)}
+          >
+            채팅방에 공유하기
+          </button>
+        </div>
+      </div>
+
+      <ShareContestModal
+        onOpenChange={setIsShareModalOpen}
+        onShareComplete={handleShareComplete}
+        open={isShareModalOpen}
+      />
+    </section>
+  );
+}
+
+function ContestImage({
+  alt,
+  className,
+  height,
+  src,
+  width,
+}: {
+  alt: string;
+  className: string;
+  height: number;
+  src: string;
+  width: number;
+}) {
+  if (isExternalUrl(src)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} width={width} height={height} className={className} />;
+  }
+
+  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
+}
+
+function isExternalUrl(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
+}
+
+function ContestActionToast({ href, message }: { href?: string; message: string }) {
+  return (
+    <div
+      role="status"
+      className="absolute bottom-[calc(100%+11px)] left-1/2 z-50 flex w-[350px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.60)] py-2 pr-4 pl-5"
+    >
+      <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">{message}</p>
+      {href ? (
+        <Link
+          href={href}
+          className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
+        >
+          바로가기
+        </Link>
+      ) : null}
+    </div>
+  );
+}
