@@ -17,7 +17,7 @@ function Header() {
       </h1>
       <div className="flex items-center">
         <Link
-          href="/mypage/settings"
+          href="/alarm"
           aria-label="알림"
           className="relative flex size-[38px] items-center justify-center rounded-[14px]"
         >
