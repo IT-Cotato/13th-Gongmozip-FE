@@ -82,28 +82,48 @@ export default function TeamMatchingPoolView({
 }: TeamMatchingPoolViewProps) {
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
-      <TeamMatchingHeader backHref="/team-matching" />
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-[42px] z-0 h-auto w-full max-w-[390px] -translate-x-1/2"
+        height={751}
+        priority
+        src="/icons/contests/Frame.svg"
+        width={390}
+      />
+
+      <TeamMatchingHeader backHref="/team-matching" className="relative z-10 bg-white" />
 
       <div className="scrollbar-hidden relative min-h-0 flex-1 overflow-y-auto px-4 pb-6">
         <section className="relative z-10 pt-[51px] text-center">
           <h1 className="text-center font-[Roboto] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
             팀원 매칭중...
           </h1>
-          <p className="mt-[18px] font-[Roboto] text-[16px] font-normal leading-[150%] text-[#616161]">
+          <p className="mt-4 font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
             조금만 기다려주세요.
+            <br />
+            앱을 종료하거나 다른 화면으로 이동해도
+            <br />
+            매칭은 계속 진행됩니다.
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
+          <Link
+            className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
+            href="/team-matching/cancel"
+          >
+            매칭신청취소
+          </Link>
         </section>
 
-        <div className="relative z-10 mt-[78px]">
+        <div className="relative z-10 mt-[7px]">
           <Image
             alt="팀원 매칭을 기다리는 캐릭터들"
-            className="mx-auto h-auto w-full max-w-[358px]"
-            height={146}
+            className="mx-auto h-auto w-[313px] max-w-full"
+            height={128}
             priority
-            src="/images/team-matching/matchingpool.png"
-            width={358}
+            src="/icons/team-matching/matching_img.svg"
+            width={313}
           />
 
           <div
@@ -117,12 +137,12 @@ export default function TeamMatchingPoolView({
         <MatchingCountdown />
       </div>
 
-      <div className="shrink-0 bg-white px-4 pb-3 pt-2">
+      <div className="relative z-10 shrink-0 bg-white px-4 pb-3 pt-2">
         <Link
-          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white"
-          href="/team-matching/cancel"
+          className="flex h-[51px] w-full shrink-0 items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
+          href="/team-matching"
         >
-          매칭 취소하기
+          홈으로
         </Link>
       </div>
 

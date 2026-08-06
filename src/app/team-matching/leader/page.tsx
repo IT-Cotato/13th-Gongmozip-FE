@@ -4,7 +4,13 @@ import { useState } from "react";
 
 import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
 
-const leaderOptions = ["네, 팀장으로 참여할게요", "아니요, 팀원으로 참여할게요", "상관없어요"];
+
+const leaderOptions = [
+  "네, 팀장으로 참여할게요",
+  "아니요, 팀원으로 참여할게요",
+  "필요하면 맡을 수 있어요",
+];
+
 
 export default function TeamMatchingLeaderPage() {
   const [selectedOption, setSelectedOption] = useState(leaderOptions[0]);
@@ -41,14 +47,14 @@ export default function TeamMatchingLeaderPage() {
           <div className="flex flex-col items-start justify-center gap-1.5 self-stretch p-2">
             <ul className="flex list-disc flex-col gap-1.5 self-stretch pl-4 font-[Roboto] text-[13px] font-normal leading-[150%] text-[#616161]">
               <li>
-                팀장을 선택하더라도
+                팀장을 선택하면 팀장후보로 우선 고려되지만, 팀 구성
                 <br />
-                반드시 팀장이 되는 것은 아닙니다.
+                결과에 따라 팀장으로 최종 선정되지 않을 수 있습니다.
               </li>
               <li>
-                팀장을 선택하지 않으신 경우에도 팀 구성 후
+                팀장을 선택하지 않아도 팀 구성 후 협의 결과에 따라 팀장
                 <br />
-                협의 과정에서 팀장으로 지원 가능합니다.
+                이 될 수 있습니다.
               </li>
             </ul>
           </div>

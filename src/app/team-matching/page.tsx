@@ -143,12 +143,14 @@ export default function TeamMatchingPage() {
 
           <section className="mt-6 space-y-4">
             <InfoCard
+              href="/team-matching/status"
               title="나의 매칭현황"
               description="매칭결과까지"
               descriptionValue="01:24:30"
               tone="coral"
             />
             <InfoCard
+              href="/team-matching/ai-notice"
               title="AI 분석 매칭 안내"
               description={`공모집의 AI 기반 팀매칭은\n어떻게 이루어지는지 알아보세요.`}
               tone="gray"
