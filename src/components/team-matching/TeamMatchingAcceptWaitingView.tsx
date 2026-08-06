@@ -4,6 +4,10 @@ import Link from "next/link";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 
 export default function TeamMatchingAcceptWaitingView() {
+  const totalMemberCount = 4;
+  const completedResponseCount = 3;
+  const completionPercent = `${(completedResponseCount / totalMemberCount) * 100}%`;
+
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <Image
@@ -54,12 +58,15 @@ export default function TeamMatchingAcceptWaitingView() {
             aria-hidden="true"
             className="mx-auto mt-8 flex h-[6px] w-full max-w-[322px] flex-col items-start gap-[10px] overflow-hidden rounded-[90px] bg-[#D9D9D9]"
           >
-            <div className="h-[6px] w-20 shrink-0 rounded-[90px] bg-[#FFAD62]" />
+            <div
+              className="h-[6px] shrink-0 rounded-[90px] bg-[#FFAD62]"
+              style={{ width: completionPercent }}
+            />
           </div>
         </div>
 
         <p className="mx-auto mt-[54.09px] inline-flex items-center justify-center rounded-[85px] bg-[#FFE4DE] px-4 py-1 text-center font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#AC4A35]">
-          4명 중에 3명이 응답 완료했습니다.
+          {totalMemberCount}명 중에 {completedResponseCount}명이 응답 완료했습니다.
         </p>
 
         <div className="flex-1" />
