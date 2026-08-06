@@ -49,10 +49,7 @@ export function ChatListShell() {
         />
       )}
 
-      <section
-        aria-label="채팅방 목록"
-        className="flex flex-1 flex-col overflow-y-auto"
-      >
+      <section aria-label="채팅방 목록" className="flex flex-1 flex-col overflow-y-auto">
         {rooms.map((room) => (
           <ChatRoomRow key={room.id} room={room} />
         ))}
@@ -63,11 +60,7 @@ export function ChatListShell() {
   );
 }
 
-function ChatSettingsDropdown({
-  onSort,
-}: {
-  onSort: (sortMode: SortMode) => void;
-}) {
+function ChatSettingsDropdown({ onSort }: { onSort: (sortMode: SortMode) => void }) {
   return (
     <div className="absolute top-[42px] right-[35px] z-20 inline-flex max-h-[400px] min-w-[140px] items-center gap-2.5 py-2 drop-shadow-[0_16px_2px_rgba(0,0,0,0),0_10px_2px_rgba(0,0,0,0.01),0_6px_1.5px_rgba(0,0,0,0.05),0_3px_1.5px_rgba(0,0,0,0.09),0_1px_0.5px_rgba(0,0,0,0.1)]">
       <div className="rounded-[12px] bg-white px-5 py-2">

@@ -15,7 +15,14 @@ import {
 } from "../../_data/mockMessages";
 
 const memberNameClass = "text-[15px] leading-[1.25] font-semibold text-color-gray-850";
-const reportReasons = ["무임승차", "잠수, 연락두절", "욕설, 비하발언", "스팸", "허위 프로필", "기타(직접 입력)"];
+const reportReasons = [
+  "무임승차",
+  "잠수, 연락두절",
+  "욕설, 비하발언",
+  "스팸",
+  "허위 프로필",
+  "기타(직접 입력)",
+];
 const customReportReason = "기타(직접 입력)";
 
 const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
@@ -227,13 +234,13 @@ function ReportDialog({
                           ? "font-semibold text-color-coral-700"
                           : "font-medium text-color-gray-650"
                       }`}
-                        onClick={() => {
-                          setSelectedReason(reason);
-                          if (reason !== customReportReason) {
-                            setCustomReason("");
-                          }
-                          setIsReasonOpen(false);
-                        }}
+                      onClick={() => {
+                        setSelectedReason(reason);
+                        if (reason !== customReportReason) {
+                          setCustomReason("");
+                        }
+                        setIsReasonOpen(false);
+                      }}
                     >
                       {reason}
                     </button>
@@ -298,13 +305,7 @@ function ChevronDownIcon({ isOpen }: { isOpen: boolean }) {
   );
 }
 
-function ChatbotRow({
-  isEnabled,
-  onToggle,
-}: {
-  isEnabled: boolean;
-  onToggle: () => void;
-}) {
+function ChatbotRow({ isEnabled, onToggle }: { isEnabled: boolean; onToggle: () => void }) {
   return (
     <div className="mt-1 flex h-[76px] items-center justify-between rounded-[16px] bg-color-gray-150 px-4 py-2">
       <div className="flex min-w-0 items-center gap-4">
@@ -402,7 +403,12 @@ function MenuAvatar({
 function ProfileSheet({ member, onClose }: { member: ChatMember; onClose: () => void }) {
   return (
     <div className="absolute inset-0 z-30 flex items-end bg-color-gray-850/60" role="presentation">
-      <button className="absolute inset-0 cursor-default" type="button" aria-label="닫기" onClick={onClose} />
+      <button
+        className="absolute inset-0 cursor-default"
+        type="button"
+        aria-label="닫기"
+        onClick={onClose}
+      />
       <section
         className="relative z-10 w-full rounded-t-[16px] bg-white px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         aria-label={`${member.name} 프로필`}
@@ -415,7 +421,8 @@ function ProfileSheet({ member, onClose }: { member: ChatMember; onClose: () => 
                 {member.isMe ? `(나)${member.name}` : member.name}
               </h2>
               <p className="mt-1 text-[13px] leading-[1.5] text-color-gray-650">
-                {[member.school, member.major, member.grade].filter(Boolean).join(" · ") || "AI 팀 도우미"}
+                {[member.school, member.major, member.grade].filter(Boolean).join(" · ") ||
+                  "AI 팀 도우미"}
               </p>
             </div>
           </div>

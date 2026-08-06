@@ -94,16 +94,12 @@ export default function CollaborationQuestionForm({
                 aria-pressed={isSelected}
                 className="flex w-full justify-center"
                 key={option.optionId}
-                onClick={() =>
-                  setResponse(questionId, option.optionId, option.optionValue)
-                }
+                onClick={() => setResponse(questionId, option.optionId, option.optionValue)}
                 type="button"
               >
                 <span
                   className={`flex w-[250px] items-center justify-center self-stretch whitespace-pre-line rounded-2xl border-[3px] p-3 text-center font-[Pretendard] font-semibold text-[#616161] ${
-                    isSelected
-                      ? "border-[#FF7658] bg-[#FFF7EF]"
-                      : "border-transparent bg-[#F5F5F5]"
+                    isSelected ? "border-[#FF7658] bg-[#FFF7EF]" : "border-transparent bg-[#F5F5F5]"
                   } ${optionTextClassName}`}
                 >
                   {option.optionLabel}

@@ -11,7 +11,7 @@ export function OngoingProjectSection() {
     <section className="flex w-full flex-col items-start gap-4">
       <SectionHeader
         title="진행 중인 프로젝트"
-        count={!isLoading && !isError ? (data?.totalElements ?? 0) : undefined}
+        count={!isLoading && !isError ? (data?.pages[0]?.totalElements ?? 0) : undefined}
       />
       <OngoingProjectList />
     </section>

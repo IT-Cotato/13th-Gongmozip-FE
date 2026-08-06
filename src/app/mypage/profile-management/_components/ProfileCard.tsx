@@ -19,7 +19,12 @@ type ProfileCardProps = {
   onDelete: () => void;
 };
 
-export function ProfileCard({ preview, updatedAt, onToggleVisibility, onDelete }: ProfileCardProps) {
+export function ProfileCard({
+  preview,
+  updatedAt,
+  onToggleVisibility,
+  onDelete,
+}: ProfileCardProps) {
   const router = useRouter();
   const projectNames = preview.projectSummaries.map((project) => project.projectName);
 
@@ -29,7 +34,7 @@ export function ProfileCard({ preview, updatedAt, onToggleVisibility, onDelete }
 
   function handleEditClick(event: React.MouseEvent) {
     event.stopPropagation();
-    // TODO: 프로필 수정 화면 구현 예정
+    router.push(`/mypage/profile-management/${preview.profileId}`);
   }
 
   return (
@@ -56,7 +61,11 @@ export function ProfileCard({ preview, updatedAt, onToggleVisibility, onDelete }
             onClick={(event) => event.stopPropagation()}
           >
             <span className="text-[13px] font-medium text-[#616161]">프로필 공개 설정</span>
-            <Toggle checked={preview.isPublic} onChange={onToggleVisibility} label="프로필 공개 설정" />
+            <Toggle
+              checked={preview.isPublic}
+              onChange={onToggleVisibility}
+              label="프로필 공개 설정"
+            />
           </div>
         </div>
 

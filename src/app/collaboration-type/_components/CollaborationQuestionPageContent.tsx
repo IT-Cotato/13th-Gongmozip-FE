@@ -33,10 +33,7 @@ export default function CollaborationQuestionPageContent({
     [question],
   );
   const progressTotalQuestionCount = totalQuestionCount || DEFAULT_SURVEY_QUESTION_COUNT;
-  const progressCurrentQuestionOrder = Math.min(
-    currentQuestionOrder,
-    progressTotalQuestionCount,
-  );
+  const progressCurrentQuestionOrder = Math.min(currentQuestionOrder, progressTotalQuestionCount);
   const nextHref =
     currentQuestionOrder >= totalQuestionCount
       ? "/collaboration-type/result-loading"
@@ -47,10 +44,7 @@ export default function CollaborationQuestionPageContent({
       : `/collaboration-type/questions/${currentQuestionOrder - 1}`;
   const progressWidth =
     progressTotalQuestionCount > 0
-      ? Math.min(
-          322,
-          Math.round((progressCurrentQuestionOrder / progressTotalQuestionCount) * 322),
-        )
+      ? Math.min(322, Math.round((progressCurrentQuestionOrder / progressTotalQuestionCount) * 322))
       : 0;
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
@@ -83,9 +77,7 @@ export default function CollaborationQuestionPageContent({
         {isError && (
           <div className="flex h-[531px] flex-col items-center justify-center self-stretch rounded-2xl bg-white px-6 text-center font-[Pretendard] text-[15px] font-semibold leading-[150%] text-[#616161]">
             <p>
-              {isUnauthorized
-                ? "로그인이 필요한 검사입니다."
-                : "질문 목록을 불러오지 못했습니다."}
+              {isUnauthorized ? "로그인이 필요한 검사입니다." : "질문 목록을 불러오지 못했습니다."}
             </p>
             <Link
               className="mt-5 flex h-10 items-center rounded-[14px] bg-[#FF7658] px-5 text-[15px] font-semibold text-white"
@@ -120,10 +112,7 @@ export default function CollaborationQuestionPageContent({
         )}
       </section>
 
-      <CollaborationTestLeaveModal
-        onOpenChange={setIsLeaveModalOpen}
-        open={isLeaveModalOpen}
-      />
+      <CollaborationTestLeaveModal onOpenChange={setIsLeaveModalOpen} open={isLeaveModalOpen} />
     </>
   );
 }

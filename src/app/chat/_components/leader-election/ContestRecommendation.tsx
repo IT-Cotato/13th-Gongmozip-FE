@@ -38,9 +38,9 @@ export function ContestRecommendationMessage({
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {isCandidateClosed
-                ? "이제 함께 나갈 공모전을 투표해볼게요.\n원하는 공모전 2개를 선택해주세요."
-                : `팀장 선출까지 마쳤으면, 팀원들과 함께 나갈 공모전을 선택해보아요. 현재 팀의 카테고리가 기획/아이디어이기 때문에 저는 이러한 공모전을 추천드려요.
+            {isCandidateClosed
+              ? "이제 함께 나갈 공모전을 투표해볼게요.\n원하는 공모전 2개를 선택해주세요."
+              : `팀장 선출까지 마쳤으면, 팀원들과 함께 나갈 공모전을 선택해보아요. 현재 팀의 카테고리가 기획/아이디어이기 때문에 저는 이러한 공모전을 추천드려요.
 더 원하는 공모전이 있으면 오늘 오후 11시 내로 리스트에 추가해주세요.`}
           </p>
           <MessageMeta />

@@ -21,10 +21,9 @@ async function deleteProfile(profileId: string) {
       }),
     ),
     ...detail.certifications.map((certification) =>
-      apiFetch<void>(
-        `/api/profiles/${encodedId}/certifications/${certification.certificationId}`,
-        { method: "DELETE" },
-      ),
+      apiFetch<void>(`/api/profiles/${encodedId}/certifications/${certification.certificationId}`, {
+        method: "DELETE",
+      }),
     ),
   ]);
 

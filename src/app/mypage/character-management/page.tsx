@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon } from "./_components/icons";
 import { getCollaborationCharacterMeta } from "../_lib/collaborationCharacter";
-import { useCurrentCharacterQuery, type CurrentCharacter } from "@/queries/useCurrentCharacterQuery";
+import {
+  useCurrentCharacterQuery,
+  type CurrentCharacter,
+} from "@/queries/useCurrentCharacterQuery";
 import {
   useCharacterPalettesQuery,
   type Palette,
@@ -41,7 +44,7 @@ function PaletteSwatch({
       onClick={onSelect}
       aria-label={palette.displayName}
       aria-pressed={selected}
-      className={`size-[100px] shrink-0 rounded-full ${
+      className={`aspect-square w-full max-w-[100px] rounded-full ${
         selected ? "ring-[3px] ring-offset-2 ring-[#1F1F1F]" : ""
       }`}
       style={paletteStyle(palette)}
@@ -77,7 +80,9 @@ function CharacterManagementContent({
       onSuccess: () => router.push("/mypage"),
       onError: (error) => {
         setSubmitError(
-          error instanceof ApiError ? error.message : "캐릭터 색상 저장에 실패했습니다. 다시 시도해주세요.",
+          error instanceof ApiError
+            ? error.message
+            : "캐릭터 색상 저장에 실패했습니다. 다시 시도해주세요.",
         );
       },
     });
@@ -105,7 +110,7 @@ function CharacterManagementContent({
 
         <div className="flex flex-col items-center gap-4 px-4 pt-8">
           <h2 className="w-full text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">단색</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid w-full grid-cols-3 gap-4 justify-items-center">
             {solidPalettes.map((palette) => (
               <PaletteSwatch
                 key={palette.paletteCode}
@@ -118,8 +123,10 @@ function CharacterManagementContent({
         </div>
 
         <div className="flex flex-col items-center gap-4 px-4 pt-8">
-          <h2 className="w-full text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">그라데이션</h2>
-          <div className="flex gap-4">
+          <h2 className="w-full text-[17px] leading-[1.35] font-semibold text-[#1f1f1f]">
+            그라데이션
+          </h2>
+          <div className="grid w-full grid-cols-3 gap-4 justify-items-center">
             {gradientPalettes.map((palette) => (
               <PaletteSwatch
                 key={palette.paletteCode}

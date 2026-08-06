@@ -148,9 +148,7 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
         >
           <ChevronLeftIcon />
         </button>
-        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
-          프로필 미리보기
-        </h1>
+        <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">프로필 미리보기</h1>
         <button
           type="button"
           aria-label="프로필 수정"
@@ -286,9 +284,7 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
                       <span className="mt-2 size-[5px] rounded-full bg-[#ac4a35]" />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <p className="text-[17px] leading-[1.5] text-[#1f1f1f]">
-                        {award.awardName}
-                      </p>
+                      <p className="text-[17px] leading-[1.5] text-[#1f1f1f]">{award.awardName}</p>
                       <p className="text-[13px] leading-[1.5] text-[#616161]">
                         {[award.organizationName, award.awardRank].filter(Boolean).join(" ")}
                       </p>

@@ -19,7 +19,13 @@ export const COLLABORATION_RESULT_TYPE_TO_CHARACTER_TYPE = {
   free: "FREE_RUNNER",
 } as const satisfies Record<CollaborationResultType, CollaborationCharacterType>;
 
-const LIKERT_SCALE_OPTIONS = ["매우 그렇다", "그렇다", "보통이다", "그렇지 않다", "매우 그렇지 않다"];
+const LIKERT_SCALE_OPTIONS = [
+  "매우 그렇다",
+  "그렇다",
+  "보통이다",
+  "그렇지 않다",
+  "매우 그렇지 않다",
+];
 
 export const COLLABORATION_TEST_QUESTIONS = [
   {
@@ -216,15 +222,11 @@ export const COLLABORATION_RESULT_TYPES = [
 
 export type CollaborationResultType = (typeof COLLABORATION_RESULT_TYPES)[number]["id"];
 
-export function normalizeCollaborationCharacterType(
-  characterType: CollaborationCharacterType,
-) {
+export function normalizeCollaborationCharacterType(characterType: CollaborationCharacterType) {
   return characterType === "BOOSTER_RUNNER" ? "BOOST_RUNNER" : characterType;
 }
 
-export function getCollaborationResultByCharacterType(
-  characterType: CollaborationCharacterType,
-) {
+export function getCollaborationResultByCharacterType(characterType: CollaborationCharacterType) {
   const normalizedCharacterType = normalizeCollaborationCharacterType(characterType);
 
   return COLLABORATION_RESULT_TYPES.find((result) => {

@@ -65,7 +65,9 @@ export function ProjectExperienceSheet({
   const [name, setName] = useState(initialProject?.name ?? "");
   const [startMonth, setStartMonth] = useState(initialProject?.startMonth ?? "");
   const [endMonth, setEndMonth] = useState(initialProject?.endMonth ?? "");
-  const [category, setCategory] = useState<ProjectCategory | null>(initialProject?.category ?? null);
+  const [category, setCategory] = useState<ProjectCategory | null>(
+    initialProject?.category ?? null,
+  );
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [content, setContent] = useState(initialProject?.content ?? "");
   const [hasAward, setHasAward] = useState(initialProject?.hasAward ?? false);
@@ -95,7 +97,10 @@ export function ProjectExperienceSheet({
   }
 
   return (
-    <BottomSheet onClose={onClose} aria-label={isEditing ? "프로젝트 경험 수정" : "프로젝트 경험 추가"}>
+    <BottomSheet
+      onClose={onClose}
+      aria-label={isEditing ? "프로젝트 경험 수정" : "프로젝트 경험 추가"}
+    >
       <div className="flex-1 overflow-y-auto px-5 pb-6">
         <div className="flex flex-col gap-2">
           <h2 className="text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">프로젝트 경험</h2>

@@ -4,17 +4,19 @@ type ToggleProps = {
   checked: boolean;
   onChange: () => void;
   label: string;
+  disabled?: boolean;
 };
 
-export function Toggle({ checked, onChange, label }: ToggleProps) {
+export function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={onChange}
-      className={`flex h-5 w-8 shrink-0 items-center rounded-full p-[2px] transition-colors ${
+      className={`flex h-5 w-8 shrink-0 items-center rounded-full p-[2px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         checked ? "bg-[#FF7658]" : "bg-[#DFDFDF]"
       }`}
     >

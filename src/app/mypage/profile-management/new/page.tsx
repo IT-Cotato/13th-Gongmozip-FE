@@ -56,10 +56,7 @@ export default function CreateProfilePage() {
     Number(gpa) <= Number(gpaScale);
 
   const isFormValid =
-    nickname.trim().length > 0 &&
-    school.trim().length > 0 &&
-    major.trim().length > 0 &&
-    isGpaValid;
+    nickname.trim().length > 0 && school.trim().length > 0 && major.trim().length > 0 && isGpaValid;
 
   function handleNext() {
     if (!isFormValid) return;

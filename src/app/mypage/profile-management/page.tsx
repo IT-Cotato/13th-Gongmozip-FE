@@ -80,7 +80,9 @@ export default function ProfileManagementPage() {
           />
 
           <div className="flex w-full flex-col items-center gap-1 text-center">
-            <p className="w-full text-[17px] leading-[1.5] text-[#1f1f1f]">등록된 프로필이 없어요</p>
+            <p className="w-full text-[17px] leading-[1.5] text-[#1f1f1f]">
+              등록된 프로필이 없어요
+            </p>
             <p className="w-full text-[13px] leading-[1.5] text-[#616161]">
               프로필을 작성하러 가볼까요?
             </p>

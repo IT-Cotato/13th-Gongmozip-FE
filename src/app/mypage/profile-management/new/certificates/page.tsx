@@ -65,13 +65,20 @@ export default function CertificatesPage() {
 
     const onError = (error: unknown) => {
       setSubmitError(
-        error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
+        error instanceof ApiError
+          ? error.message
+          : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
       );
     };
 
     if (editingProfileId !== null) {
       updateProfileMutation.mutate(
-        { profileId: editingProfileId, basicInfo: draftBasicInfo, projects: draftProjects, certificates },
+        {
+          profileId: editingProfileId,
+          basicInfo: draftBasicInfo,
+          projects: draftProjects,
+          certificates,
+        },
         {
           onSuccess: () => {
             resetProfileDraft();
@@ -157,9 +164,7 @@ export default function CertificatesPage() {
       </div>
 
       <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-        {submitError && (
-          <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>
-        )}
+        {submitError && <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>}
         <div className="flex gap-2.5">
           <button
             type="button"

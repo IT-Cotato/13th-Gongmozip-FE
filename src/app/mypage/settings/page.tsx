@@ -68,6 +68,7 @@ export default function SettingsPage() {
                   checked={profile.marketingConsentEmail}
                   onChange={() => handleToggle("marketingConsentEmail")}
                   label="Email 마케팅 수신 동의"
+                  disabled={updateConsentMutation.isPending}
                 />
               </div>
               <div className="flex w-full items-start justify-between">
@@ -78,8 +79,14 @@ export default function SettingsPage() {
                   checked={profile.marketingConsentSms}
                   onChange={() => handleToggle("marketingConsentSms")}
                   label="SMS 마케팅 수신 동의"
+                  disabled={updateConsentMutation.isPending}
                 />
               </div>
+              {updateConsentMutation.isError && (
+                <p role="alert" className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                  수신 동의 설정을 저장하지 못했어요. 다시 시도해주세요.
+                </p>
+              )}
             </div>
           </div>
 

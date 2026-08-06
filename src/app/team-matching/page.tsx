@@ -62,9 +62,7 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
         </span>
       </span>
 
-      {href ? (
-        <Image src="/icons/team-matching/icon-1.svg" alt="" width={20} height={20} />
-      ) : null}
+      {href ? <Image src="/icons/team-matching/icon-1.svg" alt="" width={20} height={20} /> : null}
     </>
   );
 

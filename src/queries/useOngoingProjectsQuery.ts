@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
 export type OngoingProject = {
@@ -19,13 +19,20 @@ type OngoingProjectsResponse = {
   totalPages: number;
 };
 
-function fetchOngoingProjects() {
-  return apiFetch<OngoingProjectsResponse>("/api/mypage/projects/ongoing?size=50");
+const PAGE_SIZE = 50;
+
+function fetchOngoingProjects(page: number) {
+  return apiFetch<OngoingProjectsResponse>(
+    `/api/mypage/projects/ongoing?page=${page}&size=${PAGE_SIZE}`,
+  );
 }
 
 export function useOngoingProjectsQuery() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["member", "projects", "ongoing"],
-    queryFn: fetchOngoingProjects,
+    queryFn: ({ pageParam }) => fetchOngoingProjects(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.page + 1 < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
 }

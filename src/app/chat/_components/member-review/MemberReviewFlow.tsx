@@ -206,9 +206,7 @@ export function MemberReviewFlow({
           </button>
           <button
             className={`flex h-[51px] flex-1 items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
-              canSubmit
-                ? "bg-color-coral-500 text-white"
-                : "bg-color-gray-200 text-color-gray-350"
+              canSubmit ? "bg-color-coral-500 text-white" : "bg-color-gray-200 text-color-gray-350"
             }`}
             disabled={!canSubmit}
             onClick={submitCurrentReview}

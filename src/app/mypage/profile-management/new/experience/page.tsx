@@ -88,7 +88,9 @@ export default function ProjectExperiencePage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-4 pt-[22px] pb-10">
-          <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">프로젝트 경험</h2>
+          <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">
+            프로젝트 경험
+          </h2>
 
           <div className="flex flex-col gap-3 px-6">
             <p className="w-full text-[17px] leading-[1.35] font-medium text-[#1f1f1f]">

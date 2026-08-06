@@ -51,7 +51,8 @@ export default function MyPage() {
   const isLoading = summaryQuery.isLoading;
   const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
-  const isUnauthorized = summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
+  const isUnauthorized =
+    summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
   useEffect(() => {
     if (isUnauthorized) {
@@ -60,7 +61,10 @@ export default function MyPage() {
   }, [isUnauthorized, router]);
 
   const collaborationType = data?.character
-    ? { characterKey: data.character.characterType, ...getCollaborationCharacterMeta(data.character.characterType) }
+    ? {
+        characterKey: data.character.characterType,
+        ...getCollaborationCharacterMeta(data.character.characterType),
+      }
     : null;
 
   function handleCharacterManageClick() {
@@ -74,13 +78,20 @@ export default function MyPage() {
   function refetch() {
     summaryQuery.refetch();
     profileQuery.refetch();
+    profileListQuery.refetch();
   }
+
+  const isProfileListUnavailable = profileListQuery.isLoading || profileListQuery.isError;
 
   const statsItems = data
     ? [
         {
           label: "프로필 관리",
-          count: profileListQuery.data?.profileCount ?? 0,
+          count: isProfileListUnavailable
+            ? profileListQuery.isLoading
+              ? "···"
+              : "-"
+            : (profileListQuery.data?.profileCount ?? 0),
           href: "/mypage/profile-management",
         },
         {
@@ -305,10 +316,14 @@ function MenuRow({ label, href, disabled }: MenuItem) {
 }
 
 function CollaborativeDistance({ max, progress }: { max: number; progress: number }) {
+  const stepCount = Math.floor(max / COLLABORATIVE_DISTANCE_STEP);
   const milestones = Array.from(
-    { length: Math.max(1, Math.round(max / COLLABORATIVE_DISTANCE_STEP)) + 1 },
+    { length: stepCount + 1 },
     (_, index) => index * COLLABORATIVE_DISTANCE_STEP,
   );
+  if (milestones[milestones.length - 1] !== max) {
+    milestones.push(max);
+  }
   const filledPercent = Math.min(100, Math.max(0, progress));
 
   return (
