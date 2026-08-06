@@ -122,7 +122,7 @@ export default function TeamMatchingPoolView({
             className="mx-auto h-auto w-[313px] max-w-full"
             height={128}
             priority
-            src="/images/team-matching/matchingpool.png"
+            src="/icons/team-matching/matching_img.svg"
             width={313}
           />
 
