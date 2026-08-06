@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
+
 import { MOCK_CHAT_MEMBERS } from "../_data/mockMessages";
 import { ChatInputBar } from "./ChatInputBar";
 import { ChatTopBar } from "./ChatTopBar";
 import { MemberReviewStartDialog } from "./member-review";
 import {
   BotMessage,
+  ChatbotSystemNotice,
   ChatbotTextMessage,
+  ChatbotUsageGuideMessage,
   ContestDeadlineReminderMessage,
 } from "./leader-election/ChatbotMessage";
 import {
@@ -24,6 +28,7 @@ import {
   ContestVoteResultSheet,
   ContestVoteResultMessage,
   ContestVoteSheet,
+  ProjectSubmissionReminderBanner,
 } from "./leader-election/ContestRecommendation";
 import {
   LeaderCandidatePreviewCard,
@@ -62,6 +67,7 @@ import {
 const recommendedLeaderNames = MOCK_CHAT_MEMBERS.filter((member) =>
   mockAiRecommendedLeaderIds.includes(member.id),
 ).map((member) => member.name);
+const DEADLINE_RESPONSE_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
 
 function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
   if (scenario === "singleDefinite") {
@@ -77,6 +83,7 @@ function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
 
 export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const router = useRouter();
+  const chatbotNotices = useChatbotNoticeStore((state) => state.noticesByRoomId[roomId] ?? []);
   const leaderScenario = getLeaderScenario(mockLeaderIntentAnswers);
   const [sheetState, setSheetState] = useState<SheetState>("closed");
   const [leaderChoice, setLeaderChoice] = useState<LeaderChoice>("no");
@@ -88,13 +95,17 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [isContestResultShown, setIsContestResultShown] = useState(false);
   const [isContestResultReady, setIsContestResultReady] = useState(false);
   const [isContestRevoteRequested, setIsContestRevoteRequested] = useState(false);
+  const [isContestVoteSubmitted, setIsContestVoteSubmitted] = useState(false);
   // TODO: API 연동 후 선택된 공모전 D-1 조건으로 대체한다.
   const [isMidtermSubmitted, setIsMidtermSubmitted] = useState(false);
   const [isMidtermToastShown, setIsMidtermToastShown] = useState(false);
   const [isMemberReviewStartOpen, setIsMemberReviewStartOpen] = useState(false);
   const [isContestToastShown, setIsContestToastShown] = useState(false);
   const [isSharedContestAdded, setIsSharedContestAdded] = useState(false);
-  const [, setDeadlineSubmissionStatus] = useState<"completed" | "incomplete" | null>(null);
+  const [deadlineSubmissionStatus, setDeadlineSubmissionStatus] = useState<
+    "completed" | "incomplete" | null
+  >(null);
+  const [isDeadlineReminderBannerShown, setIsDeadlineReminderBannerShown] = useState(false);
   const [candidateRemainingSeconds, setCandidateRemainingSeconds] = useState(10);
   const [candidateContestIds, setCandidateContestIds] = useState<string[]>(
     mockRecommendedContests.slice(0, 3).map((contest) => contest.id),
@@ -198,6 +209,18 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     return () => window.clearTimeout(timerId);
   }, [isMidtermToastShown]);
 
+  useEffect(() => {
+    if (!isMidtermSubmitted || deadlineSubmissionStatus !== null) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setIsDeadlineReminderBannerShown(true);
+    }, DEADLINE_RESPONSE_REMINDER_DELAY_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [deadlineSubmissionStatus, isMidtermSubmitted]);
+
   const submitWillingness = () => {
     const registeredCandidates = getLeaderCandidates(leaderScenario, leaderChoice);
 
@@ -253,6 +276,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
   const startContestVote = () => {
     setIsContestRevoteRequested(false);
+    setIsContestVoteSubmitted(false);
     setSelectedContestIds([]);
     setSheetState("contestVote");
   };
@@ -312,6 +336,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     }
 
     setIsContestResultReady(false);
+    setIsContestVoteSubmitted(true);
     setSheetState("contestComplete");
   };
 
@@ -341,12 +366,25 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
   const submitMidtermCheck = () => {
     setIsMidtermSubmitted(true);
+    setDeadlineSubmissionStatus(null);
+    setIsDeadlineReminderBannerShown(false);
     setIsMidtermToastShown(true);
   };
 
   const completeContestSubmission = () => {
     setDeadlineSubmissionStatus("completed");
+    setIsDeadlineReminderBannerShown(false);
     setIsMemberReviewStartOpen(true);
+  };
+
+  const markContestSubmissionIncomplete = () => {
+    setDeadlineSubmissionStatus("incomplete");
+    setIsDeadlineReminderBannerShown(false);
+  };
+
+  const requestContestSubmissionReminder = () => {
+    setDeadlineSubmissionStatus("incomplete");
+    setIsDeadlineReminderBannerShown(true);
   };
 
   const startMemberReview = () => {
@@ -389,7 +427,20 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       <ChatTopBar roomId={roomId} />
 
       {shouldShowContestVote && isCandidateClosed && !isContestResultShown ? (
-        <ContestVoteNoticeBanner onVote={startContestVote} />
+        <ContestVoteNoticeBanner
+          isVoteSubmitted={isContestVoteSubmitted}
+          onAction={isContestVoteSubmitted ? showContestVoteResult : startContestVote}
+        />
+      ) : null}
+
+      {shouldShowContestVote &&
+      isContestResultShown &&
+      isMidtermSubmitted &&
+      isDeadlineReminderBannerShown ? (
+        <ProjectSubmissionReminderBanner
+          onComplete={completeContestSubmission}
+          onIncomplete={markContestSubmissionIncomplete}
+        />
       ) : null}
 
       <section
@@ -403,6 +454,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               : "안녕하세요. 저는 팀 운영을 도와주는 AI 챗봇이에요. 팀 매칭이 완료되었어요. 각자 간단한 자기소개와 인사를 나눠볼까요?"
           }
         />
+
+        {chatbotNotices.map((notice) => (
+          <div key={notice.id} className="flex flex-col gap-4">
+            <ChatbotSystemNotice action={notice.action} actorName={notice.actorName} />
+            {notice.action === "added" ? <ChatbotUsageGuideMessage /> : null}
+          </div>
+        ))}
 
         {leaderEvent === "autoLeaderNotice" ? (
           <LeaderNoticeMessage
@@ -506,7 +564,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         {shouldShowContestVote && isContestResultShown && isMidtermSubmitted ? (
           <ContestDeadlineReminderMessage
             onComplete={completeContestSubmission}
-            onIncomplete={() => setDeadlineSubmissionStatus("incomplete")}
+            onIncomplete={requestContestSubmissionReminder}
           />
         ) : null}
       </section>
