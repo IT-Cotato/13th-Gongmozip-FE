@@ -148,6 +148,7 @@ function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: Tod
         {todayMatchingResult.publishedAt ? (
           <p className="font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
             {new Date(todayMatchingResult.publishedAt).toLocaleString("ko-KR", {
+              timeZone: "Asia/Seoul",
               hour: "2-digit",
               minute: "2-digit",
               month: "long",
