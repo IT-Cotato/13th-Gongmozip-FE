@@ -4,7 +4,7 @@ export default function AllRequiredModalPreviewPage() {
   return (
     <TeamMatchingModalPreview
       actions={[
-        { href: "/team-matching/profile", label: "프로필 작성 바로가기", variant: "outline" },
+        { href: "/mypage/profile-management/new", label: "프로필 작성 바로가기", variant: "outline" },
         {
           href: "/mypage/collaboration-type-test",
           label: "협업 유형 검사 바로가기",
