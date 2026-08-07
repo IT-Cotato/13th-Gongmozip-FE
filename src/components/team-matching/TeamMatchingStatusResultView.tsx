@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { ApiError } from "@/lib/http";
+import { useAcceptMatchingGroupMutation } from "@/queries/useAcceptMatchingGroupMutation";
 import type {
   MatchingCharacterType,
   TodayMatchingResult,
@@ -271,7 +273,7 @@ export default function TeamMatchingStatusResultView({
   todayMatchingResult,
 }: TeamMatchingStatusResultViewProps) {
   const router = useRouter();
-  const acceptProposal = useTeamMatchingProposalStore((state) => state.acceptProposal);
+  const acceptMatchingGroupMutation = useAcceptMatchingGroupMutation();
   const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
   const proposalId = todayMatchingResult.matchingGroupId
     ? String(todayMatchingResult.matchingGroupId)
@@ -286,9 +288,23 @@ export default function TeamMatchingStatusResultView({
   }
 
   function handleAcceptClick() {
-    acceptProposal(proposalId);
-    router.push("/team-matching/status/waiting");
+    if (typeof todayMatchingResult.matchingGroupId !== "number") {
+      return;
+    }
+
+    acceptMatchingGroupMutation.mutate(todayMatchingResult.matchingGroupId, {
+      onSuccess: (data) => {
+        router.push(data.teamId ? "/team-matching/status" : "/team-matching/status/waiting");
+      },
+    });
   }
+
+  const acceptErrorMessage =
+    acceptMatchingGroupMutation.error instanceof ApiError
+      ? acceptMatchingGroupMutation.error.message
+      : acceptMatchingGroupMutation.isError
+        ? "매칭 결과를 수락하지 못했어요. 잠시 후 다시 시도해 주세요."
+        : null;
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -304,21 +320,33 @@ export default function TeamMatchingStatusResultView({
         </section>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-20 flex items-stretch gap-4 bg-white px-4 pb-9 pt-3">
-        <button
-          className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
-          onClick={handlePassClick}
-          type="button"
-        >
-          패스
-        </button>
-        <button
-          className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-          onClick={handleAcceptClick}
-          type="button"
-        >
-          수락
-        </button>
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-white px-4 pb-9 pt-3">
+        {acceptErrorMessage ? (
+          <p className="mb-2 text-center font-[Pretendard] text-[12px] font-medium leading-[135%] text-[#D56046]">
+            {acceptErrorMessage}
+          </p>
+        ) : null}
+        <div className="flex items-stretch gap-4">
+          <button
+            className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161] disabled:opacity-50"
+            disabled={acceptMatchingGroupMutation.isPending}
+            onClick={handlePassClick}
+            type="button"
+          >
+            패스
+          </button>
+          <button
+            className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white disabled:opacity-60"
+            disabled={
+              acceptMatchingGroupMutation.isPending ||
+              typeof todayMatchingResult.matchingGroupId !== "number"
+            }
+            onClick={handleAcceptClick}
+            type="button"
+          >
+            {acceptMatchingGroupMutation.isPending ? "수락 중..." : "수락"}
+          </button>
+        </div>
       </div>
     </main>
   );
