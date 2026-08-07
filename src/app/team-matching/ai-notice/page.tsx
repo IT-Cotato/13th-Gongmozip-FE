@@ -51,7 +51,9 @@ function SectionItems({ section }: { section: MatchingExplanationSection }) {
     return null;
   }
 
-  const hasItemDescriptions = section.items.some((item) => item.description.trim().length > 0);
+  const hasItemDescriptions = section.items.some(
+    (item) => (item.description ?? "").trim().length > 0,
+  );
 
   if (!hasItemDescriptions) {
     return (
@@ -85,7 +87,7 @@ function SectionItems({ section }: { section: MatchingExplanationSection }) {
             {item.title}
           </p>
           <p className="mt-2 whitespace-pre-line text-[12px] font-normal leading-[150%] text-[#616161]">
-            {item.description}
+            {item.description ?? ""}
           </p>
         </li>
       ))}
