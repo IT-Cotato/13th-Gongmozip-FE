@@ -1,34 +1,26 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 
 import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
+import { useProfileListQuery, type ProfileListItem } from "@/queries/useProfileListQuery";
+import { useUpdateProfileVisibilityMutation } from "@/queries/useUpdateProfileVisibilityMutation";
+import { useTeamMatchingApplicationStore } from "@/stores/teamMatchingApplicationStore";
 
-type ProfileCard = {
-  date: string;
-  id: string;
-  isPublic: boolean;
-  projects: number;
-  summaries: string[];
-};
+function formatProfileDate(updatedAt: string) {
+  const date = new Date(updatedAt);
 
-const initialProfiles: ProfileCard[] = [
-  {
-    date: "2026.06.26",
-    id: "profile-20260626",
-    isPublic: true,
-    projects: 3,
-    summaries: ["마케팅 팀프로젝트", "Ai 활용 공모전", "코테이토 아이디어톤"],
-  },
-  {
-    date: "2026.07.15",
-    id: "profile-20260715",
-    isPublic: false,
-    projects: 2,
-    summaries: ["AI 챗봇 개발", "웹사이트 리디자인"],
-  },
-];
+  if (Number.isNaN(date.getTime())) {
+    return updatedAt;
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}.${month}.${day}`;
+}
 
 function ProfileVisibilityToggle({
   isPublic,
@@ -66,19 +58,21 @@ function ProfileVisibilityToggle({
 }
 
 function ProfileCard({
-  date,
-  id,
-  isPublic: initialIsPublic,
   isSelected,
   onSelect,
-  projects,
-  summaries,
-}: ProfileCard & {
+  profile,
+}: {
   isSelected: boolean;
-  onSelect: (profileId: string) => void;
+  onSelect: (profileId: number) => void;
+  profile: ProfileListItem;
 }) {
-  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const updateVisibilityMutation = useUpdateProfileVisibilityMutation();
+  const id = String(profile.profileId);
   const inputId = `${id}-input`;
+  const date = formatProfileDate(profile.updatedAt);
+  const summary = [profile.schoolName, profile.major, `${profile.grade}학년`]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <article
@@ -88,11 +82,11 @@ function ProfileCard({
           ? "border-[#FF7658] shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]"
           : "border-[#E8E8E8]"
       }`}
-      onClick={() => onSelect(id)}
+      onClick={() => onSelect(profile.profileId)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onSelect(id);
+          onSelect(profile.profileId);
         }
       }}
       role="radio"
@@ -107,7 +101,7 @@ function ProfileCard({
               className="sr-only"
               id={inputId}
               name="team-matching-profile"
-              onChange={() => onSelect(id)}
+              onChange={() => onSelect(profile.profileId)}
               type="radio"
             />
             <span className="line-clamp-2 overflow-hidden text-ellipsis font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#AC4A35]">
@@ -118,25 +112,24 @@ function ProfileCard({
             </span>
           </label>
           <ProfileVisibilityToggle
-            isPublic={isPublic}
-            onToggle={() => setIsPublic((currentIsPublic) => !currentIsPublic)}
+            isPublic={profile.isPublic}
+            onToggle={() =>
+              updateVisibilityMutation.mutate({
+                profileId: String(profile.profileId),
+                isPublic: !profile.isPublic,
+              })
+            }
           />
         </div>
 
         <div className="w-full">
           <h2 className="flex min-w-0 items-center gap-1 font-[Roboto] text-[17px] font-semibold leading-[135%]">
             <span className="line-clamp-2 overflow-hidden text-ellipsis text-[#1F1F1F]">
-              주요 프로젝트
-            </span>
-            <span className="flex min-w-0 items-center gap-px">
-              <span className="line-clamp-2 overflow-hidden text-ellipsis text-[#AC4A35]">
-                {projects}
-              </span>
-              <span className="line-clamp-2 overflow-hidden text-ellipsis text-[#1F1F1F]">개</span>
+              {profile.nickname}
             </span>
           </h2>
           <p className="line-clamp-1 mt-2 flex-1 overflow-hidden text-ellipsis pl-[6px] font-[Pretendard] text-[13px] font-medium leading-[125%] text-[#616161]">
-            {summaries.join(", ")}
+            {summary || "프로필 정보"}
           </p>
         </div>
       </div>
@@ -152,25 +145,14 @@ function ProfileCard({
 }
 
 export default function TeamMatchingProfilePage() {
-  const [profiles, setProfiles] = useState(initialProfiles);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-
-  const handleAddProfile = () => {
-    setProfiles((currentProfiles) => [
-      ...currentProfiles,
-      {
-        date: `2026.08.${String(currentProfiles.length + 1).padStart(2, "0")}`,
-        id: `profile-${Date.now()}`,
-        isPublic: false,
-        projects: 1,
-        summaries: ["신규 프로젝트"],
-      },
-    ]);
-  };
+  const { data, isError, isLoading } = useProfileListQuery();
+  const selectedProfileId = useTeamMatchingApplicationStore((state) => state.profileId);
+  const setSelectedProfileId = useTeamMatchingApplicationStore((state) => state.setProfileId);
+  const profiles = data?.profiles ?? [];
 
   return (
     <TeamMatchingStepLayout
-      actionDisabled={selectedProfileId === null}
+      actionDisabled={isLoading || isError || selectedProfileId === null}
       actionHref="/team-matching/collaboration-type"
       actionLabel="다음"
       currentStep={1}
@@ -186,22 +168,36 @@ export default function TeamMatchingProfilePage() {
           {"프로필 공개 설정을 켜놓으면,\n팀원이 내 프로필을 열람할 수 있어요."}
         </p>
 
-        <button
+        <Link
+          href="/mypage/profile-management/new"
           className="mt-5 flex h-12 w-full appearance-none items-center justify-center gap-1 self-stretch rounded-xl border-0 bg-[rgba(97,97,97,0.10)] p-2 text-center font-[Roboto] text-[15px] font-semibold leading-[125%] text-[#616161]"
-          onClick={handleAddProfile}
-          type="button"
         >
           <Image alt="" height={24} src="/icons/team-matching/tabler_plus.svg" width={24} />
           프로필 추가
-        </button>
+        </Link>
       </section>
 
       <section className="mt-5 space-y-5">
+        {isLoading && (
+          <p className="rounded-[8px] bg-[#F9F8F4] px-4 py-6 text-center font-[Pretendard] text-[13px] font-medium leading-[135%] text-[#616161]">
+            프로필을 불러오고 있어요.
+          </p>
+        )}
+        {isError && (
+          <p className="rounded-[8px] bg-[#F9F8F4] px-4 py-6 text-center font-[Pretendard] text-[13px] font-medium leading-[135%] text-[#616161]">
+            프로필을 불러오지 못했어요.
+          </p>
+        )}
+        {!isLoading && !isError && profiles.length === 0 && (
+          <p className="rounded-[8px] bg-[#F9F8F4] px-4 py-6 text-center font-[Pretendard] text-[13px] font-medium leading-[135%] text-[#616161]">
+            매칭에 사용할 프로필이 없어요.
+          </p>
+        )}
         {profiles.map((profile) => (
           <ProfileCard
-            key={profile.id}
-            {...profile}
-            isSelected={selectedProfileId === profile.id}
+            key={profile.profileId}
+            profile={profile}
+            isSelected={selectedProfileId === profile.profileId}
             onSelect={setSelectedProfileId}
           />
         ))}

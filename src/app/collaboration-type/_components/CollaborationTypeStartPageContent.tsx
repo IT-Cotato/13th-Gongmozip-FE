@@ -2,10 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { ApiError } from "@/lib/http";
 import { useSurveyStatusQuery } from "@/queries/useSurveyStatusQuery";
+
+const COLLABORATION_TYPE_RETURN_TO_STORAGE_KEY = "collaborationTypeReturnTo";
+
+function isSafeReturnPath(path: string) {
+  return path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/collaboration-type");
+}
 
 export default function CollaborationTypeStartPageContent() {
   const {
@@ -27,6 +34,33 @@ export default function CollaborationTypeStartPageContent() {
         ? null
         : "/collaboration-type/questions/1";
   const actionLabel = isSubmitted ? "결과 확인하기" : isUnauthorized ? "로그인하기" : "검사하기";
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const returnTo = searchParams.get("returnTo");
+
+    if (returnTo && isSafeReturnPath(returnTo)) {
+      window.sessionStorage.setItem(COLLABORATION_TYPE_RETURN_TO_STORAGE_KEY, returnTo);
+
+      return;
+    }
+
+    if (!document.referrer) {
+      return;
+    }
+
+    const referrerUrl = new URL(document.referrer);
+
+    if (referrerUrl.origin !== window.location.origin) {
+      return;
+    }
+
+    const referrerPath = `${referrerUrl.pathname}${referrerUrl.search}${referrerUrl.hash}`;
+
+    if (isSafeReturnPath(referrerPath)) {
+      window.sessionStorage.setItem(COLLABORATION_TYPE_RETURN_TO_STORAGE_KEY, referrerPath);
+    }
+  }, []);
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">

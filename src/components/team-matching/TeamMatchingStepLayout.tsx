@@ -13,6 +13,8 @@ type TeamMatchingStepLayoutProps = {
   actionDisabled?: boolean;
   actionHref: string;
   actionLabel: string;
+  actionLoading?: boolean;
+  actionOnClick?: () => void;
   backHref?: string;
   children: ReactNode;
   currentStep: number;
@@ -24,6 +26,8 @@ export default function TeamMatchingStepLayout({
   actionDisabled = false,
   actionHref,
   actionLabel,
+  actionLoading = false,
+  actionOnClick,
   backHref = "/team-matching",
   children,
   currentStep,
@@ -46,7 +50,9 @@ export default function TeamMatchingStepLayout({
       <TeamMatchingActionBar
         disabled={actionDisabled}
         href={actionHref}
+        isLoading={actionLoading}
         label={actionLabel}
+        onClick={actionOnClick}
         previousHref={previousHref}
         previousLabel={previousLabel}
       />

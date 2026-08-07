@@ -4,6 +4,8 @@ type TeamMatchingActionBarProps = {
   href: string;
   label: string;
   disabled?: boolean;
+  isLoading?: boolean;
+  onClick?: () => void;
   previousHref?: string;
   previousLabel?: string;
 };
@@ -11,7 +13,9 @@ type TeamMatchingActionBarProps = {
 export default function TeamMatchingActionBar({
   disabled = false,
   href,
+  isLoading = false,
   label,
+  onClick,
   previousHref,
   previousLabel = "이전",
 }: TeamMatchingActionBarProps) {
@@ -29,9 +33,14 @@ export default function TeamMatchingActionBar({
           {previousLabel}
         </Link>
       )}
-      {disabled ? (
-        <button className={previousHref ? `${className} flex-1` : className} disabled type="button">
-          {label}
+      {disabled || onClick ? (
+        <button
+          className={previousHref ? `${className} flex-1` : className}
+          disabled={disabled || isLoading}
+          onClick={onClick}
+          type="button"
+        >
+          {isLoading ? "처리 중..." : label}
         </button>
       ) : (
         <Link className={previousHref ? `${className} flex-1` : className} href={href}>

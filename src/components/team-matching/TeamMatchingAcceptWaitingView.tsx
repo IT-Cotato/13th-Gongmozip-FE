@@ -1,12 +1,84 @@
+"use client";
+
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import {
+  type MatchingGroupResponses,
+  useMatchingGroupResponsesQuery,
+} from "@/queries/useMatchingGroupResponsesQuery";
+import {
+  type TodayMatchingApplication,
+  useTodayMatchingApplicationQuery,
+} from "@/queries/useTodayMatchingApplicationQuery";
+import {
+  type TodayMatchingResult,
+  todayMatchingResultQueryKey,
+  useTodayMatchingResultQuery,
+} from "@/queries/useTodayMatchingResultQuery";
 
-export default function TeamMatchingAcceptWaitingView() {
-  const totalMemberCount = 4;
-  const completedResponseCount = 3;
-  const completionPercent = `${(completedResponseCount / totalMemberCount) * 100}%`;
+type TeamMatchingAcceptWaitingViewProps = {
+  todayApplication?: TodayMatchingApplication;
+  todayMatchingResult?: TodayMatchingResult;
+};
+
+const fallbackTotalMemberCount = 4;
+const fallbackCompletedResponseCount = 3;
+
+function getCompletedResponseCount(
+  groupResponses: MatchingGroupResponses | undefined,
+  todayMatchingResult: TodayMatchingResult | undefined,
+) {
+  const members = groupResponses?.members ?? todayMatchingResult?.members;
+
+  if (!members) {
+    return fallbackCompletedResponseCount;
+  }
+
+  return members.filter((member) => member.responseStatus !== "PENDING").length;
+}
+
+export default function TeamMatchingAcceptWaitingView({
+  todayApplication,
+  todayMatchingResult,
+}: TeamMatchingAcceptWaitingViewProps) {
+  const queryClient = useQueryClient();
+  const { data: fetchedTodayApplication } = useTodayMatchingApplicationQuery({
+    enabled: !todayApplication,
+  });
+  const { data: fetchedTodayMatchingResult } = useTodayMatchingResultQuery({
+    enabled: !todayMatchingResult,
+  });
+  const currentTodayMatchingResult = todayMatchingResult ?? fetchedTodayMatchingResult;
+  const matchingGroupId = currentTodayMatchingResult?.matchingGroupId;
+  const { data: groupResponses } = useMatchingGroupResponsesQuery(matchingGroupId, {
+    enabled: currentTodayMatchingResult?.myResponseStatus === "ACCEPTED",
+    refetchInterval: 5000,
+  });
+  const currentTodayApplication = todayApplication ?? fetchedTodayApplication;
+  const canWithdraw = currentTodayApplication?.withdrawal.withdrawable ?? true;
+  const totalMemberCount =
+    groupResponses?.proposedTeamSize ??
+    currentTodayMatchingResult?.teamSize ??
+    currentTodayMatchingResult?.members.length ??
+    fallbackTotalMemberCount;
+  const normalizedTotalMemberCount = Math.max(totalMemberCount, 1);
+  const completedResponseCount = getCompletedResponseCount(groupResponses, currentTodayMatchingResult);
+  const completionPercent = `${Math.min(
+    (completedResponseCount / normalizedTotalMemberCount) * 100,
+    100,
+  )}%`;
+
+  useEffect(() => {
+    if (!groupResponses || groupResponses.groupStatus === "PROPOSED") {
+      return;
+    }
+
+    void queryClient.invalidateQueries({ queryKey: todayMatchingResultQueryKey });
+  }, [groupResponses, queryClient]);
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -36,12 +108,18 @@ export default function TeamMatchingAcceptWaitingView() {
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
-          <Link
-            className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
-            href="/team-matching/cancel"
-          >
-            매칭신청취소
-          </Link>
+          {canWithdraw ? (
+            <Link
+              className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
+              href="/team-matching/cancel"
+            >
+              매칭신청취소
+            </Link>
+          ) : (
+            <span className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#949494]">
+              매칭신청취소 불가
+            </span>
+          )}
         </section>
 
         <div className="mt-[51px]">

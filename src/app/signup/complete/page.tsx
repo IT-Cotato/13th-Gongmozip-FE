@@ -32,7 +32,7 @@ export default function SignupCompletePage() {
 
   function handleGoToTest() {
     clearAutoAdvance();
-    router.push("/collaboration-type");
+    router.push("/collaboration-type?returnTo=/");
   }
 
   function handleSkip() {

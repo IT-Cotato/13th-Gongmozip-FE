@@ -1,5 +1,5 @@
-import TeamMatchingStatusResultView from "@/components/team-matching/TeamMatchingStatusResultView";
+import TeamMatchingStatusRouterView from "@/components/team-matching/TeamMatchingStatusRouterView";
 
 export default function TeamMatchingStatusPage() {
-  return <TeamMatchingStatusResultView />;
+  return <TeamMatchingStatusRouterView />;
 }

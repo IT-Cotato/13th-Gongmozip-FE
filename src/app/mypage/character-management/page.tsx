@@ -93,7 +93,7 @@ function CharacterManagementContent({
       <div className="flex-1 overflow-y-auto">
         <div className="relative flex flex-col items-center gap-4 pt-6 pb-2">
           <Link
-            href="/collaboration-type"
+            href="/collaboration-type?returnTo=/mypage/character-management"
             className="absolute top-1 right-4 text-[13px] leading-[1.25] font-semibold text-[#616161] underline"
           >
             재검사하기
