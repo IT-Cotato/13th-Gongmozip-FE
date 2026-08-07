@@ -206,6 +206,12 @@ function ContactPageInner() {
     setHistoryStep("verify");
   }
 
+  // 탭 재시작 등으로 in-memory 인증이 날아간 채 step=list URL로 바로 진입하면
+  // "접수된 문의 내역이 없어요"로 잘못 보이므로, 렌더 중에 인증 단계로 되돌린다.
+  if (historyStep === "list" && (!contactAuthEmail || !contactAuthPassword)) {
+    setHistoryStep("verify");
+  }
+
   // step=list로 새로고침되거나(URL 진입) 상세 화면에서 SPA 네비게이션으로
   // 돌아오면 inquiries state가 초기화돼 있음. 인증 정보가 메모리에 남아있다면
   // 한 번만 자동으로 다시 조회해서 목록을 복원한다.
