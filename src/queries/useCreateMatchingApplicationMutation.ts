@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/http";
 import { useTeamMatchingApplicationStore } from "@/stores/teamMatchingApplicationStore";
 
 import { matchingEligibilityQueryKey } from "./useMatchingEligibilityQuery";
+import { todayMatchingResultQueryKey } from "./useTodayMatchingResultQuery";
 import {
   todayMatchingApplicationQueryKey,
   type MatchingContestCategory,
@@ -62,6 +63,7 @@ export function useCreateMatchingApplicationMutation() {
       });
       void queryClient.invalidateQueries({ queryKey: matchingEligibilityQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayMatchingApplicationQueryKey });
+      void queryClient.invalidateQueries({ queryKey: todayMatchingResultQueryKey });
       useTeamMatchingApplicationStore.getState().reset();
     },
   });

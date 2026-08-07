@@ -4,7 +4,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
-import type { TodayMatchingApplication } from "@/queries/useTodayMatchingApplicationQuery";
+import type {
+  MatchingCharacterType,
+  TodayMatchingResult,
+  TodayMatchingResultMember,
+} from "@/queries/useTodayMatchingResultQuery";
 import { useTeamMatchingProposalStore } from "@/stores/teamMatchingProposalStore";
 
 type MatchingReason = {
@@ -16,52 +20,48 @@ type MatchedMember = {
   avatarBg: string;
   avatarSrc: string;
   badgeTone: "coral" | "blue" | "orange" | "green";
+  id: number;
+  me: boolean;
   name: string;
+  responseStatus: TodayMatchingResultMember["responseStatus"];
   role: string;
 };
 
-const matchingReasons: MatchingReason[] = [
-  { label: "매칭 이유", value: "공통된 분야 전공" },
-  { label: "팀의 강점", value: "프로젝트 완주율 높음" },
-];
-
-const matchedMembers: MatchedMember[] = [
-  {
+const characterMeta: Record<
+  MatchingCharacterType,
+  Pick<MatchedMember, "avatarBg" | "avatarSrc" | "badgeTone" | "role">
+> = {
+  LEAD_RUNNER: {
     avatarBg: "#FFF1EE",
     avatarSrc: "/images/test/lead.png",
     badgeTone: "coral",
-    name: "김민정",
     role: "리드러너",
   },
-  {
+  FREE_RUNNER: {
     avatarBg: "#EBF7FE",
     avatarSrc: "/images/test/free.png",
     badgeTone: "blue",
-    name: "이해은",
     role: "프리러너",
   },
-  {
+  BOOST_RUNNER: {
     avatarBg: "#FEFDEA",
     avatarSrc: "/images/test/boost.png",
     badgeTone: "orange",
-    name: "이철수",
     role: "부스트러너",
   },
-  {
+  TRACK_RUNNER: {
     avatarBg: "#EEFBF0",
     avatarSrc: "/images/test/track.png",
     badgeTone: "green",
-    name: "박준수",
     role: "트랙러너",
   },
-];
+};
 
 const memberDescriptions = [
-  "서울권 대학 재학중 (4학년)",
-  "사회과학 분야 전공",
-  "주요 프로젝트",
-  "주요 프로젝트",
-  "주요 프로젝트",
+  "신청 당시 프로필 기준",
+  "협업 유형 검사 반영",
+  "팀장 희망 여부 반영",
+  "궁합 점수 기반 매칭",
 ];
 
 const badgeClassName: Record<MatchedMember["badgeTone"], string> = {
@@ -73,7 +73,48 @@ const badgeClassName: Record<MatchedMember["badgeTone"], string> = {
 
 const MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
 
-function MatchingSummaryCard() {
+function formatScore(score: number | null) {
+  if (score === null) {
+    return "-";
+  }
+
+  return Number.isInteger(score) ? String(score) : score.toFixed(1);
+}
+
+function getMatchingReasons(todayMatchingResult: TodayMatchingResult): MatchingReason[] {
+  const score = formatScore(todayMatchingResult.matchingScore);
+  const teamSize = todayMatchingResult.teamSize ?? todayMatchingResult.members.length;
+
+  return [
+    { label: "궁합 점수", value: score === "-" ? "계산 완료" : `${score}점` },
+    { label: "제안 팀", value: `${teamSize}명 팀` },
+  ];
+}
+
+function getMatchedMembers(members: TodayMatchingResultMember[]): MatchedMember[] {
+  return members.map((member) => {
+    const meta = member.characterType
+      ? characterMeta[member.characterType]
+      : {
+          avatarBg: "#F9F8F4",
+          avatarSrc: "/images/test/free.png",
+          badgeTone: "blue" as const,
+          role: "러너",
+        };
+
+    return {
+      ...meta,
+      id: member.memberId,
+      me: member.me,
+      name: member.nickname,
+      responseStatus: member.responseStatus,
+    };
+  });
+}
+
+function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: TodayMatchingResult }) {
+  const matchingReasons = getMatchingReasons(todayMatchingResult);
+
   return (
     <section className="relative mx-auto mt-[30px] flex w-[358px] max-w-full flex-col items-start gap-2 overflow-hidden rounded-2xl bg-[#F9F8F4] p-4">
       <svg
@@ -102,9 +143,17 @@ function MatchingSummaryCard() {
       />
 
       <div className="relative z-10">
-        <p className="font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
-          15분 전
-        </p>
+        {todayMatchingResult.publishedAt ? (
+          <p className="font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
+            {new Date(todayMatchingResult.publishedAt).toLocaleString("ko-KR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              month: "long",
+              day: "numeric",
+            })}{" "}
+            공개
+          </p>
+        ) : null}
         <h2 className="mt-1 font-[Pretendard] text-[17px] font-bold leading-[135%] text-[#2A2A2A]">
           오늘의 팀원 매칭 제안이 도착했어요
         </h2>
@@ -141,6 +190,14 @@ function MatchingSummaryCard() {
 }
 
 function MatchedMemberCard({ member }: { member: MatchedMember }) {
+  const responseText: Record<TodayMatchingResultMember["responseStatus"], string> = {
+    ACCEPTED: "수락",
+    EXPIRED: "만료",
+    PASSED: "패스",
+    PENDING: "대기",
+    REJECTED: "거절",
+  };
+
   return (
     <article className="relative flex h-[175px] w-[147px] flex-col items-start justify-center gap-[10px] self-stretch rounded-xl bg-[#F9F8F4] pb-4 pl-4 pr-2 pt-2">
       <div
@@ -180,7 +237,7 @@ function MatchedMemberCard({ member }: { member: MatchedMember }) {
         >
           <span className="translate-y-px">{member.role}</span>
         </span>
-        {member.badgeTone === "coral" ? (
+        {member.me ? (
           <Image
             alt=""
             aria-hidden="true"
@@ -193,30 +250,35 @@ function MatchedMemberCard({ member }: { member: MatchedMember }) {
       </div>
 
       <ul className="absolute left-4 top-[85px] space-y-1 font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
-        {memberDescriptions.map((description, index) => (
-          <li className="flex gap-2" key={`${member.name}-${index}`}>
-            <span aria-hidden="true">·</span>
-            <span>{description}</span>
-          </li>
-        ))}
+        {[`응답 상태: ${responseText[member.responseStatus]}`, ...memberDescriptions].map(
+          (description, index) => (
+            <li className="flex gap-2" key={`${member.name}-${index}`}>
+              <span aria-hidden="true">·</span>
+              <span>{description}</span>
+            </li>
+          ),
+        )}
       </ul>
     </article>
   );
 }
 
 type TeamMatchingStatusResultViewProps = {
-  todayApplication?: TodayMatchingApplication;
+  todayMatchingResult: TodayMatchingResult;
 };
 
 export default function TeamMatchingStatusResultView({
-  todayApplication,
+  todayMatchingResult,
 }: TeamMatchingStatusResultViewProps) {
   const router = useRouter();
   const acceptProposal = useTeamMatchingProposalStore((state) => state.acceptProposal);
   const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
-  const proposalId = todayApplication?.applicationId
-    ? String(todayApplication.applicationId)
-    : MATCHING_PROPOSAL_ID;
+  const proposalId = todayMatchingResult.matchingGroupId
+    ? String(todayMatchingResult.matchingGroupId)
+    : todayMatchingResult.applicationId
+      ? String(todayMatchingResult.applicationId)
+      : MATCHING_PROPOSAL_ID;
+  const matchedMembers = getMatchedMembers(todayMatchingResult.members);
 
   function handlePassClick() {
     setPendingProposalId(proposalId);
@@ -233,11 +295,11 @@ export default function TeamMatchingStatusResultView({
       <TeamMatchingHeader backHref="/team-matching" title="나의 매칭현황" />
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-[116px]">
-        <MatchingSummaryCard />
+        <MatchingSummaryCard todayMatchingResult={todayMatchingResult} />
 
         <section className="mt-[41px] grid grid-cols-[147px_147px] gap-x-6 gap-y-[47px] px-5">
           {matchedMembers.map((member) => (
-            <MatchedMemberCard key={member.name} member={member} />
+            <MatchedMemberCard key={member.id} member={member} />
           ))}
         </section>
       </div>

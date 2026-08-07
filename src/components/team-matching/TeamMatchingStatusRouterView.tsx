@@ -11,9 +11,9 @@ import TeamMatchingStatusEmptyView from "@/components/team-matching/TeamMatching
 import TeamMatchingStatusResultView from "@/components/team-matching/TeamMatchingStatusResultView";
 import { ApiError } from "@/lib/http";
 import {
-  type TodayMatchingApplication,
-  useTodayMatchingApplicationQuery,
-} from "@/queries/useTodayMatchingApplicationQuery";
+  type TodayMatchingResult,
+  useTodayMatchingResultQuery,
+} from "@/queries/useTodayMatchingResultQuery";
 
 function StatusFeedbackView({
   actionHref,
@@ -50,34 +50,49 @@ function StatusFeedbackView({
   );
 }
 
-function getStatusView(todayApplication: TodayMatchingApplication) {
-  if (!todayApplication.appliedToday || todayApplication.status === "NONE") {
+function getStatusView(todayMatchingResult: TodayMatchingResult) {
+  if (todayMatchingResult.resultStatus === "NOT_APPLIED") {
     return <TeamMatchingStatusEmptyView />;
   }
 
-  switch (todayApplication.status) {
-    case "WAITING":
-    case "MATCHING":
-      return <TeamMatchingPoolView todayApplication={todayApplication} />;
-    case "PROPOSED":
-      return <TeamMatchingStatusResultView todayApplication={todayApplication} />;
-    case "REASSIGN_PENDING":
-      return <TeamMatchingAcceptWaitingView todayApplication={todayApplication} />;
-    case "MATCHED":
+  if (todayMatchingResult.resultStatus === "MATCHED") {
+    if (todayMatchingResult.teamId || todayMatchingResult.groupStatus === "CONFIRMED") {
       return <TeamMatchingCompleteView />;
-    case "PASSED":
+    }
+
+    if (todayMatchingResult.myResponseStatus === "ACCEPTED") {
+      return <TeamMatchingAcceptWaitingView />;
+    }
+
+    if (todayMatchingResult.myResponseStatus === "PASSED") {
       return <TeamMatchingPassView />;
-    case "EXPIRED":
-    case "CANCELED":
-    case "FAILED":
-      return <TeamMatchingStatusEmptyView />;
+    }
+
+    return <TeamMatchingStatusResultView todayMatchingResult={todayMatchingResult} />;
+  }
+
+  switch (todayMatchingResult.resultStatus) {
+    case "NOT_PUBLISHED":
+    case "PROCESSING":
+      return <TeamMatchingPoolView />;
+    case "UNMATCHED":
+      return (
+        <StatusFeedbackView
+          actionHref="/team-matching"
+          actionLabel="홈으로"
+          message="오늘은 조건에 맞는 팀을 찾지 못했어요.\n다음 매칭에서 더 잘 맞는 팀원을 찾아볼게요."
+          title="아쉽게도 매칭되지 않았어요"
+        />
+      );
+    case "WITHDRAWN":
+      return <TeamMatchingPassView />;
     default:
       return <TeamMatchingStatusEmptyView />;
   }
 }
 
 export default function TeamMatchingStatusRouterView() {
-  const { data: todayApplication, error, isError, isLoading } = useTodayMatchingApplicationQuery();
+  const { data: todayMatchingResult, error, isError, isLoading } = useTodayMatchingResultQuery();
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
   if (isLoading) {
@@ -89,7 +104,7 @@ export default function TeamMatchingStatusRouterView() {
     );
   }
 
-  if (isError || !todayApplication) {
+  if (isError || !todayMatchingResult) {
     return (
       <StatusFeedbackView
         actionHref={isUnauthorized ? "/login/email" : undefined}
@@ -104,5 +119,5 @@ export default function TeamMatchingStatusRouterView() {
     );
   }
 
-  return getStatusView(todayApplication);
+  return getStatusView(todayMatchingResult);
 }
