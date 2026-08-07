@@ -48,7 +48,7 @@ export default function EmailLoginPage() {
       {
         onSuccess: (data) => {
           setAccessToken(data.accessToken);
-          router.push("/mypage");
+          router.push("/");
         },
         onError: (error) => {
           if (error instanceof ApiError && error.code === MEMBER_NOT_FOUND_CODE) {

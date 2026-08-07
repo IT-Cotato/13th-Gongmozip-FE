@@ -1,6 +1,14 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import Image from "next/image";
 import Link from "next/link";
+import { ApiError } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useHasAuthHydrated } from "@/stores/useHasAuthHydrated";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 
 const heroContest = {
   title: "2026년 『KB Dream Wave 2030』\nKB라스쿨 중등 4기 멘토링 멘토 모집",
@@ -169,6 +177,37 @@ function MatchingCard() {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const hasHydrated = useHasAuthHydrated();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const memberProfileQuery = useMemberProfileQuery();
+  const isUnauthorized =
+    memberProfileQuery.error instanceof ApiError && memberProfileQuery.error.status === 401;
+
+  // 홈화면은 "1. 회원가입/로그인"을 마친 사용자가 도착하는 화면이라
+  // (기능명세서 1.7 앱 시작하기 참고), 토큰이 없거나 만료된 경우 로그인
+  // 화면으로 보낸다. hasHydrated 체크 없이 accessToken만 보면 localStorage
+  // 복원 전 순간에 로그인된 사용자를 잘못 튕겨낼 수 있다.
+  useEffect(() => {
+    if (hasHydrated && !accessToken) {
+      router.replace("/login");
+    }
+  }, [hasHydrated, accessToken, router]);
+
+  useEffect(() => {
+    if (isUnauthorized) {
+      router.replace("/login");
+    }
+  }, [isUnauthorized, router]);
+
+  if (!hasHydrated || !accessToken || isUnauthorized) {
+    return (
+      <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
+        로그인이 필요해요. 로그인 페이지로 이동할게요...
+      </p>
+    );
+  }
+
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <Header />

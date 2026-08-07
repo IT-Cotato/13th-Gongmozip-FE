@@ -1,13 +1,16 @@
 import { ContactStatusBadge } from "./ContactStatusBadge";
-import type { ContactHistoryItem } from "../_data/mockHistory";
+import { formatContactDate } from "../_lib/date";
+import type { InquirySummary } from "@/queries/useInquiryListMutation";
 
 export function ContactHistoryCard({
   item,
   onClick,
 }: {
-  item: ContactHistoryItem;
+  item: InquirySummary;
   onClick: () => void;
 }) {
+  const { date, time } = formatContactDate(item.createdAt);
+
   return (
     <button
       type="button"
@@ -18,8 +21,8 @@ export function ContactHistoryCard({
         <ContactStatusBadge status={item.status} />
         <div className="flex items-center gap-2 text-[13px] leading-[1.35] font-medium whitespace-nowrap text-[#949494]">
           <span>작성일</span>
-          <span>{item.date}</span>
-          <span>{item.time}</span>
+          <span>{date}</span>
+          <span>{time}</span>
         </div>
       </div>
       <div className="flex w-full flex-col items-start gap-2">
@@ -27,7 +30,9 @@ export function ContactHistoryCard({
           {item.title}
         </p>
         <div className="w-full rounded-[10px] bg-white p-2">
-          <p className="line-clamp-2 text-[13px] leading-[1.5] text-[#949494]">{item.content}</p>
+          <p className="line-clamp-2 text-[13px] leading-[1.5] text-[#949494]">
+            {item.contentPreview}
+          </p>
         </div>
       </div>
     </button>

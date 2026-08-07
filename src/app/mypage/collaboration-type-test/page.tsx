@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function MypageCollaborationTypeTestPage() {
-  redirect("/collaboration-type");
+  redirect("/collaboration-type?returnTo=/mypage");
 }

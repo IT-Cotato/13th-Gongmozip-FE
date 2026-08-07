@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { profileListQueryKey, type ProfileListResponse } from "./useProfileListQuery";
 import { profilePreviewQueryKey, type ProfilePreview } from "./useProfilePreviewQuery";
 
@@ -17,11 +18,12 @@ function updateProfileVisibility({ profileId, isPublic }: UpdateProfileVisibilit
 
 export function useUpdateProfileVisibilityMutation() {
   const queryClient = useQueryClient();
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   return useMutation({
     mutationFn: updateProfileVisibility,
     onSuccess: (_data, { profileId, isPublic }) => {
-      queryClient.setQueryData<ProfileListResponse>(profileListQueryKey, (current) =>
+      queryClient.setQueryData<ProfileListResponse>(profileListQueryKey(accessToken), (current) =>
         current
           ? {
               ...current,

@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
 import { EditIcon } from "../../_components/icons";
 import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useUpdateProfileImageMutation } from "@/queries/useUpdateProfileImageMutation";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -38,6 +42,10 @@ export default function CreateProfilePage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const defaultBasicInfo = useProfileDefaultInfoStore((state) => state.defaultBasicInfo);
+  const setDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.setDefaultBasicInfo);
+  const clearDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.clearDefaultBasicInfo);
 
   const [nickname, setNickname] = useState(draftBasicInfo.nickname);
   const [school, setSchool] = useState(draftBasicInfo.school);
@@ -50,6 +58,73 @@ export default function CreateProfilePage() {
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
+  const memberProfileQuery = useMemberProfileQuery();
+  const updateProfileImageMutation = useUpdateProfileImageMutation();
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const previewImageUrlRef = useRef<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const displayedImageUrl = previewImageUrl ?? memberProfileQuery.data?.profileImageUrl ?? null;
+
+  useEffect(() => {
+    return () => {
+      if (previewImageUrlRef.current) {
+        URL.revokeObjectURL(previewImageUrlRef.current);
+      }
+    };
+  }, []);
+
+  function handlePhotoButtonClick() {
+    photoInputRef.current?.click();
+  }
+
+  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (previewImageUrlRef.current) {
+      URL.revokeObjectURL(previewImageUrlRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    previewImageUrlRef.current = objectUrl;
+    setPreviewImageUrl(objectUrl);
+
+    updateProfileImageMutation.mutate(file, {
+      onSettled: () => {
+        URL.revokeObjectURL(objectUrl);
+        if (previewImageUrlRef.current === objectUrl) {
+          previewImageUrlRef.current = null;
+        }
+        // 성공 시 memberProfileQuery가 무효화되어 갱신된 서버 이미지로,
+        // 실패 시 기존 프로필 이미지로 자연스럽게 되돌아간다.
+        setPreviewImageUrl(null);
+      },
+    });
+  }
+
+  // 새 프로필을 처음 작성하는 시점(수정 아님 + 아직 아무것도 안 입력함)에만
+  // 저장된 기본값을 불러온다. persist 스토어의 localStorage 복원이 마운트 이후
+  // 비동기로 끝나기 때문에, 값이 바뀔 때 렌더 중에 반영한다("Adjusting state
+  // when a prop changes" 패턴 - useEffect로 하면 리렌더가 한 번 더 발생함).
+  // "적용 여부"는 defaultBasicInfo와의 값 비교가 아니라 별도 플래그로 추적한다 -
+  // 하이드레이션이 마운트 전에 이미 끝나있는 재진입 시나리오에서는 초기 렌더부터
+  // defaultBasicInfo와 baseline이 같아져서 값 비교로는 절대 적용되지 않는 문제가 있었음.
+  const [hasAppliedDefault, setHasAppliedDefault] = useState(false);
+  const areBasicFieldsEmpty =
+    !nickname && !school && !grade && !major && !doubleMajor && !minor && !gpa && !gpaScale;
+  if (!hasAppliedDefault && editingProfileId === null && defaultBasicInfo && areBasicFieldsEmpty) {
+    setHasAppliedDefault(true);
+    setNickname(defaultBasicInfo.nickname);
+    setSchool(defaultBasicInfo.school);
+    setGrade(defaultBasicInfo.grade);
+    setMajor(defaultBasicInfo.major);
+    setDoubleMajor(defaultBasicInfo.doubleMajor);
+    setMinor(defaultBasicInfo.minor);
+    setGpa(defaultBasicInfo.gpa);
+    setGpaScale(defaultBasicInfo.gpaScale);
+  }
+
   const isGpaValid =
     GPA_FORMAT_REGEX.test(gpa.trim()) &&
     GPA_FORMAT_REGEX.test(gpaScale.trim()) &&
@@ -60,7 +135,17 @@ export default function CreateProfilePage() {
 
   function handleNext() {
     if (!isFormValid) return;
-    setDraftBasicInfo({ nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale });
+    const basicInfo = { nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale };
+    setDraftBasicInfo(basicInfo);
+
+    if (accessToken) {
+      if (saveAsDefault) {
+        setDefaultBasicInfo(basicInfo);
+      } else {
+        clearDefaultBasicInfo();
+      }
+    }
+
     router.push("/mypage/profile-management/new/experience");
   }
 
@@ -88,14 +173,32 @@ export default function CreateProfilePage() {
             <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">기본 정보</h2>
             <div className="flex items-center gap-4 px-6">
               <div className="relative shrink-0">
-                <div className="size-[70px] rounded-full bg-[#efefef]" />
+                {displayedImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={displayedImageUrl}
+                    alt=""
+                    className="size-[70px] rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="size-[70px] rounded-full bg-[#efefef]" />
+                )}
                 <button
                   type="button"
+                  onClick={handlePhotoButtonClick}
+                  disabled={updateProfileImageMutation.isPending}
                   aria-label="프로필 사진 변경"
-                  className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border border-[rgba(97,97,97,0.22)] bg-white"
+                  className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border border-[rgba(97,97,97,0.22)] bg-white disabled:opacity-50"
                 >
                   <EditIcon />
                 </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
               </div>
               <div className="flex flex-1 flex-col gap-1">
                 <FieldLabel label="닉네임" htmlFor="nickname" required />
@@ -108,6 +211,15 @@ export default function CreateProfilePage() {
                 />
               </div>
             </div>
+            {updateProfileImageMutation.isError && (
+              <p
+                role="alert"
+                aria-live="assertive"
+                className="px-6 text-xs leading-[1.35] text-[#BB5260]"
+              >
+                프로필 사진 업로드에 실패했어요. 다시 시도해주세요.
+              </p>
+            )}
           </section>
 
           <section className="flex flex-col gap-4">

@@ -1,19 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeftIcon } from "./_components/icons";
 import { SuccessModal } from "./_components/SuccessModal";
 import { LeaveConfirmModal } from "./_components/LeaveConfirmModal";
 import { ContactHistoryCard } from "./_components/ContactHistoryCard";
-import { MOCK_CONTACT_HISTORY } from "./_data/mockHistory";
+import { useCreateInquiryMutation } from "@/queries/useCreateInquiryMutation";
+import { useInquiryListMutation, type InquirySummary } from "@/queries/useInquiryListMutation";
+import { useContactInquiryAuthStore } from "@/stores/contactInquiryAuthStore";
+import { ApiError } from "@/lib/http";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TITLE_MAX_LENGTH = 20;
 const CONTENT_MAX_LENGTH = 1000;
 const PASSWORD_LENGTH = 4;
 const HISTORY_LIST_RETURN_TO = "/contact?tab=history&step=list";
+const INQUIRY_NOT_FOUND_CODE = "INQUIRY_404_1";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -61,8 +66,14 @@ export default function ContactPage() {
 
 function ContactPageInner() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const createInquiryMutation = useCreateInquiryMutation();
+  const inquiryListMutation = useInquiryListMutation();
+  const setContactInquiryAuth = useContactInquiryAuthStore((state) => state.setContactInquiryAuth);
+  const contactAuthEmail = useContactInquiryAuthStore((state) => state.email);
+  const contactAuthPassword = useContactInquiryAuthStore((state) => state.password);
 
   const [activeTab, setActiveTab] = useState<"write" | "history">(() =>
     searchParams.get("tab") === "history" ? "history" : "write",
@@ -79,9 +90,12 @@ function ContactPageInner() {
   const [isDetailOpen, setIsDetailOpen] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [historyEmail, setHistoryEmail] = useState("");
   const [historyPassword, setHistoryPassword] = useState("");
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [inquiries, setInquiries] = useState<InquirySummary[]>([]);
 
   const isFormValid =
     title.trim().length > 0 &&
@@ -125,9 +139,20 @@ function ContactPageInner() {
   }
 
   function handleSubmit() {
-    if (!isFormValid) return;
-    // TODO(backend): 문의 접수 API 연동 전까지 성공 팝업만 임시로 표시
-    setShowSuccessModal(true);
+    if (!isFormValid || createInquiryMutation.isPending) return;
+    setSubmitError(null);
+
+    createInquiryMutation.mutate(
+      { email, password, title, content },
+      {
+        onSuccess: () => setShowSuccessModal(true),
+        onError: (error) => {
+          setSubmitError(
+            error instanceof ApiError ? error.message : "문의 접수에 실패했어요. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
   function handleCloseSuccessModal() {
@@ -137,16 +162,81 @@ function ContactPageInner() {
     setEmail("");
     setPassword("");
     setAgreePrivacy(false);
+    createInquiryMutation.reset();
+  }
+
+  function fetchInquiryList(email: string, password: string) {
+    setHistoryError(null);
+
+    inquiryListMutation.mutate(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          // 같은 이메일이라도 비밀번호가 다르면 다른 문의를 가리킬 수 있는데,
+          // useInquiryDetailQuery의 캐시 키는 이메일까지만 반영해서 이전 인증의
+          // 상세 데이터가 남아있을 수 있음 - 새 인증 성공 시 무효화한다.
+          queryClient.removeQueries({ queryKey: ["inquiries"] });
+          setContactInquiryAuth(email, password);
+          setInquiries(data.inquiries);
+          setHistoryStep("list");
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.code === INQUIRY_NOT_FOUND_CODE) {
+            setHistoryError("이메일 또는 비밀번호가 일치하지 않아요.");
+            return;
+          }
+          setHistoryError(
+            error instanceof ApiError
+              ? error.message
+              : "문의 내역을 불러오지 못했어요. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
   function handleHistoryConfirm() {
-    if (!isHistoryFormValid) return;
-    // TODO(backend): 문의 내역 조회 API 연동 전까지 목데이터로 임시 표시
-    setHistoryStep("list");
+    if (!isHistoryFormValid || inquiryListMutation.isPending) return;
+    fetchInquiryList(historyEmail, historyPassword);
   }
 
-  function handleOpenHistoryDetail(id: string) {
-    router.push(`/contact/history/${id}?returnTo=${encodeURIComponent(HISTORY_LIST_RETURN_TO)}`);
+  function handleRetryHistoryVerify() {
+    setInquiries([]);
+    setHistoryError(null);
+    setHistoryStep("verify");
+  }
+
+  // 탭 재시작 등으로 in-memory 인증이 날아간 채 step=list URL로 바로 진입하면
+  // "접수된 문의 내역이 없어요"로 잘못 보이므로, 렌더 중에 인증 단계로 되돌린다.
+  if (historyStep === "list" && (!contactAuthEmail || !contactAuthPassword)) {
+    setHistoryStep("verify");
+  }
+
+  // step=list로 새로고침되거나(URL 진입) 상세 화면에서 SPA 네비게이션으로
+  // 돌아오면 inquiries state가 초기화돼 있음. 인증 정보가 메모리에 남아있다면
+  // 한 번만 자동으로 다시 조회해서 목록을 복원한다.
+  const hasAttemptedListRestoreRef = useRef(false);
+  useEffect(() => {
+    if (
+      historyStep !== "list" ||
+      inquiries.length > 0 ||
+      !contactAuthEmail ||
+      !contactAuthPassword ||
+      hasAttemptedListRestoreRef.current
+    ) {
+      return;
+    }
+    hasAttemptedListRestoreRef.current = true;
+    fetchInquiryList(contactAuthEmail, contactAuthPassword);
+    // fetchInquiryList는 매 렌더 재생성되는 클로저라 deps에 넣으면 위 ref 가드가
+    // 무의미해짐 - ref로 단 한 번만 실행되도록 이미 보장하고 있음.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyStep, inquiries.length, contactAuthEmail, contactAuthPassword]);
+
+  function handleOpenHistoryDetail(inquiryId: number) {
+    router.push(
+      `/contact/history/${inquiryId}?returnTo=${encodeURIComponent(HISTORY_LIST_RETURN_TO)}`,
+    );
   }
 
   return (
@@ -306,38 +396,67 @@ function ContactPageInner() {
               className={INPUT_CLASS}
             />
           </div>
+          {historyError && (
+            <p role="alert" className="px-5 text-xs leading-[1.35] text-[#BB5260]">
+              {historyError}
+            </p>
+          )}
+        </div>
+      ) : inquiryListMutation.isPending ? (
+        <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
+          문의 내역을 불러오는 중이에요...
+        </p>
+      ) : inquiries.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 px-4 py-16">
+          <p className="text-[13px] text-[#949494]">
+            {historyError ?? "접수된 문의 내역이 없어요."}
+          </p>
+          <button
+            type="button"
+            onClick={handleRetryHistoryVerify}
+            className="rounded-full bg-[#F5F5F5] px-4 py-2 text-[13px] font-medium text-[#1F1F1F]"
+          >
+            다시 조회
+          </button>
         </div>
       ) : (
         <div className="flex flex-1 flex-col gap-4 p-4">
-          {MOCK_CONTACT_HISTORY.map((item) => (
+          {inquiries.map((item) => (
             <ContactHistoryCard
-              key={item.id}
+              key={item.inquiryId}
               item={item}
-              onClick={() => handleOpenHistoryDetail(item.id)}
+              onClick={() => handleOpenHistoryDetail(item.inquiryId)}
             />
           ))}
         </div>
       )}
 
       {(activeTab === "write" || historyStep === "verify") && (
-        <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
           {activeTab === "write" ? (
-            <button
-              type="button"
-              disabled={!isFormValid}
-              onClick={handleSubmit}
-              className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-                isFormValid
-                  ? "bg-[#FF7658] text-white"
-                  : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-              }`}
-            >
-              제출하기
-            </button>
+            <>
+              {submitError && (
+                <p role="alert" className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                  {submitError}
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={!isFormValid || createInquiryMutation.isPending}
+                onClick={handleSubmit}
+                className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+                  isFormValid
+                    ? "bg-[#FF7658] text-white"
+                    : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+                }`}
+              >
+                {createInquiryMutation.isPending ? "접수 중..." : "제출하기"}
+              </button>
+            </>
           ) : (
             <button
               type="button"
-              disabled={!isHistoryFormValid}
+              disabled={!isHistoryFormValid || inquiryListMutation.isPending}
               onClick={handleHistoryConfirm}
               className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
                 isHistoryFormValid
@@ -345,7 +464,7 @@ function ContactPageInner() {
                   : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
               }`}
             >
-              확인
+              {inquiryListMutation.isPending ? "확인 중..." : "확인"}
             </button>
           )}
         </div>

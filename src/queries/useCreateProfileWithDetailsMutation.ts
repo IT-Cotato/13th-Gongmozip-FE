@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
-import { profileListQueryKey } from "./useProfileListQuery";
 import { fetchProfileDetail, profileDetailQueryKey } from "./useProfileDetailQuery";
 import type { ProfileBasicInfo } from "@/stores/profileDraftStore";
 import type { ProjectExperienceInput } from "@/app/mypage/profile-management/new/experience/_components/ProjectExperienceSheet";
@@ -124,7 +123,7 @@ export function useCreateProfileWithDetailsMutation() {
   return useMutation({
     mutationFn: createProfileWithDetails,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileListQueryKey });
+      queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
     },
   });
 }
@@ -183,7 +182,7 @@ export function useUpdateProfileWithDetailsMutation() {
   return useMutation({
     mutationFn: updateProfileWithDetails,
     onSuccess: (_data, { profileId }) => {
-      queryClient.invalidateQueries({ queryKey: profileListQueryKey });
+      queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
       queryClient.invalidateQueries({ queryKey: profileDetailQueryKey(String(profileId)) });
     },
   });

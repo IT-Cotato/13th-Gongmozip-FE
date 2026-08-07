@@ -1,13 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon } from "../../_components/icons";
 import { ContactStatusBadge } from "../../_components/ContactStatusBadge";
-import { getMockContactHistoryById } from "../../_data/mockHistory";
+import { formatContactDate } from "../../_lib/date";
+import { useInquiryDetailQuery } from "@/queries/useInquiryDetailQuery";
+import { useContactInquiryAuthStore } from "@/stores/contactInquiryAuthStore";
 
 const DEFAULT_RETURN_TO = "/contact?tab=history&step=list";
+const VERIFY_AGAIN_URL = "/contact?tab=history&step=verify";
 
 const READONLY_BOX_CLASS =
   "w-full rounded-xl border border-[rgba(97,97,97,0.08)] bg-white px-5 py-3 text-[13px] leading-[1.5] whitespace-pre-wrap text-[#1F1F1F]";
@@ -20,17 +23,36 @@ export default function ContactHistoryDetailPage() {
   );
 }
 
+function isSafeReturnPath(path: string) {
+  return path.startsWith("/") && !path.startsWith("//");
+}
+
 function ContactHistoryDetailPageInner() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") || DEFAULT_RETURN_TO;
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo = rawReturnTo && isSafeReturnPath(rawReturnTo) ? rawReturnTo : DEFAULT_RETURN_TO;
 
-  const item = getMockContactHistoryById(params.id);
+  const email = useContactInquiryAuthStore((state) => state.email);
+  const password = useContactInquiryAuthStore((state) => state.password);
+  const auth = email && password ? { email, password } : null;
+
+  const detailQuery = useInquiryDetailQuery(params.id, auth);
+  const item = detailQuery.data;
+
+  useEffect(() => {
+    if (!email || !password) {
+      router.replace(VERIFY_AGAIN_URL);
+    }
+  }, [email, password, router]);
 
   function handleBack() {
     router.push(returnTo);
   }
+
+  const createdAt = item ? formatContactDate(item.createdAt) : null;
+  const answeredAt = item?.answeredAt ? formatContactDate(item.answeredAt) : null;
 
   return (
     <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
@@ -46,7 +68,11 @@ function ContactHistoryDetailPageInner() {
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111111]">문의내용</h1>
       </div>
 
-      {!item ? (
+      {!auth || detailQuery.isLoading ? (
+        <p className="p-4 text-center text-[13px] leading-[1.5] text-[#616161]">
+          문의 내역을 불러오는 중이에요...
+        </p>
+      ) : detailQuery.isError || !item || !createdAt ? (
         <p className="p-4 text-center text-[13px] leading-[1.5] text-[#616161]">
           문의 내역을 찾을 수 없습니다.
         </p>
@@ -57,8 +83,8 @@ function ContactHistoryDetailPageInner() {
               <ContactStatusBadge status={item.status} />
               <div className="flex items-center gap-2 text-[13px] leading-[1.35] font-medium whitespace-nowrap text-[#949494]">
                 <span>작성일</span>
-                <span>{item.date}</span>
-                <span>{item.time}</span>
+                <span>{createdAt.date}</span>
+                <span>{createdAt.time}</span>
               </div>
             </div>
 
@@ -75,7 +101,7 @@ function ContactHistoryDetailPageInner() {
             </div>
           </div>
 
-          {item.answer && (
+          {item.answerContent && answeredAt && (
             <div className="flex w-full flex-col gap-3 p-4">
               <div className="flex items-center gap-4">
                 <Image
@@ -91,12 +117,12 @@ function ContactHistoryDetailPageInner() {
                   </p>
                   <div className="flex items-center gap-2 text-[13px] leading-[1.35] font-medium whitespace-nowrap text-[#949494]">
                     <span>답변일</span>
-                    <span>{item.answer.date}</span>
-                    <span>{item.answer.time}</span>
+                    <span>{answeredAt.date}</span>
+                    <span>{answeredAt.time}</span>
                   </div>
                 </div>
               </div>
-              <p className={READONLY_BOX_CLASS}>{item.answer.body}</p>
+              <p className={READONLY_BOX_CLASS}>{item.answerContent}</p>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, "");
+export const FRONTEND_BASE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
 
 export class ApiError extends Error {
   status: number;

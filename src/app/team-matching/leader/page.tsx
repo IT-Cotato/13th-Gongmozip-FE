@@ -1,34 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
+import type { MatchingLeaderPreference } from "@/queries/useTodayMatchingApplicationQuery";
+import { useTeamMatchingApplicationStore } from "@/stores/teamMatchingApplicationStore";
 
 
-const leaderOptions = [
-  "네, 팀장으로 참여할게요",
-  "아니요, 팀원으로 참여할게요",
-  "필요하면 맡을 수 있어요",
+const leaderOptions: { label: string; value: MatchingLeaderPreference }[] = [
+  { label: "네, 팀장으로 참여할게요", value: "WANTS" },
+  { label: "아니요, 팀원으로 참여할게요", value: "DOES_NOT_WANT" },
+  { label: "필요하면 맡을 수 있어요", value: "NEUTRAL" },
 ];
 
 
 export default function TeamMatchingLeaderPage() {
-  const [selectedOption, setSelectedOption] = useState(leaderOptions[0]);
+  const storedLeaderPreference = useTeamMatchingApplicationStore((state) => state.leaderPreference);
+  const setLeaderPreference = useTeamMatchingApplicationStore((state) => state.setLeaderPreference);
+  const [selectedOption, setSelectedOption] = useState<MatchingLeaderPreference>(
+    storedLeaderPreference ?? leaderOptions[0].value,
+  );
 
-  const renderLeaderOption = (option: string) => {
-    const isSelected = selectedOption === option;
+  useEffect(() => {
+    if (!storedLeaderPreference) {
+      setLeaderPreference(leaderOptions[0].value);
+    }
+  }, [setLeaderPreference, storedLeaderPreference]);
+
+  const handleSelect = (leaderPreference: MatchingLeaderPreference) => {
+    setSelectedOption(leaderPreference);
+    setLeaderPreference(leaderPreference);
+  };
+
+  const renderLeaderOption = (option: { label: string; value: MatchingLeaderPreference }) => {
+    const isSelected = selectedOption === option.value;
 
     return (
       <button
         className={`flex h-8 items-center justify-center rounded-[999px] px-[10px] py-2 text-center font-[Roboto] text-[15px] font-semibold leading-[125%] ${
           isSelected ? "bg-[#1F1F1F] text-white" : "bg-[rgba(97,97,97,0.10)] text-[#616161]"
         }`}
-        key={option}
+        key={option.value}
         aria-pressed={isSelected}
-        onClick={() => setSelectedOption(option)}
+        onClick={() => handleSelect(option.value)}
         type="button"
       >
-        {option}
+        {option.label}
       </button>
     );
   };
