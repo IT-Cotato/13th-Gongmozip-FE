@@ -11,7 +11,7 @@ export default function AllRequiredModalPreviewPage() {
         },
       ]}
       showCloseButton
-      title={`AI 분석 매칭은\n프로필 작성이 완료되어야\n매칭 신청이 가능합니다.`}
+      title={`AI 분석 매칭은\n프로필 작성과 협업 유형 검사가\n완료되어야 신청 가능합니다.`}
     />
   );
 }

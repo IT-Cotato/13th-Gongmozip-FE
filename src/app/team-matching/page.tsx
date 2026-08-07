@@ -1,11 +1,145 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
+import { ApiError } from "@/lib/http";
+import {
+  type MatchingEligibility,
+  type MatchingEligibilityReason,
+  useMatchingEligibilityQuery,
+} from "@/queries/useMatchingEligibilityQuery";
 
-const countdownDigits = ["0", "1", "3", "0", "1", "0"];
+const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
 
-function CountdownCard() {
+const reasonPriority: MatchingEligibilityReason[] = [
+  "PROFILE_REQUIRED",
+  "SURVEY_REQUIRED",
+  "ALREADY_APPLIED_TODAY",
+  "MATCHING_RESTRICTED",
+  "APPLICATION_DEADLINE_PASSED",
+  "PROJECT_EVALUATION_NOT_READY",
+  "REASSIGNMENT_PENDING",
+];
+
+const blockingReasonMessages: Record<MatchingEligibilityReason, string> = {
+  PROFILE_REQUIRED: "프로필 작성 후 신청할 수 있어요.",
+  SURVEY_REQUIRED: "협업 유형 검사 후 신청할 수 있어요.",
+  APPLICATION_DEADLINE_PASSED: "오늘 매칭 신청이 마감됐어요.",
+  ALREADY_APPLIED_TODAY: "오늘은 이미 매칭을 신청했어요.",
+  MATCHING_RESTRICTED: "매칭 참여 제한 기간이에요.",
+  PROJECT_EVALUATION_NOT_READY: "프로젝트 AI 평가 완료 후 신청할 수 있어요.",
+  REASSIGNMENT_PENDING: "이전 매칭 응답 완료 후 신청할 수 있어요.",
+};
+
+function formatParticipantCount(participantCount?: number) {
+  if (typeof participantCount !== "number") {
+    return "---";
+  }
+
+  return participantCount.toLocaleString("ko-KR");
+}
+
+function getRemainingSeconds(deadlineAt?: string, baseTime = Date.now()) {
+  if (!deadlineAt) {
+    return 0;
+  }
+
+  const deadlineTime = new Date(deadlineAt).getTime();
+
+  if (Number.isNaN(deadlineTime)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((deadlineTime - baseTime) / 1000));
+}
+
+function getCountdownDigits(deadlineAt?: string, baseTime?: number) {
+  const remainingSeconds = getRemainingSeconds(deadlineAt, baseTime);
+  const hours = Math.floor(remainingSeconds / 3600);
+  const minutes = Math.floor((remainingSeconds % 3600) / 60);
+  const seconds = remainingSeconds % 60;
+
+  return `${String(hours).padStart(2, "0")}${String(minutes).padStart(2, "0")}${String(
+    seconds,
+  ).padStart(2, "0")}`.split("");
+}
+
+function getPrimaryReason(reasons: MatchingEligibilityReason[]) {
+  return reasonPriority.find((reason) => reasons.includes(reason));
+}
+
+function getApplyHref(eligibility?: MatchingEligibility) {
+  if (!eligibility) {
+    return "/team-matching/profile";
+  }
+
+  const reasons = eligibility.reasons;
+
+  if (eligibility.eligible || reasons.length === 0) {
+    return "/team-matching/profile";
+  }
+
+  if (reasons.includes("PROFILE_REQUIRED") && reasons.includes("SURVEY_REQUIRED")) {
+    return "/team-matching/modal-preview/all-required";
+  }
+
+  if (reasons.includes("PROFILE_REQUIRED")) {
+    return "/team-matching/modal-preview/profile-required";
+  }
+
+  if (reasons.includes("SURVEY_REQUIRED")) {
+    return "/team-matching/modal-preview/collaboration-test-required";
+  }
+
+  if (reasons.includes("ALREADY_APPLIED_TODAY")) {
+    return "/team-matching/modal-preview/already-applied";
+  }
+
+  if (reasons.includes("MATCHING_RESTRICTED")) {
+    return "/team-matching/modal-preview/weekly-limit";
+  }
+
+  return "/team-matching";
+}
+
+function hasActionableBlockingReason(eligibility?: MatchingEligibility) {
+  if (!eligibility || eligibility.eligible) {
+    return true;
+  }
+
+  return eligibility.reasons.some((reason) =>
+    ["PROFILE_REQUIRED", "SURVEY_REQUIRED", "ALREADY_APPLIED_TODAY", "MATCHING_RESTRICTED"].includes(
+      reason,
+    ),
+  );
+}
+
+function useCountdownDigits(deadlineAt?: string) {
+  const [baseTime, setBaseTime] = useState(Date.now);
+
+  useEffect(() => {
+    if (!deadlineAt) {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      setBaseTime(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [deadlineAt]);
+
+  return deadlineAt ? getCountdownDigits(deadlineAt, baseTime) : fallbackCountdownDigits;
+}
+
+function CountdownCard({ deadlineAt }: { deadlineAt?: string }) {
+  const countdownDigits = useCountdownDigits(deadlineAt);
+
   return (
     <section className="mx-auto mt-4 flex h-[143px] w-[358px] max-w-[calc(100%-32px)] flex-col items-center gap-2 rounded-2xl bg-[#F9F8F4] p-4 text-center">
       <div className="flex items-start justify-center gap-[10px] rounded-[10px] bg-[#1F1F1F] px-2 py-[5px] text-[14px] font-bold leading-none text-white">
@@ -77,18 +211,64 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
   return <div className={className}>{content}</div>;
 }
 
-function FixedApplyButton() {
+function FixedApplyButton({
+  disabled,
+  href,
+  label,
+}: {
+  disabled?: boolean;
+  href: string;
+  label: string;
+}) {
+  const className = disabled
+    ? "flex h-12 w-full items-center justify-center rounded-[14px] bg-[#DFDFDF] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
+    : "flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white";
+
+  if (disabled) {
+    return (
+      <button className={className} disabled type="button">
+        {label}
+      </button>
+    );
+  }
+
   return (
-    <Link
-      className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
-      href="/team-matching/profile"
-    >
-      매칭 신청하기
+    <Link className={className} href={href}>
+      {label}
     </Link>
   );
 }
 
 export default function TeamMatchingPage() {
+  const { data: eligibility, error, isError, isLoading } = useMatchingEligibilityQuery();
+  const participantCount = formatParticipantCount(eligibility?.participantCount);
+  const applyHref = getApplyHref(eligibility);
+  const primaryReason = eligibility ? getPrimaryReason(eligibility.reasons) : undefined;
+  const canOpenApplyDestination = hasActionableBlockingReason(eligibility);
+  const applyLabel = isLoading
+    ? "확인 중..."
+    : primaryReason && !eligibility?.eligible
+      ? "신청 조건 확인하기"
+      : "매칭 신청하기";
+  const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const helperMessage = useMemo(() => {
+    if (isLoading) {
+      return "신청 가능 여부를 확인하고 있어요.";
+    }
+
+    if (isError) {
+      return isUnauthorized
+        ? "로그인 후 매칭 신청 자격을 확인할 수 있어요."
+        : "매칭 신청 자격을 불러오지 못했어요.";
+    }
+
+    if (eligibility?.eligible) {
+      return "오늘 매칭 신청이 가능해요.";
+    }
+
+    return primaryReason ? blockingReasonMessages[primaryReason] : "매칭 신청 상태를 확인해 주세요.";
+  }, [eligibility?.eligible, isError, isLoading, isUnauthorized, primaryReason]);
+
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
@@ -118,7 +298,7 @@ export default function TeamMatchingPage() {
               <span className="flex h-[30px] items-center justify-center">
                 지금{" "}
                 <span className="mx-[4px] inline-flex h-[30px] items-center rounded-[6px] bg-[#EFEFEF] px-[5px]">
-                  000
+                  {participantCount}
                 </span>{" "}
                 명이
               </span>
@@ -137,7 +317,7 @@ export default function TeamMatchingPage() {
             </div>
           </section>
 
-          <CountdownCard />
+          <CountdownCard deadlineAt={eligibility?.applicationDeadlineAt} />
 
           <div className="mt-6 h-[6px] w-[390px] max-w-full bg-[rgba(97,97,97,0.08)]" />
 
@@ -145,8 +325,7 @@ export default function TeamMatchingPage() {
             <InfoCard
               href="/team-matching/status"
               title="나의 매칭현황"
-              description="매칭결과까지"
-              descriptionValue="01:24:30"
+              description={helperMessage}
               tone="coral"
             />
             <InfoCard
@@ -159,7 +338,11 @@ export default function TeamMatchingPage() {
         </div>
 
         <div className="shrink-0 bg-white px-4 pb-3 pt-2">
-          <FixedApplyButton />
+          <FixedApplyButton
+            disabled={isLoading || (isError && !isUnauthorized) || !canOpenApplyDestination}
+            href={isUnauthorized ? "/login/email" : applyHref}
+            label={isUnauthorized ? "로그인하기" : applyLabel}
+          />
         </div>
       </div>
       <BottomNavigation />
