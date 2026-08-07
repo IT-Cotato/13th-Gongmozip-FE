@@ -5,29 +5,22 @@ import { persist } from "zustand/middleware";
 import type { ProfileBasicInfo } from "./profileDraftStore";
 
 type ProfileDefaultInfoState = {
-  // accessToken별로 분리 보관 - 같은 브라우저를 여러 계정이 함께 쓰는 경우
-  // 한 계정에서 저장한 기본값이 다른 계정에도 그대로 보이는 걸 막기 위함.
-  // memberId는 API 응답을 통해 비동기로만 알 수 있어 하이드레이션 시점에
-  // 쓸 수 없고, accessToken은 로그인 즉시 동기적으로 알 수 있어 이걸 키로 쓴다.
-  defaultBasicInfoByAccount: Record<string, ProfileBasicInfo>;
-  setDefaultBasicInfo: (accessToken: string, info: ProfileBasicInfo) => void;
-  clearDefaultBasicInfo: (accessToken: string) => void;
+  // accessToken을 키로 쓰면 apiFetch의 조용한 토큰 재발급(reissue) 때마다
+  // accessToken 값이 바뀌어서 저장해둔 기본값을 못 찾게 되고(localStorage에는
+  // 옛 토큰 키로 계속 쌓이기만 함), 그 문제를 피하기 위해 계정 구분 없이
+  // 단일 슬롯으로 보관한다. 대신 계정 전환 시 이전 값이 보이지 않도록
+  // useAuthStore.clearAccessToken에서 로그아웃할 때 함께 비운다.
+  defaultBasicInfo: ProfileBasicInfo | null;
+  setDefaultBasicInfo: (info: ProfileBasicInfo) => void;
+  clearDefaultBasicInfo: () => void;
 };
 
 export const useProfileDefaultInfoStore = create<ProfileDefaultInfoState>()(
   persist(
     (set) => ({
-      defaultBasicInfoByAccount: {},
-      setDefaultBasicInfo: (accessToken, info) =>
-        set((state) => ({
-          defaultBasicInfoByAccount: { ...state.defaultBasicInfoByAccount, [accessToken]: info },
-        })),
-      clearDefaultBasicInfo: (accessToken) =>
-        set((state) => {
-          const next = { ...state.defaultBasicInfoByAccount };
-          delete next[accessToken];
-          return { defaultBasicInfoByAccount: next };
-        }),
+      defaultBasicInfo: null,
+      setDefaultBasicInfo: (info) => set({ defaultBasicInfo: info }),
+      clearDefaultBasicInfo: () => set({ defaultBasicInfo: null }),
     }),
     {
       name: "profile-default-basic-info",
