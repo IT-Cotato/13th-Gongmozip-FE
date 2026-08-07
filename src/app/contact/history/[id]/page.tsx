@@ -23,11 +23,16 @@ export default function ContactHistoryDetailPage() {
   );
 }
 
+function isSafeReturnPath(path: string) {
+  return path.startsWith("/") && !path.startsWith("//");
+}
+
 function ContactHistoryDetailPageInner() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") || DEFAULT_RETURN_TO;
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo = rawReturnTo && isSafeReturnPath(rawReturnTo) ? rawReturnTo : DEFAULT_RETURN_TO;
 
   const email = useContactInquiryAuthStore((state) => state.email);
   const password = useContactInquiryAuthStore((state) => state.password);

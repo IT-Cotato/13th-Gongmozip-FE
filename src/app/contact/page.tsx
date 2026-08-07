@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeftIcon } from "./_components/icons";
 import { SuccessModal } from "./_components/SuccessModal";
 import { LeaveConfirmModal } from "./_components/LeaveConfirmModal";
@@ -65,6 +66,7 @@ export default function ContactPage() {
 
 function ContactPageInner() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const createInquiryMutation = useCreateInquiryMutation();
@@ -170,6 +172,10 @@ function ContactPageInner() {
       { email, password },
       {
         onSuccess: (data) => {
+          // 같은 이메일이라도 비밀번호가 다르면 다른 문의를 가리킬 수 있는데,
+          // useInquiryDetailQuery의 캐시 키는 이메일까지만 반영해서 이전 인증의
+          // 상세 데이터가 남아있을 수 있음 - 새 인증 성공 시 무효화한다.
+          queryClient.removeQueries({ queryKey: ["inquiries"] });
           setContactInquiryAuth(email, password);
           setInquiries(data.inquiries);
           setHistoryStep("list");
@@ -197,6 +203,12 @@ function ContactPageInner() {
   function handleRetryHistoryVerify() {
     setInquiries([]);
     setHistoryError(null);
+    setHistoryStep("verify");
+  }
+
+  // 탭 재시작 등으로 in-memory 인증이 날아간 채 step=list URL로 바로 진입하면
+  // "접수된 문의 내역이 없어요"로 잘못 보이므로, 렌더 중에 인증 단계로 되돌린다.
+  if (historyStep === "list" && (!contactAuthEmail || !contactAuthPassword)) {
     setHistoryStep("verify");
   }
 
@@ -385,7 +397,9 @@ function ContactPageInner() {
             />
           </div>
           {historyError && (
-            <p className="px-5 text-xs leading-[1.35] text-[#BB5260]">{historyError}</p>
+            <p role="alert" className="px-5 text-xs leading-[1.35] text-[#BB5260]">
+              {historyError}
+            </p>
           )}
         </div>
       ) : inquiryListMutation.isPending ? (
@@ -422,7 +436,9 @@ function ContactPageInner() {
           {activeTab === "write" ? (
             <>
               {submitError && (
-                <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>
+                <p role="alert" className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                  {submitError}
+                </p>
               )}
               <button
                 type="button"

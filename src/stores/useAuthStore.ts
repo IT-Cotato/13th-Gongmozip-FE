@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 import { useCollaborationTestStore } from "./collaborationTestStore";
 import { useContestScrapStore } from "./contestScrapStore";
+import { useProfileDefaultInfoStore } from "./profileDefaultInfoStore";
 import { useTeamMatchingApplicationStore } from "./teamMatchingApplicationStore";
 
 type AuthState = {
@@ -22,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
         useCollaborationTestStore.getState().resetCollaborationTest();
         useContestScrapStore.getState().resetScraps();
         useTeamMatchingApplicationStore.getState().reset();
+        useProfileDefaultInfoStore.getState().clearDefaultBasicInfo();
         set({ accessToken: null });
       },
     }),

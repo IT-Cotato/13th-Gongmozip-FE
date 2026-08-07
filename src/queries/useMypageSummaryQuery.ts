@@ -22,10 +22,12 @@ export type MypageSummary = {
   scrapContestCount: number;
 };
 
+export const MYPAGE_SUMMARY_QUERY_KEY_PREFIX = ["mypage", "summary"] as const;
+
 // accessToken을 키에 포함시켜, 로그아웃 없이 다른 계정으로 로그인해도
 // 이전 계정의 캐시된 데이터가 잠깐 보이는 일이 없도록 세션별로 캐시를 분리한다.
 export const mypageSummaryQueryKey = (accessToken: string | null) =>
-  ["mypage", "summary", accessToken] as const;
+  [...MYPAGE_SUMMARY_QUERY_KEY_PREFIX, accessToken] as const;
 
 export function fetchMypageSummary() {
   return apiFetch<MypageSummary>("/api/mypage");

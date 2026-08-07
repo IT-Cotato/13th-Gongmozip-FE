@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
 import { EditIcon } from "../../_components/icons";
@@ -43,15 +43,9 @@ export default function CreateProfilePage() {
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const accessToken = useAuthStore((state) => state.accessToken);
-  const defaultBasicInfo = useProfileDefaultInfoStore((state) =>
-    accessToken ? state.defaultBasicInfoByAccount[accessToken] ?? null : null,
-  );
-  const setDefaultBasicInfoForAccount = useProfileDefaultInfoStore(
-    (state) => state.setDefaultBasicInfo,
-  );
-  const clearDefaultBasicInfoForAccount = useProfileDefaultInfoStore(
-    (state) => state.clearDefaultBasicInfo,
-  );
+  const defaultBasicInfo = useProfileDefaultInfoStore((state) => state.defaultBasicInfo);
+  const setDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.setDefaultBasicInfo);
+  const clearDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.clearDefaultBasicInfo);
 
   const [nickname, setNickname] = useState(draftBasicInfo.nickname);
   const [school, setSchool] = useState(draftBasicInfo.school);
@@ -67,8 +61,17 @@ export default function CreateProfilePage() {
   const memberProfileQuery = useMemberProfileQuery();
   const updateProfileImageMutation = useUpdateProfileImageMutation();
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const previewImageUrlRef = useRef<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const displayedImageUrl = previewImageUrl ?? memberProfileQuery.data?.profileImageUrl ?? null;
+
+  useEffect(() => {
+    return () => {
+      if (previewImageUrlRef.current) {
+        URL.revokeObjectURL(previewImageUrlRef.current);
+      }
+    };
+  }, []);
 
   function handlePhotoButtonClick() {
     photoInputRef.current?.click();
@@ -79,11 +82,24 @@ export default function CreateProfilePage() {
     event.target.value = "";
     if (!file) return;
 
+    if (previewImageUrlRef.current) {
+      URL.revokeObjectURL(previewImageUrlRef.current);
+    }
+
     const objectUrl = URL.createObjectURL(file);
+    previewImageUrlRef.current = objectUrl;
     setPreviewImageUrl(objectUrl);
 
     updateProfileImageMutation.mutate(file, {
-      onError: () => setPreviewImageUrl(null),
+      onSettled: () => {
+        URL.revokeObjectURL(objectUrl);
+        if (previewImageUrlRef.current === objectUrl) {
+          previewImageUrlRef.current = null;
+        }
+        // 성공 시 memberProfileQuery가 무효화되어 갱신된 서버 이미지로,
+        // 실패 시 기존 프로필 이미지로 자연스럽게 되돌아간다.
+        setPreviewImageUrl(null);
+      },
     });
   }
 
@@ -124,9 +140,9 @@ export default function CreateProfilePage() {
 
     if (accessToken) {
       if (saveAsDefault) {
-        setDefaultBasicInfoForAccount(accessToken, basicInfo);
+        setDefaultBasicInfo(basicInfo);
       } else {
-        clearDefaultBasicInfoForAccount(accessToken);
+        clearDefaultBasicInfo();
       }
     }
 
@@ -196,7 +212,11 @@ export default function CreateProfilePage() {
               </div>
             </div>
             {updateProfileImageMutation.isError && (
-              <p className="px-6 text-xs leading-[1.35] text-[#BB5260]">
+              <p
+                role="alert"
+                aria-live="assertive"
+                className="px-6 text-xs leading-[1.35] text-[#BB5260]"
+              >
                 프로필 사진 업로드에 실패했어요. 다시 시도해주세요.
               </p>
             )}
