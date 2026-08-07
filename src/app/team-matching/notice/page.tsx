@@ -116,7 +116,10 @@ export default function TeamMatchingNoticePage() {
         </div>
 
         {errorMessage && (
-          <p className="mt-4 rounded-[8px] bg-[#FFF1EE] px-4 py-3 font-[Pretendard] text-[13px] font-medium leading-[135%] text-[#AC4A35]">
+          <p
+            role="alert"
+            className="mt-4 rounded-[8px] bg-[#FFF1EE] px-4 py-3 font-[Pretendard] text-[13px] font-medium leading-[135%] text-[#AC4A35]"
+          >
             {errorMessage}
           </p>
         )}
