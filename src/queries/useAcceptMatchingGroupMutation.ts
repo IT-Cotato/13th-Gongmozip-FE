@@ -10,6 +10,7 @@ import {
   todayMatchingResultQueryKey,
   type TodayMatchingResult,
 } from "./useTodayMatchingResultQuery";
+import { todayMatchingApplicationQueryKey } from "./useTodayMatchingApplicationQuery";
 import type {
   MatchingGroupMemberStatus,
   MatchingGroupStatus,
@@ -77,6 +78,7 @@ export function useAcceptMatchingGroupMutation() {
       );
 
       void queryClient.invalidateQueries({ queryKey: todayMatchingResultQueryKey });
+      void queryClient.invalidateQueries({ queryKey: todayMatchingApplicationQueryKey });
       void queryClient.invalidateQueries({
         queryKey: matchingGroupResponsesQueryKey(data.matchingGroupId),
       });
