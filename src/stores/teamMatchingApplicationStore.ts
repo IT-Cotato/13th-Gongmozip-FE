@@ -33,6 +33,15 @@ export const useTeamMatchingApplicationStore = create<TeamMatchingApplicationDra
     }),
     {
       name: "team-matching-application-draft",
+      partialize: (state) => ({
+        contestCategory: state.contestCategory,
+        leaderPreference: state.leaderPreference,
+      }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...(persistedState as Partial<TeamMatchingApplicationDraft>),
+        profileId: null,
+      }),
     },
   ),
 );
