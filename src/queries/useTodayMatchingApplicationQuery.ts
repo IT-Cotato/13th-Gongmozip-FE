@@ -11,9 +11,43 @@ export type MatchingApplicationStatus =
   | "CANCELED"
   | "PASSED"
   | "REASSIGN_PENDING"
-  | "FAILED";
+  | "FAILED"
+  | "EXPIRED";
 
 export type MatchingLeaderPreference = "WANTS" | "NEUTRAL" | "DOES_NOT_WANT";
+
+export type MatchingContestCategory =
+  | "IT_AI_TECH"
+  | "MARKETING_AD_BRANDING"
+  | "IDEA_PLANNING"
+  | "ART_DESIGN"
+  | "PHOTO_VIDEO"
+  | "DATA_ANALYSIS";
+
+export type MatchingResultStatus =
+  | "NOT_APPLIED"
+  | "NOT_PUBLISHED"
+  | "PROCESSING"
+  | "MATCHED"
+  | "UNMATCHED"
+  | "WITHDRAWN";
+
+export type MatchingGroupStatus =
+  | "PROPOSED"
+  | "CONFIRMED"
+  | "CANCELED"
+  | "EXPIRED"
+  | "IN_PROGRESS"
+  | "COMPLETED";
+
+export type MatchingGroupMemberStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "PASSED"
+  | "EXPIRED"
+  | "REJECTED";
+
+export type MatchingAiStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export type MatchingWithdrawalType = "FREE_CANCEL" | "PENALIZED_PASS";
 
@@ -29,7 +63,7 @@ export type TodayMatchingApplication = {
   applicationId: number | null;
   status: MatchingApplicationStatus;
   applicationDate: string | null;
-  contestCategory: string | null;
+  contestCategory: MatchingContestCategory | null;
   leaderPreference: MatchingLeaderPreference | null;
   skillScore: number | null;
   skillGroup: number | null;

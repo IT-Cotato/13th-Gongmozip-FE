@@ -1,6 +1,13 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
+import { ApiError } from "@/lib/http";
+import { useCreateMatchingApplicationMutation } from "@/queries/useCreateMatchingApplicationMutation";
+import { useTeamMatchingApplicationStore } from "@/stores/teamMatchingApplicationStore";
 
 const restrictedBehaviors = [
   {
@@ -18,10 +25,49 @@ const restrictedBehaviors = [
 ];
 
 export default function TeamMatchingNoticePage() {
+  const router = useRouter();
+  const createMatchingApplicationMutation = useCreateMatchingApplicationMutation();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const profileId = useTeamMatchingApplicationStore((state) => state.profileId);
+  const contestCategory = useTeamMatchingApplicationStore((state) => state.contestCategory);
+  const leaderPreference = useTeamMatchingApplicationStore((state) => state.leaderPreference);
+  const isActionDisabled =
+    createMatchingApplicationMutation.isPending || !profileId || !contestCategory || !leaderPreference;
+
+  const handleSubmit = () => {
+    if (!profileId || !contestCategory || !leaderPreference) {
+      setErrorMessage("매칭 신청에 필요한 선택값을 다시 확인해 주세요.");
+      return;
+    }
+
+    setErrorMessage(null);
+    createMatchingApplicationMutation.mutate(
+      {
+        profileId,
+        contestCategory,
+        leaderPreference,
+        noticeConfirmed: true,
+      },
+      {
+        onError: (error) => {
+          setErrorMessage(
+            error instanceof ApiError ? error.message : "매칭 신청 중 오류가 발생했어요.",
+          );
+        },
+        onSuccess: () => {
+          router.push("/team-matching/pool");
+        },
+      },
+    );
+  };
+
   return (
     <TeamMatchingStepLayout
       actionHref="/team-matching/pool"
+      actionDisabled={isActionDisabled}
       actionLabel="확인했습니다."
+      actionLoading={createMatchingApplicationMutation.isPending}
+      actionOnClick={handleSubmit}
       currentStep={5}
     >
       <section>
@@ -68,6 +114,12 @@ export default function TeamMatchingNoticePage() {
             ))}
           </ul>
         </div>
+
+        {errorMessage && (
+          <p className="mt-4 rounded-[8px] bg-[#FFF1EE] px-4 py-3 font-[Pretendard] text-[13px] font-medium leading-[135%] text-[#AC4A35]">
+            {errorMessage}
+          </p>
+        )}
       </section>
     </TeamMatchingStepLayout>
   );

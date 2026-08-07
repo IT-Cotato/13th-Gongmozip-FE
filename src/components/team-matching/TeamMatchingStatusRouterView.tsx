@@ -67,6 +67,7 @@ function getStatusView(todayApplication: TodayMatchingApplication) {
       return <TeamMatchingCompleteView />;
     case "PASSED":
       return <TeamMatchingPassView />;
+    case "EXPIRED":
     case "CANCELED":
     case "FAILED":
       return <TeamMatchingStatusEmptyView />;

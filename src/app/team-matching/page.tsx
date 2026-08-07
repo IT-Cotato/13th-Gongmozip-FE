@@ -49,6 +49,7 @@ const todayApplicationStatusMessages: Record<MatchingApplicationStatus, string> 
   PASSED: "오늘 매칭을 패스했어요.",
   REASSIGN_PENDING: "다른 팀원들의 응답을 기다리는 중이에요.",
   FAILED: "오늘 매칭이 완료되지 않았어요.",
+  EXPIRED: "오늘 매칭 응답 시간이 종료됐어요.",
 };
 
 function formatParticipantCount(participantCount?: number) {
