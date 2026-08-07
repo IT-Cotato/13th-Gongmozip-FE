@@ -1,8 +1,14 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 import CancelConfirmationModal from "@/components/team-matching/CancelConfirmationModal";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import {
+  type TodayMatchingApplication,
+  useTodayMatchingApplicationQuery,
+} from "@/queries/useTodayMatchingApplicationQuery";
 
 const countdownGroups = [
   { digits: ["0", "1"], label: "시간" },
@@ -12,6 +18,7 @@ const countdownGroups = [
 
 type TeamMatchingPoolViewProps = {
   showCancelModal?: boolean;
+  todayApplication?: TodayMatchingApplication;
 };
 
 function MatchingCountdown() {
@@ -79,7 +86,15 @@ function MatchingCountdown() {
 
 export default function TeamMatchingPoolView({
   showCancelModal = false,
+  todayApplication,
 }: TeamMatchingPoolViewProps) {
+  const { data: fetchedTodayApplication } = useTodayMatchingApplicationQuery({
+    enabled: !todayApplication,
+  });
+  const currentTodayApplication = todayApplication ?? fetchedTodayApplication;
+  const withdrawal = currentTodayApplication?.withdrawal;
+  const canWithdraw = withdrawal?.withdrawable ?? true;
+
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <Image
@@ -108,12 +123,18 @@ export default function TeamMatchingPoolView({
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
-          <Link
-            className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
-            href="/team-matching/cancel"
-          >
-            매칭신청취소
-          </Link>
+          {canWithdraw ? (
+            <Link
+              className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
+              href="/team-matching/cancel"
+            >
+              매칭신청취소
+            </Link>
+          ) : (
+            <span className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#949494]">
+              매칭신청취소 불가
+            </span>
+          )}
         </section>
 
         <div className="relative z-10 mt-[7px]">

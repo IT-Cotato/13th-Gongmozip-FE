@@ -11,6 +11,11 @@ import {
   type MatchingEligibilityReason,
   useMatchingEligibilityQuery,
 } from "@/queries/useMatchingEligibilityQuery";
+import {
+  type MatchingApplicationStatus,
+  type TodayMatchingApplication,
+  useTodayMatchingApplicationQuery,
+} from "@/queries/useTodayMatchingApplicationQuery";
 
 const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
 
@@ -32,6 +37,18 @@ const blockingReasonMessages: Record<MatchingEligibilityReason, string> = {
   MATCHING_RESTRICTED: "매칭 참여 제한 기간이에요.",
   PROJECT_EVALUATION_NOT_READY: "프로젝트 AI 평가 완료 후 신청할 수 있어요.",
   REASSIGNMENT_PENDING: "이전 매칭 응답 완료 후 신청할 수 있어요.",
+};
+
+const todayApplicationStatusMessages: Record<MatchingApplicationStatus, string> = {
+  NONE: "아직 오늘 신청한 매칭이 없어요.",
+  WAITING: "공모집이 팀원을 구성중이에요.",
+  MATCHING: "공모집이 팀원을 구성중이에요.",
+  PROPOSED: "오늘의 팀원 매칭 제안이 도착했어요.",
+  MATCHED: "팀원 매칭이 완료됐어요.",
+  CANCELED: "오늘 매칭 신청이 취소됐어요.",
+  PASSED: "오늘 매칭을 패스했어요.",
+  REASSIGN_PENDING: "다른 팀원들의 응답을 기다리는 중이에요.",
+  FAILED: "오늘 매칭이 완료되지 않았어요.",
 };
 
 function formatParticipantCount(participantCount?: number) {
@@ -111,10 +128,25 @@ function hasActionableBlockingReason(eligibility?: MatchingEligibility) {
   }
 
   return eligibility.reasons.some((reason) =>
-    ["PROFILE_REQUIRED", "SURVEY_REQUIRED", "ALREADY_APPLIED_TODAY", "MATCHING_RESTRICTED"].includes(
-      reason,
-    ),
+    [
+      "PROFILE_REQUIRED",
+      "SURVEY_REQUIRED",
+      "ALREADY_APPLIED_TODAY",
+      "MATCHING_RESTRICTED",
+    ].includes(reason),
   );
+}
+
+function getTodayApplicationStatusMessage(todayApplication?: TodayMatchingApplication) {
+  if (!todayApplication) {
+    return null;
+  }
+
+  if (!todayApplication.appliedToday) {
+    return todayApplicationStatusMessages.NONE;
+  }
+
+  return todayApplicationStatusMessages[todayApplication.status];
 }
 
 function useCountdownDigits(deadlineAt?: string) {
@@ -241,17 +273,44 @@ function FixedApplyButton({
 
 export default function TeamMatchingPage() {
   const { data: eligibility, error, isError, isLoading } = useMatchingEligibilityQuery();
+  const {
+    data: todayApplication,
+    error: todayApplicationError,
+    isError: isTodayApplicationError,
+    isLoading: isTodayApplicationLoading,
+  } = useTodayMatchingApplicationQuery();
   const participantCount = formatParticipantCount(eligibility?.participantCount);
-  const applyHref = getApplyHref(eligibility);
+  const alreadyAppliedToday = eligibility?.appliedToday || todayApplication?.appliedToday;
+  const applyHref = alreadyAppliedToday
+    ? "/team-matching/modal-preview/already-applied"
+    : getApplyHref(eligibility);
   const primaryReason = eligibility ? getPrimaryReason(eligibility.reasons) : undefined;
   const canOpenApplyDestination = hasActionableBlockingReason(eligibility);
   const applyLabel = isLoading
     ? "확인 중..."
-    : primaryReason && !eligibility?.eligible
+    : alreadyAppliedToday
       ? "신청 조건 확인하기"
-      : "매칭 신청하기";
+      : primaryReason && !eligibility?.eligible
+        ? "신청 조건 확인하기"
+        : "매칭 신청하기";
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const isTodayApplicationUnauthorized =
+    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
   const helperMessage = useMemo(() => {
+    if (isTodayApplicationLoading) {
+      return "매칭 신청 상태를 확인하고 있어요.";
+    }
+
+    if (!isTodayApplicationError && todayApplication) {
+      return (
+        getTodayApplicationStatusMessage(todayApplication) ?? "매칭 신청 상태를 확인해 주세요."
+      );
+    }
+
+    if (isTodayApplicationError && !isTodayApplicationUnauthorized) {
+      return "매칭 신청 상태를 불러오지 못했어요.";
+    }
+
     if (isLoading) {
       return "신청 가능 여부를 확인하고 있어요.";
     }
@@ -266,8 +325,20 @@ export default function TeamMatchingPage() {
       return "오늘 매칭 신청이 가능해요.";
     }
 
-    return primaryReason ? blockingReasonMessages[primaryReason] : "매칭 신청 상태를 확인해 주세요.";
-  }, [eligibility?.eligible, isError, isLoading, isUnauthorized, primaryReason]);
+    return primaryReason
+      ? blockingReasonMessages[primaryReason]
+      : "매칭 신청 상태를 확인해 주세요.";
+  }, [
+    eligibility?.eligible,
+    isError,
+    isLoading,
+    isTodayApplicationError,
+    isTodayApplicationLoading,
+    isTodayApplicationUnauthorized,
+    isUnauthorized,
+    primaryReason,
+    todayApplication,
+  ]);
 
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">

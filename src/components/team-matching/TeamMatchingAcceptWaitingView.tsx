@@ -1,12 +1,29 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import {
+  type TodayMatchingApplication,
+  useTodayMatchingApplicationQuery,
+} from "@/queries/useTodayMatchingApplicationQuery";
 
-export default function TeamMatchingAcceptWaitingView() {
+type TeamMatchingAcceptWaitingViewProps = {
+  todayApplication?: TodayMatchingApplication;
+};
+
+export default function TeamMatchingAcceptWaitingView({
+  todayApplication,
+}: TeamMatchingAcceptWaitingViewProps) {
   const totalMemberCount = 4;
   const completedResponseCount = 3;
   const completionPercent = `${(completedResponseCount / totalMemberCount) * 100}%`;
+  const { data: fetchedTodayApplication } = useTodayMatchingApplicationQuery({
+    enabled: !todayApplication,
+  });
+  const currentTodayApplication = todayApplication ?? fetchedTodayApplication;
+  const canWithdraw = currentTodayApplication?.withdrawal.withdrawable ?? true;
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -36,12 +53,18 @@ export default function TeamMatchingAcceptWaitingView() {
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
-          <Link
-            className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
-            href="/team-matching/cancel"
-          >
-            매칭신청취소
-          </Link>
+          {canWithdraw ? (
+            <Link
+              className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
+              href="/team-matching/cancel"
+            >
+              매칭신청취소
+            </Link>
+          ) : (
+            <span className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#949494]">
+              매칭신청취소 불가
+            </span>
+          )}
         </section>
 
         <div className="mt-[51px]">

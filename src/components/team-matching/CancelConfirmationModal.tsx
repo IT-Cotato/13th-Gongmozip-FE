@@ -4,10 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
+import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
+
 export default function CancelConfirmationModal() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const initialFocusRef = useRef<HTMLAnchorElement>(null);
   const router = useRouter();
+  const { data: todayApplication } = useTodayMatchingApplicationQuery();
+  const withdrawal = todayApplication?.withdrawal;
+  const canWithdraw = withdrawal?.withdrawable ?? true;
+  const expectedPenalty = withdrawal?.expectedPenalty ?? 0;
+  const withdrawalDescription = canWithdraw
+    ? expectedPenalty > 0
+      ? `취소하면 협업거리가 ${expectedPenalty}m 줄어들어요.`
+      : "지금은 감점 없이 취소할 수 있어요."
+    : "현재는 매칭 신청을 취소할 수 없어요.";
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -44,6 +55,9 @@ export default function CancelConfirmationModal() {
         >
           팀원 매칭을 취소할까요?
         </h2>
+        <p className="mt-2 text-center font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
+          {withdrawalDescription}
+        </p>
 
         <div className="mt-5 flex h-[60px] self-stretch items-center gap-2 px-2 py-1">
           <Link
@@ -53,12 +67,22 @@ export default function CancelConfirmationModal() {
           >
             계속 기다리기
           </Link>
-          <Link
-            className="flex flex-[1_0_0] items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
-            href="/team-matching"
-          >
-            매칭 취소하기
-          </Link>
+          {canWithdraw ? (
+            <Link
+              className="flex flex-[1_0_0] items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
+              href="/team-matching"
+            >
+              매칭 취소하기
+            </Link>
+          ) : (
+            <button
+              className="flex flex-[1_0_0] items-center justify-center self-stretch rounded-[14px] bg-[#DFDFDF] px-[10px] py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
+              disabled
+              type="button"
+            >
+              취소 불가
+            </button>
+          )}
         </div>
       </section>
     </dialog>

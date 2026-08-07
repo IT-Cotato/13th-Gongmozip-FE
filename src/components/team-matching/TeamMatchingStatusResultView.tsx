@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import type { TodayMatchingApplication } from "@/queries/useTodayMatchingApplicationQuery";
 import { useTeamMatchingProposalStore } from "@/stores/teamMatchingProposalStore";
 
 type MatchingReason = {
@@ -203,18 +204,27 @@ function MatchedMemberCard({ member }: { member: MatchedMember }) {
   );
 }
 
-export default function TeamMatchingStatusResultView() {
+type TeamMatchingStatusResultViewProps = {
+  todayApplication?: TodayMatchingApplication;
+};
+
+export default function TeamMatchingStatusResultView({
+  todayApplication,
+}: TeamMatchingStatusResultViewProps) {
   const router = useRouter();
   const acceptProposal = useTeamMatchingProposalStore((state) => state.acceptProposal);
   const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
+  const proposalId = todayApplication?.applicationId
+    ? String(todayApplication.applicationId)
+    : MATCHING_PROPOSAL_ID;
 
   function handlePassClick() {
-    setPendingProposalId(MATCHING_PROPOSAL_ID);
+    setPendingProposalId(proposalId);
     router.push("/team-matching/status/pass/leave");
   }
 
   function handleAcceptClick() {
-    acceptProposal(MATCHING_PROPOSAL_ID);
+    acceptProposal(proposalId);
     router.push("/team-matching/status/waiting");
   }
 
