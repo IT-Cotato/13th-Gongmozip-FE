@@ -123,7 +123,10 @@ export default function TeamMatchingAiNoticePage() {
             {data?.title ?? "AI 분석 매칭 안내"}
           </h2>
           <p className="mt-3 whitespace-pre-line font-[Pretendard] text-[17px] font-medium leading-[150%] text-[#1F1F1F]">
-            {data?.summary ?? "공모집의 AI 분석 매칭 정보를 불러오고 있어요."}
+            {data?.summary ??
+              (isError
+                ? "안내 정보를 불러오지 못했어요."
+                : "공모집의 AI 분석 매칭 정보를 불러오고 있어요.")}
           </p>
 
           <Image
