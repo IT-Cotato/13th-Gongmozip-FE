@@ -1,41 +1,127 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import {
+  type MatchingExplanationSection,
+  useMatchingExplanationsQuery,
+} from "@/queries/useMatchingExplanationsQuery";
 
-const styleTags = [
-  { label: "#우호성", className: "bg-[#FFF1EE] text-[#AC4A35]" },
-  { label: "#정직-겸손성", className: "bg-[#EBF7FE] text-[#184966]" },
-  { label: "#성실성", className: "bg-[#EEFBF2] text-[#318249]" },
-  { label: "#외향성", className: "bg-[#FEFDEA] text-[#625E10]" },
+const itemToneClassNames = [
+  "bg-[#FFF1EE] text-[#AC4A35]",
+  "bg-[#EBF7FE] text-[#184966]",
+  "bg-[#EEFBF2] text-[#318249]",
+  "bg-[#FEFDEA] text-[#625E10]",
+  "bg-[rgba(97,97,97,0.10)] text-[#616161]",
 ];
 
-const combinationTags = [
-  "# 공모전 참여 목표",
-  "# 일정 관리 방식 (성실도)",
-  "# 소통 방식 (외향성)",
-  "# 리더 선호 정도",
-  "# 기타 등등",
-];
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "medium",
+  }).format(date);
+}
+
+function NoticeSkeleton() {
+  return (
+    <div className="space-y-8" role="status" aria-label="AI 분석 매칭 안내 불러오는 중">
+      {[0, 1, 2].map((sectionIndex) => (
+        <section className="animate-pulse" key={sectionIndex}>
+          <div className="h-7 w-3/4 rounded bg-[#F5F5F5]" />
+          <div className="mt-3 space-y-2">
+            <div className="h-4 w-full rounded bg-[#F5F5F5]" />
+            <div className="h-4 w-11/12 rounded bg-[#F5F5F5]" />
+            <div className="h-4 w-4/5 rounded bg-[#F5F5F5]" />
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function SectionItems({ section }: { section: MatchingExplanationSection }) {
+  if (section.items.length === 0) {
+    return null;
+  }
+
+  const hasItemDescriptions = section.items.some((item) => item.description.trim().length > 0);
+
+  if (!hasItemDescriptions) {
+    return (
+      <div className="mt-3 flex flex-wrap gap-2">
+        {section.items.map((item, index) => (
+          <span
+            className={`flex items-center justify-center gap-[10px] rounded-full px-3 py-1 font-[Pretendard] text-[12px] font-semibold leading-[135%] ${
+              itemToneClassNames[index % itemToneClassNames.length]
+            }`}
+            key={`${section.type}-${item.title}`}
+          >
+            {item.title}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <ul className="mt-3 space-y-2">
+      {section.items.map((item, index) => (
+        <li
+          className="rounded-xl bg-[#F9F8F4] px-4 py-3 font-[Pretendard]"
+          key={`${section.type}-${item.title}-${index}`}
+        >
+          <p
+            className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold leading-[135%] ${
+              itemToneClassNames[index % itemToneClassNames.length]
+            }`}
+          >
+            {item.title}
+          </p>
+          <p className="mt-2 whitespace-pre-line text-[12px] font-normal leading-[150%] text-[#616161]">
+            {item.description}
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ExplanationSection({ section }: { section: MatchingExplanationSection }) {
+  return (
+    <section className="mt-8 first:mt-0">
+      <h2 className="font-[Pretendard] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
+        {section.title}
+      </h2>
+      <p className="mt-3 whitespace-pre-line font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
+        {section.description}
+      </p>
+      <SectionItems section={section} />
+    </section>
+  );
+}
 
 export default function TeamMatchingAiNoticePage() {
+  const { data, isError, isLoading, refetch } = useMatchingExplanationsQuery();
+  const updatedDate = data?.updatedAt ? formatDateTime(data.updatedAt) : null;
+
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader backHref="/team-matching" title="AI 분석 매칭 안내" />
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-8">
         <section>
-          <h2 className="font-[Pretendard] text-[26px] font-bold leading-[135%] text-[#1F1F1F]">
-            가장 빠른 공모전 팀 찾기,
-            <br />
-            공모집에서
+          <h2 className="whitespace-pre-line font-[Pretendard] text-[26px] font-bold leading-[135%] text-[#1F1F1F]">
+            {data?.title ?? "AI 분석 매칭 안내"}
           </h2>
-          <p className="mt-3 font-[Pretendard] text-[17px] font-medium leading-[150%] text-[#1F1F1F]">
-            공모집은 HEXACO 성격이론을 기반으로
-            <br />
-            개인 프로필과 성격 유형검사 결과를 반영하여
-            <br />
-            최적의 팀을 구성합니다.
+          <p className="mt-3 whitespace-pre-line font-[Pretendard] text-[17px] font-medium leading-[150%] text-[#1F1F1F]">
+            {data?.summary ?? "공모집의 AI 분석 매칭 정보를 불러오고 있어요."}
           </p>
 
           <Image
@@ -48,81 +134,47 @@ export default function TeamMatchingAiNoticePage() {
           />
         </section>
 
-        <section className="mt-4">
-          <h2 className="font-[Pretendard] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
-            심리학 기반 협업 스타일 분석
-          </h2>
-          <p className="mt-3 font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
-            본 서비스는 성격심리학 연구에서 활용되는
-            <br />
-            HEXACO 이론을 기반으로 만든 자체 검사를 통해
-            <br />
-            협업에 중요한 특성을 분석합니다.
-            <br />
-            특히 공모전 협업 과정에서 발생할 수 있는
-            <br />
-            갈등, 책임감, 의사소통 스타일을 중심으로 평가합니다.
-          </p>
+        <div className="mt-4">
+          {isLoading ? <NoticeSkeleton /> : null}
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {styleTags.map(({ label, className }) => (
-              <span
-                className={`flex items-center justify-center gap-[10px] rounded-full px-3 py-1 font-[Pretendard] text-[12px] font-semibold leading-[135%] ${className}`}
-                key={label}
+          {isError ? (
+            <section className="mt-4 rounded-2xl bg-[#F5F5F5] px-5 py-6 text-center">
+              <h2 className="font-[Pretendard] text-[17px] font-bold leading-[135%] text-[#1F1F1F]">
+                안내 정보를 불러오지 못했어요
+              </h2>
+              <p className="mt-2 font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
+                잠시 후 다시 시도해 주세요.
+              </p>
+              <button
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-[12px] bg-[#FF7658] px-5 font-[Pretendard] text-[14px] font-semibold text-white"
+                onClick={() => void refetch()}
+                type="button"
               >
-                {label}
-              </span>
-            ))}
-          </div>
-        </section>
+                다시 불러오기
+              </button>
+            </section>
+          ) : null}
 
-        <section className="mt-8">
-          <h2 className="font-[Pretendard] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
-            협업 유형 검사 조합 분석
-          </h2>
-          <p className="mt-3 font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
-            좋은 팀은 단순히 유사한 특성의 사람들을 구성한다고
-            <br />
-            만들어지지 않습니다.
-            <br />
-            조직심리학 이론을 기반으로 역량, 협업스타일,
-            <br />
-            성격의 유사성과 상보성이 적절한 팀 조합을 고려합니다.
-            <br />
-            구체적으로는 다음과 같은 요소를 함께 고려합니다.
-          </p>
+          {data?.sections.map((section, index) => (
+            <ExplanationSection
+              key={`${section.type}-${section.title}-${index}`}
+              section={section}
+            />
+          ))}
+        </div>
 
-          <div className="mt-3 flex flex-wrap gap-1">
-            {combinationTags.map((label) => (
-              <span
-                className="flex items-center justify-center gap-[10px] rounded-full bg-[rgba(97,97,97,0.10)] px-3 py-1 font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#616161]"
-                key={label}
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-8">
-          <h2 className="font-[Pretendard] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
-            팀 시너지 최적화
-          </h2>
-          <p className="mt-3 font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
-            매칭에는 많은 사용자가 동시에 참여하기 때문에,
-            <br />
-            특정 팀 하나의 궁합만 높이는 방식은 사용하지 않습니다.
-            <br />
-            자체 개발한 매칭 알고리즘은
-            <br />
-            수많은 팀 조합을 반복적으로 분석하여
-            <br />
-            전체 팀들의 시너지가 가장 높아지는 방향으로 최적화합니다.
-            <br />
-            이를 통해 사용자들에게 보다 균형 있고 만족도 높은
-            <br />팀 구성을 제공합니다.
-          </p>
-        </section>
+        {data?.disclaimer ? (
+          <section className="mt-8 rounded-2xl bg-[#F5F5F5] px-4 py-3">
+            <p className="whitespace-pre-line font-[Pretendard] text-[12px] font-normal leading-[150%] text-[#616161]">
+              {data.disclaimer}
+            </p>
+            {updatedDate ? (
+              <p className="mt-2 font-[Pretendard] text-[11px] font-normal leading-[135%] text-[#949494]">
+                최근 업데이트 {updatedDate}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         <section className="mt-8 flex w-[350px] max-w-full flex-col items-center gap-[14px] rounded-2xl bg-[#F5F5F5] p-5 text-center">
           <p className="text-center font-[Pretendard] text-[17px] font-medium leading-[135%] text-[#1F1F1F]">
