@@ -5,7 +5,6 @@ import { ApiError, apiFetch } from "@/lib/http";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import { contestDetailQueryKey } from "./useContestDetailQuery";
 import type { ContestsResponse } from "./useContestsQuery";
-import { mypageSummaryQueryKey } from "./useMypageSummaryQuery";
 import { contestScrapStatusQueryKey, type ContestScrapStatus } from "./useContestScrapStatusQuery";
 
 type UpdateContestScrapStatusRequest = {
@@ -168,7 +167,7 @@ export function useContestScrapMutation() {
         updateContestQueryScrapStatus(current, data.contestId, data.isScrapped),
       );
       useContestScrapStore.getState().setScrapStatus(data.contestId, data.isScrapped);
-      void queryClient.invalidateQueries({ queryKey: mypageSummaryQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ["mypage", "summary"] });
     },
   });
 }

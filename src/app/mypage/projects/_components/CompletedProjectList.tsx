@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useCompletedProjectsQuery } from "@/queries/useCompletedProjectsQuery";
+import { useDeleteCompletedProjectMutation } from "@/queries/useDeleteCompletedProjectMutation";
+import { ApiError } from "@/lib/http";
 import { CompletedProjectCard } from "./CompletedProjectCard";
+import { DeleteCompletedProjectConfirmModal } from "./DeleteCompletedProjectConfirmModal";
 import { EmptyState } from "./EmptyState";
 
 export function CompletedProjectList() {
@@ -14,7 +18,33 @@ export function CompletedProjectList() {
     hasNextPage,
     isFetchingNextPage,
   } = useCompletedProjectsQuery();
+  const deleteMutation = useDeleteCompletedProjectMutation();
+  const [pendingDeleteTeamId, setPendingDeleteTeamId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const projects = data?.pages.flatMap((page) => page.projects) ?? [];
+
+  function openDeleteConfirm(teamId: number) {
+    setDeleteError(null);
+    setPendingDeleteTeamId(teamId);
+  }
+
+  function closeDeleteConfirm() {
+    setDeleteError(null);
+    setPendingDeleteTeamId(null);
+  }
+
+  function handleConfirmDelete() {
+    if (pendingDeleteTeamId === null) return;
+    setDeleteError(null);
+    deleteMutation.mutate(pendingDeleteTeamId, {
+      onSuccess: () => setPendingDeleteTeamId(null),
+      onError: (error) => {
+        setDeleteError(
+          error instanceof ApiError ? error.message : "삭제에 실패했어요. 다시 시도해주세요.",
+        );
+      },
+    });
+  }
 
   if (isLoading) {
     return (
@@ -52,7 +82,11 @@ export function CompletedProjectList() {
   return (
     <div className="flex w-full flex-col items-start gap-2 px-4">
       {projects.map((project) => (
-        <CompletedProjectCard key={project.contestId} project={project} />
+        <CompletedProjectCard
+          key={project.teamId}
+          project={project}
+          onDelete={() => openDeleteConfirm(project.teamId)}
+        />
       ))}
       {hasNextPage && (
         <button
@@ -63,6 +97,15 @@ export function CompletedProjectList() {
         >
           {isFetchingNextPage ? "불러오는 중..." : "더보기"}
         </button>
+      )}
+
+      {pendingDeleteTeamId !== null && (
+        <DeleteCompletedProjectConfirmModal
+          onCancel={closeDeleteConfirm}
+          onConfirm={handleConfirmDelete}
+          isDeleting={deleteMutation.isPending}
+          errorMessage={deleteError}
+        />
       )}
     </div>
   );

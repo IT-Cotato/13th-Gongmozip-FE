@@ -1,7 +1,7 @@
-import type { ContactHistoryStatus } from "../_data/mockHistory";
+import type { InquiryStatus } from "@/queries/useInquiryListMutation";
 
-export function ContactStatusBadge({ status }: { status: ContactHistoryStatus }) {
-  const isAnswered = status === "answered";
+export function ContactStatusBadge({ status }: { status: InquiryStatus }) {
+  const isAnswered = status === "ANSWERED";
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full px-1.5 py-[3px] text-[12px] leading-[1.35] font-semibold ${

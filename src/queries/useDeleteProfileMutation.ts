@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { fetchProfileDetail } from "./useProfileDetailQuery";
 import { profileListQueryKey, type ProfileListResponse } from "./useProfileListQuery";
 
@@ -34,11 +35,12 @@ async function deleteProfile(profileId: string) {
 
 export function useDeleteProfileMutation() {
   const queryClient = useQueryClient();
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   return useMutation({
     mutationFn: deleteProfile,
     onSuccess: (_data, profileId) => {
-      queryClient.setQueryData<ProfileListResponse>(profileListQueryKey, (current) =>
+      queryClient.setQueryData<ProfileListResponse>(profileListQueryKey(accessToken), (current) =>
         current
           ? {
               profileCount: current.profileCount - 1,
