@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import type { COLLABORATION_RESULT_TYPES } from "../../_data/collaborationTest";
 
@@ -77,7 +78,7 @@ async function saveResultImage(result: CollaborationResult) {
   const context = canvas.getContext("2d");
 
   if (!context) {
-    return;
+    throw new Error("Canvas context is unavailable.");
   }
 
   canvas.width = RESULT_CARD_WIDTH * pixelRatio;
@@ -178,6 +179,8 @@ export default function CollaborationTypeResultPageContent({
   result,
 }: CollaborationTypeResultPageContentProps) {
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleLeave = () => {
     const returnTo = window.sessionStorage.getItem(COLLABORATION_TYPE_RETURN_TO_STORAGE_KEY);
@@ -202,8 +205,21 @@ export default function CollaborationTypeResultPageContent({
     router.push("/collaboration-type");
   };
 
-  const handleSave = () => {
-    void saveResultImage(result);
+  const handleSave = async () => {
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await saveResultImage(result);
+    } catch {
+      setSaveError("결과 이미지를 저장하지 못했어요. 다시 시도해 주세요.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -320,12 +336,18 @@ export default function CollaborationTypeResultPageContent({
           나가기
         </button>
         <button
-          className="mt-[10px] flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[15px] font-bold leading-none text-white"
+          className="mt-[10px] flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[15px] font-bold leading-none text-white disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSaving}
           onClick={handleSave}
           type="button"
         >
-          저장하기
+          {isSaving ? "저장 중..." : "저장하기"}
         </button>
+        {saveError ? (
+          <p role="alert" className="mt-2 px-1 text-center text-xs leading-[1.35] text-[#BB5260]">
+            {saveError}
+          </p>
+        ) : null}
       </div>
     </main>
   );
