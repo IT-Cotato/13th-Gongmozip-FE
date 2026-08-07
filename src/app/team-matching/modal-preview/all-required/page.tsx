@@ -6,7 +6,7 @@ export default function AllRequiredModalPreviewPage() {
       actions={[
         { href: "/mypage/profile-management/new", label: "프로필 작성 바로가기", variant: "outline" },
         {
-          href: "/mypage/collaboration-type-test",
+          href: "/collaboration-type?returnTo=/team-matching",
           label: "협업 유형 검사 바로가기",
         },
       ]}

@@ -177,7 +177,7 @@ export default function MyPage() {
                       {collaborationType?.label ?? "검사 전"}
                     </span>
                     <Link
-                      href="/collaboration-type"
+                      href="/collaboration-type?returnTo=/mypage"
                       className="flex items-center text-[13px] font-semibold text-[#616161] underline"
                     >
                       협업 유형 검사
@@ -274,7 +274,7 @@ export default function MyPage() {
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
-          onStartTest={() => router.push("/collaboration-type")}
+          onStartTest={() => router.push("/collaboration-type?returnTo=/mypage")}
         />
       )}
     </div>

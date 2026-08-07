@@ -5,7 +5,7 @@ export default function CollaborationTestRequiredModalPreviewPage() {
     <TeamMatchingModalPreview
       actions={[
         {
-          href: "/mypage/collaboration-type-test",
+          href: "/collaboration-type?returnTo=/team-matching",
           label: "협업 유형 검사 바로가기",
         },
       ]}
