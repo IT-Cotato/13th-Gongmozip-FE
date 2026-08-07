@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { ApiError } from "@/lib/http";
 import { useAcceptMatchingGroupMutation } from "@/queries/useAcceptMatchingGroupMutation";
+import {
+  type MatchingReasonTextBlock,
+  useCreateMatchingReasonMutation,
+  useMatchingReasonQuery,
+} from "@/queries/useMatchingReasonQuery";
 import type {
   MatchingCharacterType,
   TodayMatchingResult,
@@ -112,6 +117,204 @@ function getMatchedMembers(members: TodayMatchingResultMember[]): MatchedMember[
       responseStatus: member.responseStatus,
     };
   });
+}
+
+function formatReasonScore(score: number | null) {
+  if (score === null) {
+    return null;
+  }
+
+  return Number.isInteger(score) ? `${score}점` : `${score.toFixed(1)}점`;
+}
+
+function isReasonGenerating(status: string | undefined) {
+  return status === "PENDING" || status === "PROCESSING";
+}
+
+function MatchingReasonList({
+  items,
+  title,
+}: {
+  items: MatchingReasonTextBlock[];
+  title: string;
+}) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4">
+      <h4 className="font-[Pretendard] text-[13px] font-semibold leading-[135%] text-[#2A2A2A]">
+        {title}
+      </h4>
+      <ul className="mt-2 space-y-2">
+        {items.map((item) => (
+          <li className="rounded-[8px] bg-white px-3 py-2" key={`${title}-${item.title}`}>
+            <p className="font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#1F1F1F]">
+              {item.title}
+            </p>
+            <p className="mt-1 font-[Pretendard] text-[11px] font-normal leading-[145%] text-[#616161]">
+              {item.description}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function MatchingReasonBulletList({ items, title }: { items: string[]; title: string }) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4">
+      <h4 className="font-[Pretendard] text-[13px] font-semibold leading-[135%] text-[#2A2A2A]">
+        {title}
+      </h4>
+      <ul className="mt-2 space-y-1.5">
+        {items.map((item) => (
+          <li
+            className="flex gap-2 font-[Pretendard] text-[11px] font-normal leading-[145%] text-[#616161]"
+            key={`${title}-${item}`}
+          >
+            <span aria-hidden="true">·</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function MatchingReasonSection({ matchingGroupId }: { matchingGroupId: number | null }) {
+  const reasonQuery = useMatchingReasonQuery(matchingGroupId, {
+    refetchInterval: (query) =>
+      isReasonGenerating(query.state.data?.status) ? 4000 : false,
+  });
+  const createReasonMutation = useCreateMatchingReasonMutation();
+  const reason = reasonQuery.data;
+  const isNotFound = reasonQuery.error instanceof ApiError && reasonQuery.error.status === 404;
+  const createError =
+    createReasonMutation.error instanceof ApiError ? createReasonMutation.error : null;
+  const isCreating =
+    createReasonMutation.isPending || isReasonGenerating(createReasonMutation.data?.status);
+  const isGenerating = isReasonGenerating(reason?.status) || isCreating;
+  const totalScore = formatReasonScore(reason?.totalCompatibilityScore ?? null);
+  const scoreItems = [
+    { label: "목표", value: formatReasonScore(reason?.teamGoalScore ?? null) },
+    { label: "성향", value: formatReasonScore(reason?.personalityScore ?? null) },
+    { label: "외향 보완", value: formatReasonScore(reason?.extraversionComplementScore ?? null) },
+  ].filter((item): item is { label: string; value: string } => item.value !== null);
+
+  function handleCreateReason() {
+    if (typeof matchingGroupId !== "number" || createReasonMutation.isPending) {
+      return;
+    }
+
+    createReasonMutation.mutate(matchingGroupId);
+  }
+
+  if (typeof matchingGroupId !== "number") {
+    return null;
+  }
+
+  return (
+    <section className="mx-auto mt-5 w-[358px] max-w-full rounded-[14px] bg-[#F9F8F4] px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-[Pretendard] text-[11px] font-medium leading-[135%] text-[#FF7658]">
+            AI 추천 사유
+          </p>
+          <h3 className="mt-1 font-[Pretendard] text-[16px] font-bold leading-[135%] text-[#1F1F1F]">
+            {reason?.headline || "팀 궁합 분석을 확인해 보세요"}
+          </h3>
+        </div>
+        <button
+          className="h-8 shrink-0 rounded-[9px] bg-[#FF7658] px-3 font-[Pretendard] text-[12px] font-semibold leading-[135%] text-white disabled:bg-[#DFDFDF]"
+          disabled={isGenerating}
+          onClick={handleCreateReason}
+          type="button"
+        >
+          {reason ? "재생성" : "생성"}
+        </button>
+      </div>
+
+      {reasonQuery.isLoading ? (
+        <p className="mt-3 font-[Pretendard] text-[12px] font-normal leading-[145%] text-[#616161]">
+          추천 사유를 불러오고 있어요.
+        </p>
+      ) : null}
+
+      {isNotFound ? (
+        <p className="mt-3 font-[Pretendard] text-[12px] font-normal leading-[145%] text-[#616161]">
+          아직 생성된 추천 사유가 없어요.
+        </p>
+      ) : null}
+
+      {isGenerating ? (
+        <p className="mt-3 rounded-[8px] bg-white px-3 py-2 font-[Pretendard] text-[12px] font-medium leading-[145%] text-[#616161]">
+          AI가 추천 사유를 생성하고 있어요. 완료되면 자동으로 갱신됩니다.
+        </p>
+      ) : null}
+
+      {reason?.status === "FAILED" ? (
+        <p className="mt-3 rounded-[8px] bg-white px-3 py-2 font-[Pretendard] text-[12px] font-medium leading-[145%] text-[#D56046]">
+          {reason.failureMessage || "추천 사유 생성에 실패했어요. 다시 시도해 주세요."}
+        </p>
+      ) : null}
+
+      {createError ? (
+        <p
+          role="alert"
+          className="mt-3 font-[Pretendard] text-[12px] font-medium leading-[145%] text-[#D56046]"
+        >
+          {createError.status === 409
+            ? "이미 추천 사유 생성이 진행 중이에요. 잠시 후 확인해 주세요."
+            : createError.message}
+        </p>
+      ) : null}
+
+      {reason?.summary ? (
+        <p className="mt-3 font-[Pretendard] text-[12px] font-normal leading-[145%] text-[#616161]">
+          {reason.summary}
+        </p>
+      ) : null}
+
+      {totalScore ? (
+        <div className="mt-4 rounded-[10px] bg-white px-3 py-3">
+          <div className="flex items-center justify-between">
+            <span className="font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#616161]">
+              총 궁합 점수
+            </span>
+            <strong className="font-[Pretendard] text-[18px] font-bold leading-[135%] text-[#FF7658]">
+              {totalScore}
+            </strong>
+          </div>
+          {scoreItems.length > 0 ? (
+            <dl className="mt-2 grid grid-cols-3 gap-2">
+              {scoreItems.map((item) => (
+                <div className="min-w-0 text-center" key={item.label}>
+                  <dt className="font-[Pretendard] text-[10px] font-medium leading-[135%] text-[#616161]">
+                    {item.label}
+                  </dt>
+                  <dd className="mt-0.5 font-[Pretendard] text-[11px] font-semibold leading-[135%] text-[#1F1F1F]">
+                    {item.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
+      ) : null}
+
+      <MatchingReasonList items={reason?.strengths ?? []} title="팀의 강점" />
+      <MatchingReasonBulletList items={reason?.commonPoints ?? []} title="공통점" />
+      <MatchingReasonList items={reason?.complementaryPoints ?? []} title="보완 포인트" />
+      <MatchingReasonBulletList items={reason?.cautions ?? []} title="주의할 점" />
+    </section>
+  );
 }
 
 function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: TodayMatchingResult }) {
@@ -313,6 +516,7 @@ export default function TeamMatchingStatusResultView({
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-[116px]">
         <MatchingSummaryCard todayMatchingResult={todayMatchingResult} />
+        <MatchingReasonSection matchingGroupId={todayMatchingResult.matchingGroupId} />
 
         <section className="mt-[41px] grid grid-cols-[147px_147px] gap-x-6 gap-y-[47px] px-5">
           {matchedMembers.map((member) => (
