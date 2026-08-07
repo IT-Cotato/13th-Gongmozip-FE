@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
+import {
+  type ChatbotNotice,
+  useChatbotNoticeStore,
+} from "@/stores/chatbotNoticeStore";
 
 import { MOCK_CHAT_MEMBERS } from "../_data/mockMessages";
 import { ChatInputBar } from "./ChatInputBar";
@@ -68,6 +71,7 @@ const recommendedLeaderNames = MOCK_CHAT_MEMBERS.filter((member) =>
   mockAiRecommendedLeaderIds.includes(member.id),
 ).map((member) => member.name);
 const DEADLINE_RESPONSE_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
+const EMPTY_CHATBOT_NOTICES: ChatbotNotice[] = [];
 
 function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
   if (scenario === "singleDefinite") {
@@ -83,7 +87,8 @@ function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
 
 export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const router = useRouter();
-  const chatbotNotices = useChatbotNoticeStore((state) => state.noticesByRoomId[roomId] ?? []);
+  const chatbotNotices =
+    useChatbotNoticeStore((state) => state.noticesByRoomId[roomId]) ?? EMPTY_CHATBOT_NOTICES;
   const leaderScenario = getLeaderScenario(mockLeaderIntentAnswers);
   const [sheetState, setSheetState] = useState<SheetState>("closed");
   const [leaderChoice, setLeaderChoice] = useState<LeaderChoice>("no");
