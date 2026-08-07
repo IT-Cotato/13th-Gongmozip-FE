@@ -252,7 +252,7 @@ export default function CollaborationTypeResultPageContent({
           </h2>
 
           <p
-            className="mt-2 flex h-8 max-w-full items-center justify-center gap-2.5 rounded-[75px] px-[13px] py-2 text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] whitespace-nowrap text-white"
+            className="mt-2 flex min-h-8 max-w-full items-center justify-center gap-2.5 rounded-[75px] px-[13px] py-2 text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-white"
             style={{ width: `${result.quoteBoxWidth}px`, backgroundColor: result.quoteBoxColor }}
           >
             {result.quote}
