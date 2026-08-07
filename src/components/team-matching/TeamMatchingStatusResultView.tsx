@@ -323,7 +323,10 @@ export default function TeamMatchingStatusResultView({
 
       <div className="absolute bottom-0 left-0 right-0 z-20 bg-white px-4 pb-9 pt-3">
         {acceptErrorMessage ? (
-          <p className="mb-2 text-center font-[Pretendard] text-[12px] font-medium leading-[135%] text-[#D56046]">
+          <p
+            role="alert"
+            className="mb-2 text-center font-[Pretendard] text-[12px] font-medium leading-[135%] text-[#D56046]"
+          >
             {acceptErrorMessage}
           </p>
         ) : null}
