@@ -61,7 +61,7 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
     }
 
     if (todayMatchingResult.myResponseStatus === "ACCEPTED") {
-      return <TeamMatchingAcceptWaitingView />;
+      return <TeamMatchingAcceptWaitingView todayMatchingResult={todayMatchingResult} />;
     }
 
     if (todayMatchingResult.myResponseStatus === "PASSED") {
