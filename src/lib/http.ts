@@ -52,7 +52,7 @@ function extractAccessToken(data: unknown): string | null {
   return null;
 }
 
-function reissueAccessToken(): Promise<string | null> {
+export function reissueAccessToken(): Promise<string | null> {
   if (!reissuePromise) {
     reissuePromise = (async () => {
       try {
