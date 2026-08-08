@@ -6,7 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { ApiError } from "@/lib/http";
-import { useChatTeamMembersQuery, useChatTeamsQuery } from "@/queries/useChatQueries";
+import {
+  useChatTeamMembersQuery,
+  useChatTeamsQuery,
+  useLeaveChatTeamMutation,
+  useReportUserMutation,
+  useUpdateChatbotStatusMutation,
+} from "@/queries/useChatQueries";
 import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
 
 import { ChevronLeftIcon } from "../../_components/icons";
@@ -39,6 +45,10 @@ export default function ChatRoomMenuPage() {
   const router = useRouter();
   const membersQuery = useChatTeamMembersQuery(params.roomId);
   const teamsQuery = useChatTeamsQuery();
+  const leaveMutation = useLeaveChatTeamMutation(params.roomId);
+  const updateChatbotStatusMutation = useUpdateChatbotStatusMutation(params.roomId);
+  const reportUserMutation = useReportUserMutation();
+
   const chatMembers =
     membersQuery.data && membersQuery.data.chatMembers.length > 0
       ? membersQuery.data.chatMembers
@@ -62,6 +72,12 @@ export default function ChatRoomMenuPage() {
   const currentMember = chatMembers.find((member) => member.isMe) ?? chatMembers[0];
 
   const submitReport = (member: ChatMember, reason: string) => {
+    reportUserMutation.mutate({
+      reportedMemberId: member.id,
+      teamId: params.roomId,
+      reasonCode: reason,
+      customReasonText: reason,
+    });
     setReportedMemberIds((currentIds) =>
       currentIds.includes(member.id) ? currentIds : [...currentIds, member.id],
     );
@@ -74,9 +90,19 @@ export default function ChatRoomMenuPage() {
       return;
     }
 
+    updateChatbotStatusMutation.mutate(!isChatbotEnabled);
     toggleChatbot(params.roomId, currentMember.name);
     router.push(`/chat/${params.roomId}`);
   };
+
+  const handleConfirmLeave = () => {
+    leaveMutation.mutate(undefined, {
+      onSettled: () => {
+        router.push("/chat");
+      },
+    });
+  };
+
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
@@ -166,7 +192,7 @@ export default function ChatRoomMenuPage() {
       {isLeaveDialogOpen && (
         <LeaveChatRoomDialog
           onClose={() => setIsLeaveDialogOpen(false)}
-          onConfirm={() => router.push("/chat")}
+          onConfirm={handleConfirmLeave}
         />
       )}
     </main>

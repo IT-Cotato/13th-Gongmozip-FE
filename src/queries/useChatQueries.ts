@@ -128,6 +128,64 @@ export function useMarkChatTeamAsReadMutation(teamId: string) {
   });
 }
 
+export type ReportUserPayload = {
+  reportedMemberId: number | string;
+  teamId?: number | string;
+  reasonCode: string;
+  customReasonText?: string;
+};
+
+export function leaveChatTeam(teamId: string) {
+  return apiFetch<null>(`/api/teams/${encodeURIComponent(teamId)}/members/me`, {
+    method: "DELETE",
+  });
+}
+
+export function updateChatbotStatus(teamId: string, enabled: boolean) {
+  return apiFetch<null>(`/api/teams/${encodeURIComponent(teamId)}/chatbot`, {
+    method: "PATCH",
+    body: { enabled },
+  });
+}
+
+export function reportUser(payload: ReportUserPayload) {
+  return apiFetch<null>("/api/reports", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function useLeaveChatTeamMutation(teamId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => leaveChatTeam(teamId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: chatTeamMembersQueryKey(teamId) });
+    },
+  });
+}
+
+export function useUpdateChatbotStatusMutation(teamId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (enabled: boolean) => updateChatbotStatus(teamId, enabled),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: chatTeamMembersQueryKey(teamId) });
+      void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+    },
+  });
+}
+
+export function useReportUserMutation() {
+  return useMutation({
+    mutationFn: (payload: ReportUserPayload) => reportUser(payload),
+  });
+}
+
+
 function mapChatTeam(team: ChatTeamResponse): ChatRoom {
   const id = String(
     getValue(team, ["teamId", "id", "chatRoomId", "roomId"]) ?? `team-${getString(team, ["name", "teamName"])}`,
