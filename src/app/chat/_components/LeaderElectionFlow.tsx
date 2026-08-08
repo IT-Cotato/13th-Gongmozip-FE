@@ -7,9 +7,15 @@ import {
   type ChatbotNotice,
   useChatbotNoticeStore,
 } from "@/stores/chatbotNoticeStore";
+import {
+  useChatTeamMembersQuery,
+  useChatTeamMessagesQuery,
+  useMarkChatTeamAsReadMutation,
+} from "@/queries/useChatQueries";
 
 import { MOCK_CHAT_MEMBERS } from "../_data/mockMessages";
 import { ChatInputBar } from "./ChatInputBar";
+import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatTopBar } from "./ChatTopBar";
 import { MemberReviewStartDialog } from "./member-review";
 import {
@@ -89,6 +95,15 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const router = useRouter();
   const chatbotNotices =
     useChatbotNoticeStore((state) => state.noticesByRoomId[roomId]) ?? EMPTY_CHATBOT_NOTICES;
+  const membersQuery = useChatTeamMembersQuery(roomId);
+  const chatMembers =
+    membersQuery.data && membersQuery.data.chatMembers.length > 0
+      ? membersQuery.data.chatMembers
+      : MOCK_CHAT_MEMBERS;
+  const messagesQuery = useChatTeamMessagesQuery(roomId, chatMembers, {
+    enabled: membersQuery.isSuccess,
+  });
+  const { mutate: markAsRead } = useMarkChatTeamAsReadMutation(roomId);
   const leaderScenario = getLeaderScenario(mockLeaderIntentAnswers);
   const [sheetState, setSheetState] = useState<SheetState>("closed");
   const [leaderChoice, setLeaderChoice] = useState<LeaderChoice>("no");
@@ -133,10 +148,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const selectedCandidate =
     safeCandidates.find((candidate) => candidate.id === selectedCandidateId) ?? safeCandidates[0];
   const recommendedLeader = safeCandidates[0] ?? fallbackCandidate;
-  const recommendedLeaders = MOCK_CHAT_MEMBERS.filter((member) =>
+  const recommendedLeaders = chatMembers.filter((member) =>
     mockAiRecommendedLeaderIds.includes(member.id),
   );
-  const currentMember = MOCK_CHAT_MEMBERS.find((member) => member.isMe) ?? fallbackCandidate;
+  const currentMember = chatMembers.find((member) => member.isMe) ?? fallbackCandidate;
   const isCurrentMemberLeader = selectedCandidate.id === currentMember.id;
   const recommendedLeaderLabel = formatRecommendedLeaderNames(
     recommendedLeaderNames.map((name) => `${name}님`),
@@ -144,6 +159,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const leaderCandidateLabel = formatLeaderCandidateNames(
     candidates.map((candidate) => `${candidate.name}님`),
   );
+
+  useEffect(() => {
+    if (!messagesQuery.isSuccess) {
+      return;
+    }
+
+    markAsRead();
+  }, [markAsRead, messagesQuery.isSuccess, roomId]);
 
   useEffect(() => {
     const shouldRunCandidateTimer =
@@ -416,6 +439,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   );
   const sharedContest = mockRecommendedContests[2] ?? mockRecommendedContests[0];
   const winningContest = selectedContests[0] ?? mockRecommendedContests[0];
+  const roomTitle = chatMembers
+    .filter((member) => !member.isMe && !member.isChatbot)
+    .map((member) => member.name)
+    .join(", ");
 
   if (sheetState === "contestList") {
     return (
@@ -429,7 +456,11 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
-      <ChatTopBar roomId={roomId} />
+      <ChatTopBar
+        memberCount={chatMembers.filter((member) => !member.isChatbot).length}
+        roomId={roomId}
+        title={roomTitle || undefined}
+      />
 
       {shouldShowContestVote && isCandidateClosed && !isContestResultShown ? (
         <ContestVoteNoticeBanner
@@ -465,6 +496,22 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             <ChatbotSystemNotice action={notice.action} actorName={notice.actorName} />
             {notice.action === "added" ? <ChatbotUsageGuideMessage /> : null}
           </div>
+        ))}
+
+        {messagesQuery.isLoading ? (
+          <p className="text-center text-[13px] leading-[1.5] text-color-gray-650">
+            이전 메시지를 불러오는 중입니다.
+          </p>
+        ) : null}
+
+        {messagesQuery.isError ? (
+          <p className="text-center text-[13px] leading-[1.5] text-color-gray-650">
+            이전 메시지를 불러오지 못했습니다.
+          </p>
+        ) : null}
+
+        {messagesQuery.data?.messages.map((message) => (
+          <ChatMessageBubble key={message.id} message={message} />
         ))}
 
         {leaderEvent === "autoLeaderNotice" ? (
