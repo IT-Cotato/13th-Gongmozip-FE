@@ -16,11 +16,7 @@ import {
 import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
 
 import { ChevronLeftIcon } from "../../_components/icons";
-import {
-  MOCK_CHATBOT_MEMBER,
-  MOCK_CHAT_MEMBERS,
-  type ChatMember,
-} from "../../_data/mockMessages";
+import { MOCK_CHATBOT_MEMBER, type ChatMember } from "../../_data/mockMessages";
 
 const memberNameClass = "text-[15px] leading-[1.25] font-semibold text-color-gray-850";
 const reportReasons = [
@@ -49,10 +45,7 @@ export default function ChatRoomMenuPage() {
   const updateChatbotStatusMutation = useUpdateChatbotStatusMutation(params.roomId);
   const reportUserMutation = useReportUserMutation();
 
-  const chatMembers =
-    membersQuery.data && membersQuery.data.chatMembers.length > 0
-      ? membersQuery.data.chatMembers
-      : MOCK_CHAT_MEMBERS;
+  const chatMembers = membersQuery.data?.chatMembers ?? [];
   const roomTitle =
     teamsQuery.data?.find((room) => room.id === params.roomId)?.title ||
     chatMembers
@@ -72,6 +65,10 @@ export default function ChatRoomMenuPage() {
   const currentMember = chatMembers.find((member) => member.isMe) ?? chatMembers[0];
 
   const submitReport = (member: ChatMember, reason: string) => {
+    if (!membersQuery.isSuccess) {
+      return;
+    }
+
     reportUserMutation.mutate({
       reportedMemberId: member.id,
       teamId: params.roomId,
@@ -142,8 +139,14 @@ export default function ChatRoomMenuPage() {
           </p>
         ) : null}
 
+        {membersQuery.isSuccess && chatMembers.length === 0 ? (
+          <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
+            표시할 대화상대가 없습니다.
+          </p>
+        ) : null}
+
         <div className="mt-6 flex flex-col gap-4">
-          {chatMembers.map((member) => (
+          {membersQuery.isSuccess ? chatMembers.map((member) => (
             <MemberRow
               key={member.id}
               member={member}
@@ -151,7 +154,7 @@ export default function ChatRoomMenuPage() {
               onOpenProfile={() => setSelectedMember(member)}
               onOpenReport={() => setReportTarget(member)}
             />
-          ))}
+          )) : null}
 
           <ChatbotRow
             isEnabled={isChatbotEnabled}
