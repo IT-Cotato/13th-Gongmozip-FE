@@ -5,12 +5,18 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ApiError } from "@/lib/http";
+import {
+  useChatTeamMembersQuery,
+  useChatTeamsQuery,
+  useLeaveChatTeamMutation,
+  useReportUserMutation,
+  useUpdateChatbotStatusMutation,
+} from "@/queries/useChatQueries";
 import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
 
 import { ChevronLeftIcon } from "../../_components/icons";
 import {
-  CHAT_MEMBER_COUNT,
-  CHAT_ROOM_TITLE,
   MOCK_CHATBOT_MEMBER,
   MOCK_CHAT_MEMBERS,
   type ChatMember,
@@ -37,6 +43,23 @@ const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
 export default function ChatRoomMenuPage() {
   const params = useParams<{ roomId: string }>();
   const router = useRouter();
+  const membersQuery = useChatTeamMembersQuery(params.roomId);
+  const teamsQuery = useChatTeamsQuery();
+  const leaveMutation = useLeaveChatTeamMutation(params.roomId);
+  const updateChatbotStatusMutation = useUpdateChatbotStatusMutation(params.roomId);
+  const reportUserMutation = useReportUserMutation();
+
+  const chatMembers =
+    membersQuery.data && membersQuery.data.chatMembers.length > 0
+      ? membersQuery.data.chatMembers
+      : MOCK_CHAT_MEMBERS;
+  const roomTitle =
+    teamsQuery.data?.find((room) => room.id === params.roomId)?.title ||
+    chatMembers
+      .filter((member) => !member.isMe && !member.isChatbot)
+      .map((member) => member.name)
+      .join(", ") ||
+    "채팅방";
   const isChatbotEnabled = useChatbotNoticeStore(
     (state) => state.chatbotEnabledByRoomId[params.roomId] ?? true,
   );
@@ -46,9 +69,15 @@ export default function ChatRoomMenuPage() {
   const [selectedMember, setSelectedMember] = useState<ChatMember | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatMember | null>(null);
   const [completedReportReason, setCompletedReportReason] = useState("");
-  const currentMember = MOCK_CHAT_MEMBERS.find((member) => member.isMe) ?? MOCK_CHAT_MEMBERS[0];
+  const currentMember = chatMembers.find((member) => member.isMe) ?? chatMembers[0];
 
   const submitReport = (member: ChatMember, reason: string) => {
+    reportUserMutation.mutate({
+      reportedMemberId: member.id,
+      teamId: params.roomId,
+      reasonCode: reason,
+      customReasonText: reason,
+    });
     setReportedMemberIds((currentIds) =>
       currentIds.includes(member.id) ? currentIds : [...currentIds, member.id],
     );
@@ -57,9 +86,23 @@ export default function ChatRoomMenuPage() {
   };
 
   const handleChatbotToggle = () => {
+    if (!currentMember) {
+      return;
+    }
+
+    updateChatbotStatusMutation.mutate(!isChatbotEnabled);
     toggleChatbot(params.roomId, currentMember.name);
     router.push(`/chat/${params.roomId}`);
   };
+
+  const handleConfirmLeave = () => {
+    leaveMutation.mutate(undefined, {
+      onSettled: () => {
+        router.push("/chat");
+      },
+    });
+  };
+
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
@@ -73,8 +116,8 @@ export default function ChatRoomMenuPage() {
             <ChevronLeftIcon />
           </Link>
           <h1 className="flex max-w-[250px] items-center justify-center gap-2 truncate text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
-            <span className="truncate">{CHAT_ROOM_TITLE}</span>
-            <span className="shrink-0">{CHAT_MEMBER_COUNT}</span>
+            <span className="truncate">{roomTitle}</span>
+            <span className="shrink-0">{chatMembers.length}</span>
           </h1>
         </div>
       </header>
@@ -82,11 +125,25 @@ export default function ChatRoomMenuPage() {
       <section className="flex-1 overflow-y-auto px-4 pt-4 pb-[120px]" aria-label="채팅방 메뉴">
         <h2 className="flex items-center gap-2 text-[15px] leading-[1.25] font-bold text-color-gray-850">
           <span>대화상대</span>
-          <span>{CHAT_MEMBER_COUNT}</span>
+          <span>{chatMembers.length}</span>
         </h2>
 
+        {membersQuery.isLoading ? (
+          <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
+            대화상대를 불러오는 중입니다.
+          </p>
+        ) : null}
+
+        {membersQuery.isError ? (
+          <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
+            {membersQuery.error instanceof ApiError
+              ? membersQuery.error.message
+              : "대화상대를 불러오지 못했습니다."}
+          </p>
+        ) : null}
+
         <div className="mt-6 flex flex-col gap-4">
-          {MOCK_CHAT_MEMBERS.map((member) => (
+          {chatMembers.map((member) => (
             <MemberRow
               key={member.id}
               member={member}
@@ -135,7 +192,7 @@ export default function ChatRoomMenuPage() {
       {isLeaveDialogOpen && (
         <LeaveChatRoomDialog
           onClose={() => setIsLeaveDialogOpen(false)}
-          onConfirm={() => router.push("/chat")}
+          onConfirm={handleConfirmLeave}
         />
       )}
     </main>

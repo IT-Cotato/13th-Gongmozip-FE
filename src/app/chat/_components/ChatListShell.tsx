@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
-import { MOCK_CHAT_ROOMS, type ChatRoom } from "../_data/mockMessages";
+import { ApiError } from "@/lib/http";
+import { useChatTeamsQuery } from "@/queries/useChatQueries";
+
+import type { ChatRoom } from "../_data/mockMessages";
 import { SettingsIcon } from "./icons";
 
 type SortMode = "latest" | "unread";
@@ -16,14 +19,17 @@ const dropdownActionTextClass =
 export function ChatListShell() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("latest");
+  const { data: chatRooms = [], error, isError, isLoading, refetch } = useChatTeamsQuery();
 
   const rooms = useMemo(() => {
     if (sortMode === "unread") {
-      return [...MOCK_CHAT_ROOMS].sort((a, b) => b.unreadCount - a.unreadCount);
+      return [...chatRooms].sort((a, b) => b.unreadCount - a.unreadCount);
     }
 
-    return MOCK_CHAT_ROOMS;
-  }, [sortMode]);
+    return chatRooms;
+  }, [chatRooms, sortMode]);
+
+  const unreadChatCount = rooms.reduce((totalCount, room) => totalCount + room.unreadCount, 0);
 
   return (
     <main className="relative flex h-full w-full flex-col bg-white pt-[env(safe-area-inset-top)]">
@@ -50,13 +56,56 @@ export function ChatListShell() {
       )}
 
       <section aria-label="채팅방 목록" className="flex flex-1 flex-col overflow-y-auto">
-        {rooms.map((room) => (
+        {isLoading ? <ChatListStateMessage message="채팅방을 불러오는 중입니다." /> : null}
+
+        {isError ? (
+          <ChatListStateMessage
+            message={
+              error instanceof ApiError
+                ? error.message
+                : "채팅방 목록을 불러오지 못했습니다."
+            }
+            actionLabel="다시 시도"
+            onAction={() => void refetch()}
+          />
+        ) : null}
+
+        {!isLoading && !isError && rooms.length === 0 ? (
+          <ChatListStateMessage message="아직 참여 중인 채팅방이 없습니다." />
+        ) : null}
+
+        {!isLoading && !isError ? rooms.map((room) => (
           <ChatRoomRow key={room.id} room={room} />
-        ))}
+        )) : null}
       </section>
 
-      <BottomNavigation unreadChatCount={9} />
+      <BottomNavigation unreadChatCount={unreadChatCount} />
     </main>
+  );
+}
+
+function ChatListStateMessage({
+  actionLabel,
+  message,
+  onAction,
+}: {
+  actionLabel?: string;
+  message: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+      <p className="text-[13px] leading-[1.5] text-color-gray-650">{message}</p>
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          className="flex h-10 items-center justify-center rounded-[12px] bg-color-coral-500 px-4 text-[13px] leading-[1.25] font-semibold text-white"
+          onClick={onAction}
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
