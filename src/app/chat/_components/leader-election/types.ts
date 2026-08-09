@@ -31,6 +31,8 @@ export type LeaderIntentAnswer = {
 };
 export type RecommendedContest = {
   id: string;
+  contestId?: number;
+  contestCandidateId?: number;
   category: string;
   dday: string;
   imageSrc?: string;

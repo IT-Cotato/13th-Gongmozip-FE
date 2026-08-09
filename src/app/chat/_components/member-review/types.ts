@@ -17,5 +17,6 @@ export type MemberReviewAnswer = {
 };
 
 export type ReviewMember = Pick<ChatMember, "avatarSrc" | "avatarTone" | "id" | "isMe" | "name"> & {
+  alreadyReviewed?: boolean;
   isLeader?: boolean;
 };
