@@ -284,7 +284,7 @@ export function ContestVoteResultMessage({
   onMidtermSubmit,
 }: {
   contest: RecommendedContest;
-  onMidtermSubmit: () => void;
+  onMidtermSubmit: (progressPercent: number) => void;
 }) {
   const [midtermProgress, setMidtermProgress] = useState(0);
 
@@ -292,7 +292,7 @@ export function ContestVoteResultMessage({
     setMidtermProgress(value);
 
     if (value > 0) {
-      onMidtermSubmit();
+      onMidtermSubmit(value);
     }
   };
 
@@ -378,11 +378,13 @@ export function ContestVoteResultMessage({
 
 export function ContestVoteSheet({
   contests,
+  disabled = false,
   onSubmit,
   onToggle,
   selectedContestIds,
 }: {
   contests: RecommendedContest[];
+  disabled?: boolean;
   onSubmit: () => void;
   onToggle: (contestId: string) => void;
   selectedContestIds: string[];
@@ -418,7 +420,7 @@ export function ContestVoteSheet({
       <div className="flex h-[60px] w-full shrink-0 px-2 py-1">
         <button
           className="flex flex-1 items-center justify-center rounded-[12px] bg-color-coral-500 text-[15px] leading-[1.25] font-semibold text-white disabled:bg-color-gray-200 disabled:text-color-gray-350"
-          disabled={selectedContestIds.length === 0}
+          disabled={disabled || selectedContestIds.length === 0}
           onClick={onSubmit}
           type="button"
         >

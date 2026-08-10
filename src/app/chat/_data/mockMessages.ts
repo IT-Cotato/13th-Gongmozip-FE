@@ -4,10 +4,31 @@ export type ChatMessage = {
   body: string;
   sentAt: string;
   direction: "incoming" | "outgoing";
+  senderType?: ChatSenderType;
+  messageType?: ChatMessageType;
+  metadata?: ChatMessageMetadata;
   avatarTone?: "robot" | "green" | "blue" | "coral";
   avatarSrc?: string;
   unreadLabel?: string;
 };
+
+export type ChatSenderType = "MEMBER" | "CHATBOT" | "SYSTEM" | (string & {});
+
+export type ChatMessageType =
+  | "TALK"
+  | "TEXT"
+  | "SYSTEM"
+  | "BOT"
+  | "LEADER_NOMINATION_CARD"
+  | "LEADER_VOTE_CARD"
+  | "LEADER_RESULT_CARD"
+  | "CONTEST_RECOMMEND_CARD"
+  | "CONTEST_CANDIDATE_CARD"
+  | "CONTEST_VOTE_CARD"
+  | "CONTEST_RESULT_CARD"
+  | (string & {});
+
+export type ChatMessageMetadata = Record<string, string | number | boolean | null | string[] | number[]>;
 
 export type ChatRoom = {
   id: string;
