@@ -43,7 +43,9 @@ pnpm start
 Create `.env.local` from `.env.example` when API endpoints or public runtime values are needed.
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=https://13.209.254.149.nip.io
+NEXT_PUBLIC_API_BASE_URL=https://api.gongmozip.site
+NEXT_PUBLIC_WS_BASE_URL=https://api.gongmozip.site
+NEXT_PUBLIC_FRONTEND_URL=https://gongmozip.site
 ```
 
 ## Deployment

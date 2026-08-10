@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const DEFAULT_API_ORIGIN = "https://13.209.254.149.nip.io";
+const DEFAULT_API_ORIGIN = "https://api.gongmozip.site";
 
 const apiOrigin = (() => {
   try {
