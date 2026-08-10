@@ -1,4 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Client, type IMessage } from "@stomp/stompjs";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 
 import type {
   ChatMember,
@@ -10,9 +18,12 @@ import type {
 } from "@/app/chat/_data/mockMessages";
 import type { RecommendedContest } from "@/app/chat/_components/leader-election/types";
 import type { ReviewMember } from "@/app/chat/_components/member-review/types";
-import { apiFetch } from "@/lib/http";
+import { API_BASE_URL, apiFetch, isBaseResponse } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 type UnknownRecord = Record<string, unknown>;
+
+const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL ?? API_BASE_URL).replace(/\/+$/, "");
 
 export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
@@ -20,6 +31,7 @@ export type ChatMessageResponse = UnknownRecord;
 export type ContestCandidateResponse = UnknownRecord;
 export type ContestVoteStatusResponse = UnknownRecord;
 export type ReviewTargetResponse = UnknownRecord;
+export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
 
 export type TeamMembersResponse = {
   members: ChatTeamMemberResponse[];
@@ -29,6 +41,26 @@ export type TeamMembersResponse = {
 
 export type TeamMessagesResponse = {
   messages: ChatMessageResponse[];
+  nextCursor: string | null;
+  hasNext: boolean;
+};
+
+export type ContestVoteResultStatus = "normal" | "noVotes" | "tie";
+
+export type ContestVoteResultItem = {
+  contestCandidateId?: number;
+  contestId?: number;
+  voteCount: number;
+  percent: number;
+  isWinner: boolean;
+};
+
+export type ContestVoteStatus = {
+  result: ContestVoteResultStatus;
+  hasVotes: boolean;
+  isTie: boolean;
+  participantCount: number;
+  results: ContestVoteResultItem[];
 };
 
 export const chatTeamsQueryKey = ["chat", "teams"] as const;
@@ -81,13 +113,46 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
   };
 }
 
-export async function fetchChatTeamMessages(teamId: string): Promise<TeamMessagesResponse> {
+export async function fetchChatTeamMessages(
+  teamId: string,
+  cursor?: string | null,
+): Promise<TeamMessagesResponse> {
+  const searchParams = new URLSearchParams();
+
+  searchParams.set("size", "50");
+
+  if (cursor) {
+    searchParams.set("cursor", cursor);
+  }
+
+  const queryString = searchParams.toString();
   const data = await apiFetch<
-    ChatMessageResponse[] | { messages?: ChatMessageResponse[]; content?: ChatMessageResponse[] }
-  >(`/api/teams/${encodeURIComponent(teamId)}/messages`);
+    | ChatMessageResponse[]
+    | {
+        messages?: ChatMessageResponse[];
+        content?: ChatMessageResponse[];
+        nextCursor?: string | number | null;
+        previousCursor?: string | number | null;
+        cursor?: string | number | null;
+        hasNext?: boolean;
+        hasPrevious?: boolean;
+      }
+  >(`/api/teams/${encodeURIComponent(teamId)}/messages?${queryString}`);
+
+  if (Array.isArray(data)) {
+    return {
+      messages: data,
+      nextCursor: null,
+      hasNext: false,
+    };
+  }
+
+  const nextCursor = data.nextCursor ?? data.previousCursor ?? data.cursor ?? null;
 
   return {
-    messages: Array.isArray(data) ? data : (data.messages ?? data.content ?? []),
+    messages: data.messages ?? data.content ?? [],
+    nextCursor: nextCursor === null ? null : String(nextCursor),
+    hasNext: data.hasNext ?? data.hasPrevious ?? nextCursor !== null,
   };
 }
 
@@ -122,12 +187,17 @@ export function useChatTeamMessagesQuery(
   members: ChatMember[] = [],
   options: { enabled?: boolean } = {},
 ) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: chatTeamMessagesQueryKey(teamId),
-    queryFn: () => fetchChatTeamMessages(teamId),
+    queryFn: ({ pageParam }) => fetchChatTeamMessages(teamId, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasNext && lastPage.nextCursor ? lastPage.nextCursor : undefined,
     enabled: (options.enabled ?? true) && teamId.length > 0,
     select: (data) => ({
-      messages: [...data.messages]
+      ...data,
+      messages: data.pages
+        .flatMap((page) => page.messages)
         .sort((a, b) => getMessageTime(a) - getMessageTime(b))
         .map((message) => mapChatMessage(message, members)),
     }),
@@ -196,6 +266,105 @@ export function reportUser(payload: ReportUserPayload) {
     method: "POST",
     body: payload,
   });
+}
+
+export function useChatRealtime(
+  teamId: string,
+  options: { enabled?: boolean } = {},
+) {
+  const queryClient = useQueryClient();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const normalizedAccessToken = useMemo(() => normalizeAccessToken(accessToken), [accessToken]);
+  const clientRef = useRef<Client | null>(null);
+  const [status, setStatus] = useState<ChatRealtimeStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const enabled = (options.enabled ?? true) && teamId.length > 0 && API_BASE_URL.length > 0;
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const stompClient = new Client({
+      brokerURL: getWebSocketUrl("/ws"),
+      connectHeaders: normalizedAccessToken
+        ? { Authorization: `Bearer ${normalizedAccessToken}` }
+        : {},
+      debug: () => undefined,
+      reconnectDelay: 0,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
+      onConnect: () => {
+        setStatus("connected");
+        setErrorMessage(null);
+
+        stompClient.subscribe(`/topic/teams/${teamId}`, (message) => {
+          const payload = parseStompMessage(message);
+
+          if (!isRecord(payload)) {
+            return;
+          }
+
+          if (isChatMessageEvent(payload)) {
+            queryClient.setQueryData<InfiniteData<TeamMessagesResponse>>(
+              chatTeamMessagesQueryKey(teamId),
+              (current) => appendChatMessagePages(current, payload),
+            );
+            void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
+            return;
+          }
+
+          void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
+        });
+
+        stompClient.subscribe("/user/queue/errors", (message) => {
+          const payload = parseStompMessage(message);
+          setErrorMessage(getRealtimeErrorMessage(payload));
+        });
+      },
+      onStompError: (frame) => {
+        setStatus("error");
+        setErrorMessage(frame.headers.message ?? "채팅 서버 연결 중 오류가 발생했습니다.");
+      },
+      onWebSocketError: () => {
+        setStatus("error");
+        setErrorMessage("채팅 서버에 연결하지 못했습니다.");
+      },
+      onWebSocketClose: () => {
+        setStatus((currentStatus) => (currentStatus === "connected" ? "connecting" : currentStatus));
+      },
+    });
+
+    clientRef.current = stompClient;
+    stompClient.activate();
+
+    return () => {
+      clientRef.current = null;
+      void stompClient.deactivate();
+    };
+  }, [enabled, normalizedAccessToken, queryClient, teamId]);
+
+  const sendMessage = (content: string) => {
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent || !clientRef.current?.connected) {
+      return false;
+    }
+
+    clientRef.current.publish({
+      destination: `/app/teams/${teamId}/messages`,
+      body: JSON.stringify({ content: trimmedContent }),
+    });
+
+    return true;
+  };
+
+  return {
+    errorMessage: enabled ? errorMessage : null,
+    isConnected: enabled && status === "connected",
+    sendMessage,
+    status: enabled ? status : "idle",
+  };
 }
 
 export function fetchContestCandidates(teamId: string) {
@@ -358,6 +527,7 @@ export function useContestVoteStatusQuery(teamId: string, options: { enabled?: b
     queryKey: contestVotesQueryKey(teamId),
     queryFn: () => fetchContestVoteStatus(teamId),
     enabled: (options.enabled ?? true) && teamId.length > 0,
+    select: mapContestVoteStatus,
   });
 }
 
@@ -368,6 +538,7 @@ export function useAddContestCandidateMutation(teamId: string) {
     mutationFn: (contestId: number) => addContestCandidate(teamId, contestId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contestCandidatesQueryKey(teamId) });
+      void queryClient.invalidateQueries({ queryKey: contestVotesQueryKey(teamId) });
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
     },
   });
@@ -506,6 +677,115 @@ export function useRequestLeaderRevoteMutation(teamId: string) {
   });
 }
 
+function parseStompMessage(message: IMessage): unknown {
+  if (!message.body) {
+    return null;
+  }
+
+  try {
+    const parsedValue: unknown = JSON.parse(message.body);
+
+    return isBaseResponse(parsedValue) ? parsedValue.data : parsedValue;
+  } catch {
+    return message.body;
+  }
+}
+
+function appendChatMessage(
+  current: TeamMessagesResponse | undefined,
+  message: ChatMessageResponse,
+): TeamMessagesResponse {
+  const messages = current?.messages ?? [];
+  const messageId = getValue(message, ["messageId", "id"]);
+
+  if (
+    messageId !== undefined &&
+    messages.some((currentMessage) => getValue(currentMessage, ["messageId", "id"]) === messageId)
+  ) {
+    return current ?? { messages, nextCursor: null, hasNext: false };
+  }
+
+  return {
+    nextCursor: current?.nextCursor ?? null,
+    hasNext: current?.hasNext ?? false,
+    messages: [...messages, message].sort((a, b) => getMessageTime(a) - getMessageTime(b)),
+  };
+}
+
+function appendChatMessagePages(
+  current: InfiniteData<TeamMessagesResponse> | undefined,
+  message: ChatMessageResponse,
+): InfiniteData<TeamMessagesResponse> | undefined {
+  if (!current) {
+    return current;
+  }
+
+  const pages = current.pages.map((page) => ({
+    ...page,
+    messages: [...page.messages],
+  }));
+  const messageId = getValue(message, ["messageId", "id"]);
+
+  if (
+    messageId !== undefined &&
+    pages.some((page) =>
+      page.messages.some((currentMessage) => getValue(currentMessage, ["messageId", "id"]) === messageId),
+    )
+  ) {
+    return current;
+  }
+
+  const firstPage = pages[0] ?? { messages: [], nextCursor: null, hasNext: false };
+  pages[0] = appendChatMessage(firstPage, message);
+
+  return {
+    ...current,
+    pages,
+  };
+}
+
+function isChatMessageEvent(value: UnknownRecord): value is ChatMessageResponse {
+  return (
+    getString(value, ["content", "body", "message"]) !== undefined ||
+    getString(value, ["messageType", "type", "senderType"]) !== undefined ||
+    getString(value, ["createdAt", "sentAt", "timestamp"]) !== undefined
+  );
+}
+
+function getRealtimeErrorMessage(value: unknown) {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+
+  if (!isRecord(value)) {
+    return "메시지 처리 중 오류가 발생했습니다.";
+  }
+
+  return (
+    getString(value, ["message", "error", "reason"]) ??
+    "메시지 처리 중 오류가 발생했습니다."
+  );
+}
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeAccessToken(accessToken: string | null) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return accessToken.startsWith("Bearer ") ? accessToken.slice("Bearer ".length) : accessToken;
+}
+
+function getWebSocketUrl(path: string) {
+  const url = new URL(path, `${WS_BASE_URL}/`);
+
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+
+  return url.toString();
+}
 
 function mapChatTeam(team: ChatTeamResponse): ChatRoom {
   const id = String(
@@ -604,6 +884,41 @@ function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedCo
       getString(candidate, ["title", "contestTitle", "name"]) ??
       (contestId ? `공모전 #${contestId}` : "공모전"),
     viewCount: viewCount.toLocaleString("ko-KR"),
+  };
+}
+
+function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteStatus {
+  const resultsValue = getValue(status, ["results", "voteResults", "contestCandidates", "candidates"]);
+  const results = Array.isArray(resultsValue)
+    ? resultsValue.filter(isRecord).map(mapContestVoteResultItem)
+    : [];
+  const participantCount =
+    getNumber(status, ["participantCount", "voterCount", "totalVoteCount", "totalVotes"]) ??
+    results.reduce((sum, result) => sum + result.voteCount, 0);
+  const explicitStatus = getString(status, ["result", "status", "voteStatus"])?.toUpperCase();
+  const isTie = getBoolean(status, ["tie", "isTie"]) ?? (explicitStatus === "TIE");
+  const hasVotes =
+    getBoolean(status, ["hasVotes"]) ??
+    (explicitStatus === "NO_VOTES" || explicitStatus === "NO_VOTE"
+      ? false
+      : participantCount > 0 || results.some((result) => result.voteCount > 0));
+
+  return {
+    result: !hasVotes ? "noVotes" : isTie ? "tie" : "normal",
+    hasVotes,
+    isTie,
+    participantCount,
+    results,
+  };
+}
+
+function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem {
+  return {
+    contestCandidateId: getNumber(result, ["contestCandidateId", "candidateId", "id"]),
+    contestId: getNumber(result, ["contestId"]),
+    voteCount: getNumber(result, ["voteCount", "votes", "count"]) ?? 0,
+    percent: getNumber(result, ["percent", "votePercent", "rate"]) ?? 0,
+    isWinner: getBoolean(result, ["winner", "isWinner"]) ?? false,
   };
 }
 
