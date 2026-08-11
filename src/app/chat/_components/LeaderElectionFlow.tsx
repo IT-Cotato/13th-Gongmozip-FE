@@ -1174,7 +1174,7 @@ function ChatMessageRenderer({
       leaderRecommendation,
     );
 
-    if (aiRecommendedLeader) {
+    if (isLeaderTieMessage(message) && aiRecommendedLeader) {
       return (
         <LeaderTieMessage
           recommendedLeader={aiRecommendedLeader}
@@ -1337,6 +1337,45 @@ function getMetadataNumber(metadata: ChatMessageMetadata | undefined, key: strin
   }
 
   return undefined;
+}
+
+function getMetadataBoolean(metadata: ChatMessageMetadata | undefined, key: string) {
+  const value = metadata?.[key];
+
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function getMetadataString(metadata: ChatMessageMetadata | undefined, key: string) {
+  const value = metadata?.[key];
+
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function isLeaderTieMessage(message: ChatMessage) {
+  const messageType = message.messageType?.toUpperCase();
+
+  if (messageType?.includes("TIE")) {
+    return true;
+  }
+
+  const metadataTie =
+    getMetadataBoolean(message.metadata, "isTie") ??
+    getMetadataBoolean(message.metadata, "tie") ??
+    getMetadataBoolean(message.metadata, "isLeaderVoteTie") ??
+    getMetadataBoolean(message.metadata, "leaderVoteTie");
+
+  if (metadataTie !== undefined) {
+    return metadataTie;
+  }
+
+  const metadataStatus = (
+    getMetadataString(message.metadata, "leaderVoteStatus") ??
+    getMetadataString(message.metadata, "voteStatus") ??
+    getMetadataString(message.metadata, "result") ??
+    getMetadataString(message.metadata, "status")
+  )?.toUpperCase();
+
+  return metadataStatus === "TIE" || metadataStatus === "TIED" || metadataStatus === "LEADER_VOTE_TIE";
 }
 
 function getChatbotNoticeAction(body: string): "added" | "removed" | null {
