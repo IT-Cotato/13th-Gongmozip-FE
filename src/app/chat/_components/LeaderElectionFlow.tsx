@@ -14,9 +14,11 @@ import {
   useChatRealtime,
   useAcceptLeaderAiRecommendationMutation,
   useAddContestCandidateMutation,
+  useCreateLeaderRecommendationMutation,
   useContestCandidatesQuery,
   useContestVoteStatusQuery,
   useDeleteContestCandidateMutation,
+  useLeaderRecommendationQuery,
   useMarkChatTeamAsReadMutation,
   useRequestLeaderRevoteMutation,
   useUpdateLeaderCandidacyMutation,
@@ -24,6 +26,7 @@ import {
   useUpdateTeamSubmissionMutation,
   useVoteContestCandidatesMutation,
   useVoteLeaderMutation,
+  type LeaderRecommendation,
 } from "@/queries/useChatQueries";
 
 import {
@@ -132,10 +135,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const contestVoteStatusQuery = useContestVoteStatusQuery(roomId, {
     enabled: hasServerMessages,
   });
+  const leaderRecommendationQuery = useLeaderRecommendationQuery(roomId, {
+    enabled: hasServerMessages,
+  });
   const { mutate: markAsRead } = useMarkChatTeamAsReadMutation(roomId);
   const updateLeaderCandidacyMutation = useUpdateLeaderCandidacyMutation(roomId);
   const voteLeaderMutation = useVoteLeaderMutation(roomId);
   const acceptLeaderRecommendationMutation = useAcceptLeaderAiRecommendationMutation(roomId);
+  const createLeaderRecommendationMutation = useCreateLeaderRecommendationMutation(roomId);
   const requestLeaderRevoteMutation = useRequestLeaderRevoteMutation(roomId);
   const addContestCandidateMutation = useAddContestCandidateMutation(roomId);
   const deleteContestCandidateMutation = useDeleteContestCandidateMutation(roomId);
@@ -413,6 +420,16 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     setLeaderEvent("revote");
     setSelectedCandidateId(recommendedLeader.id);
     setSheetState("closed");
+  };
+
+  const requestLeaderRecommendation = async () => {
+    setLeaderActionError(null);
+
+    try {
+      await createLeaderRecommendationMutation.mutateAsync();
+    } catch (error) {
+      setLeaderActionError(getApiErrorMessage(error, "AI 팀장 추천 생성에 실패했습니다."));
+    }
   };
 
   const startContestVote = (contestCandidateIds?: string[]) => {
@@ -794,6 +811,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           <ChatMessageRenderer
             chatMembers={chatMembers}
             contestCandidates={apiContestCandidates}
+            isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
+            leaderRecommendation={leaderRecommendationQuery.data}
             key={message.id}
             message={message}
             onAddContestCandidate={addContestCandidateByContestId}
@@ -811,6 +830,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               setLeaderActionError(null);
               setSheetState("willingness");
             }}
+            onRequestLeaderRecommendation={requestLeaderRecommendation}
             onRequestRevote={requestRevote}
           />
         ))}
@@ -1079,6 +1099,8 @@ function ChatRoomState({ message, roomId }: { message: string; roomId: string })
 function ChatMessageRenderer({
   chatMembers,
   contestCandidates,
+  isLeaderRecommendationPending,
+  leaderRecommendation,
   message,
   onAddContestCandidate,
   onAcceptRecommendation,
@@ -1087,10 +1109,13 @@ function ChatMessageRenderer({
   onOpenContestList,
   onOpenContestVote,
   onOpenWillingness,
+  onRequestLeaderRecommendation,
   onRequestRevote,
 }: {
   chatMembers: LeaderCandidate[];
   contestCandidates: RecommendedContest[];
+  isLeaderRecommendationPending: boolean;
+  leaderRecommendation?: LeaderRecommendation;
   message: ChatMessage;
   onAddContestCandidate: (contestId: number) => void;
   onAcceptRecommendation: () => void;
@@ -1099,20 +1124,36 @@ function ChatMessageRenderer({
   onOpenContestList: () => void;
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
   onOpenWillingness: () => void;
+  onRequestLeaderRecommendation: () => void;
   onRequestRevote: () => void;
 }) {
   if (message.messageType === "LEADER_NOMINATION_CARD") {
-    const recommendedLeaders = getMembersByMetadataIds(
+    const metadataRecommendedLeaders = getMembersByMetadataIds(
       chatMembers,
       getMetadataNumberArray(message.metadata, "aiRecommendedTeamMemberIds"),
     );
+    const apiRecommendedLeaders = getMembersByLeaderRecommendation(chatMembers, leaderRecommendation);
+    const recommendedLeaders =
+      apiRecommendedLeaders.length > 0 ? apiRecommendedLeaders : metadataRecommendedLeaders;
+    const recommendationStatus = leaderRecommendation?.status;
+    const shouldRequestRecommendation =
+      !leaderRecommendation || recommendationStatus === "FAILED";
+    const buttonLabel = shouldRequestRecommendation
+      ? recommendationStatus === "FAILED"
+        ? "AI 추천 다시 생성하기"
+        : "AI 추천 생성하기"
+      : "팀장 여부 투표하기";
 
     return (
       <BotMessage
-        body={message.body}
-        buttonDisabled={false}
-        buttonLabel="팀장 여부 투표하기"
-        onButtonClick={onOpenWillingness}
+        body={getLeaderRecommendationMessage(message.body, leaderRecommendation)}
+        buttonDisabled={
+          isLeaderRecommendationPending ||
+          recommendationStatus === "PENDING" ||
+          recommendationStatus === "PROCESSING"
+        }
+        buttonLabel={isLeaderRecommendationPending ? "AI 추천 생성 중" : buttonLabel}
+        onButtonClick={shouldRequestRecommendation ? onRequestLeaderRecommendation : onOpenWillingness}
       >
         {recommendedLeaders.length > 0 ? (
           <LeaderCandidatePreviewCard leaders={recommendedLeaders} title="AI 팀장 추천" />
@@ -1122,16 +1163,22 @@ function ChatMessageRenderer({
   }
 
   if (message.messageType === "LEADER_VOTE_CARD") {
-    const candidateIds = getMetadataNumberArray(message.metadata, "candidateTeamMemberIds").map(String);
-    const aiRecommendedTeamMemberId = getMetadataNumber(message.metadata, "aiRecommendedTeamMemberId");
-    const aiRecommendedLeader = chatMembers.find(
-      (member) => member.id === String(aiRecommendedTeamMemberId),
+    const candidateIds = getLeaderVoteCandidateIds(message.metadata, chatMembers, leaderRecommendation);
+    const aiRecommendedTeamMemberId =
+      getMetadataNumber(message.metadata, "aiRecommendedTeamMemberId") ??
+      leaderRecommendation?.recommendedMemberId ??
+      undefined;
+    const aiRecommendedLeader = getLeaderRecommendedMember(
+      chatMembers,
+      aiRecommendedTeamMemberId,
+      leaderRecommendation,
     );
 
     if (aiRecommendedLeader) {
       return (
         <LeaderTieMessage
           recommendedLeader={aiRecommendedLeader}
+          recommendationReason={leaderRecommendation?.recommendationReason}
           onAccept={onAcceptRecommendation}
           onRevote={onRequestRevote}
         />
@@ -1320,10 +1367,91 @@ function getMetadataNumberArray(metadata: ChatMessageMetadata | undefined, key: 
     .filter((item) => Number.isFinite(item));
 }
 
+function getLeaderVoteCandidateIds(
+  metadata: ChatMessageMetadata | undefined,
+  members: LeaderCandidate[],
+  leaderRecommendation?: LeaderRecommendation,
+) {
+  const metadataCandidateIds = getMetadataNumberArray(metadata, "candidateTeamMemberIds").map(String);
+
+  if (metadataCandidateIds.length > 0) {
+    return metadataCandidateIds;
+  }
+
+  return getMembersByLeaderRecommendation(members, leaderRecommendation).map((member) => member.id);
+}
+
+function getMembersByLeaderRecommendation(
+  members: LeaderCandidate[],
+  leaderRecommendation?: LeaderRecommendation,
+) {
+  const candidateIds = leaderRecommendation?.candidates.map((candidate) => candidate.memberId) ?? [];
+
+  if (candidateIds.length > 0) {
+    const matchedMembers = getMembersByMetadataIds(members, candidateIds);
+
+    if (matchedMembers.length > 0) {
+      return matchedMembers;
+    }
+  }
+
+  const candidateNicknames = leaderRecommendation?.candidates.map((candidate) => candidate.nickname) ?? [];
+
+  if (candidateNicknames.length > 0) {
+    return members.filter((member) => candidateNicknames.includes(member.name));
+  }
+
+  if (leaderRecommendation?.recommendedMemberId) {
+    const matchedMembers = getMembersByMetadataIds(members, [leaderRecommendation.recommendedMemberId]);
+
+    if (matchedMembers.length > 0) {
+      return matchedMembers;
+    }
+  }
+
+  return leaderRecommendation?.recommendedMemberNickname
+    ? members.filter((member) => member.name === leaderRecommendation.recommendedMemberNickname)
+    : [];
+}
+
+function getLeaderRecommendedMember(
+  members: LeaderCandidate[],
+  recommendedMemberId?: number,
+  leaderRecommendation?: LeaderRecommendation,
+) {
+  const matchedMember = recommendedMemberId
+    ? members.find((member) => member.id === String(recommendedMemberId))
+    : undefined;
+
+  if (matchedMember) {
+    return matchedMember;
+  }
+
+  return leaderRecommendation?.recommendedMemberNickname
+    ? members.find((member) => member.name === leaderRecommendation.recommendedMemberNickname)
+    : undefined;
+}
+
 function getMembersByMetadataIds(members: LeaderCandidate[], ids: Array<number | string>) {
   const idSet = new Set(ids.map(String));
 
   return members.filter((member) => idSet.has(member.id));
+}
+
+function getLeaderRecommendationMessage(body: string, leaderRecommendation?: LeaderRecommendation) {
+  if (!leaderRecommendation) {
+    return body;
+  }
+
+  if (leaderRecommendation.status === "FAILED") {
+    return leaderRecommendation.failureMessage ?? "AI 팀장 추천 결과를 생성하지 못했습니다.";
+  }
+
+  if (leaderRecommendation.status === "PENDING" || leaderRecommendation.status === "PROCESSING") {
+    return "AI가 팀원의 성향과 외향성 분포를 바탕으로 팀장 추천을 생성하고 있습니다.";
+  }
+
+  return body;
 }
 
 function getContestsByIds(
