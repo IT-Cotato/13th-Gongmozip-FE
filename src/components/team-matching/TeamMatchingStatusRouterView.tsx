@@ -107,7 +107,7 @@ export default function TeamMatchingStatusRouterView() {
   if (isError || !todayMatchingResult) {
     return (
       <StatusFeedbackView
-        actionHref={isUnauthorized ? "/login/email" : undefined}
+        actionHref={isUnauthorized ? "/login" : undefined}
         actionLabel={isUnauthorized ? "로그인하기" : undefined}
         message={
           isUnauthorized
