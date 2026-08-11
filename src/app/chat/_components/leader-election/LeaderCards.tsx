@@ -105,12 +105,20 @@ export function LeaderElectedMessage({
 export function LeaderTieMessage({
   onAccept,
   onRevote,
+  recommendationReason,
   recommendedLeader,
 }: {
   onAccept: () => void;
   onRevote: () => void;
+  recommendationReason?: string | null;
   recommendedLeader: LeaderCandidate;
 }) {
+  const reason =
+    recommendationReason ??
+    `팀의 시너지를 고려한 분석 결과, ${recommendedLeader.name}님을 팀장으로 추천합니다.
+팀원들의 성향과 역할 조합을 바탕으로 가장 높은 협업 시너지가
+기대됩니다.`;
+
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -120,8 +128,7 @@ export function LeaderTieMessage({
         <div className="flex w-full items-end gap-2">
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {`투표 결과 동률이 발생했습니다.
-팀 시너지를 고려한 분석 결과, ${recommendedLeader.name}님을 팀장으로 추천합니다.
-팀원들의 성향과 역할 조합을 바탕으로 가장 높은 작업 시너지가 기대됩니다. 추천을 수락하시겠어요?`}
+${reason} 추천을 수락하시겠어요?`}
           </p>
           <MessageMeta />
         </div>
