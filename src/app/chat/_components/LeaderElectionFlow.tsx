@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/http";
@@ -11,9 +11,12 @@ import {
 import {
   useChatTeamMembersQuery,
   useChatTeamMessagesQuery,
+  useChatRealtime,
   useAcceptLeaderAiRecommendationMutation,
   useAddContestCandidateMutation,
   useContestCandidatesQuery,
+  useContestVoteStatusQuery,
+  useDeleteContestCandidateMutation,
   useMarkChatTeamAsReadMutation,
   useRequestLeaderRevoteMutation,
   useUpdateLeaderCandidacyMutation,
@@ -119,8 +122,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     enabled: membersQuery.isSuccess && chatMembers.length > 0,
   });
   const serverMessages = messagesQuery.data?.messages ?? [];
-  const hasServerMessages = serverMessages.length > 0;
+  const hasServerMessages = messagesQuery.isSuccess;
+  const chatRealtime = useChatRealtime(roomId, {
+    enabled: messagesQuery.isSuccess,
+  });
   const contestCandidatesQuery = useContestCandidatesQuery(roomId, {
+    enabled: hasServerMessages,
+  });
+  const contestVoteStatusQuery = useContestVoteStatusQuery(roomId, {
     enabled: hasServerMessages,
   });
   const { mutate: markAsRead } = useMarkChatTeamAsReadMutation(roomId);
@@ -129,6 +138,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const acceptLeaderRecommendationMutation = useAcceptLeaderAiRecommendationMutation(roomId);
   const requestLeaderRevoteMutation = useRequestLeaderRevoteMutation(roomId);
   const addContestCandidateMutation = useAddContestCandidateMutation(roomId);
+  const deleteContestCandidateMutation = useDeleteContestCandidateMutation(roomId);
   const voteContestCandidatesMutation = useVoteContestCandidatesMutation(roomId);
   const updateTeamProgressMutation = useUpdateTeamProgressMutation(roomId);
   const updateTeamSubmissionMutation = useUpdateTeamSubmissionMutation(roomId);
@@ -163,6 +173,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   );
   const [activeContestCandidateIds, setActiveContestCandidateIds] = useState<string[] | null>(null);
   const [selectedContestIds, setSelectedContestIds] = useState<string[]>([]);
+  const messageListRef = useRef<HTMLElement>(null);
 
   const singleDefiniteLeader = findMembersByIds(
     mockLeaderIntentAnswers
@@ -447,6 +458,23 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     }
   };
 
+  const removeContestCandidate = async (contestCandidateId: number) => {
+    setContestActionError(null);
+
+    if (!hasServerMessages) {
+      setCandidateContestIds((currentIds) =>
+        currentIds.filter((contestId) => Number(contestId) !== contestCandidateId),
+      );
+      return;
+    }
+
+    try {
+      await deleteContestCandidateMutation.mutateAsync(contestCandidateId);
+    } catch (error) {
+      setContestActionError(getApiErrorMessage(error, "후보 공모전 삭제에 실패했습니다."));
+    }
+  };
+
   const confirmContestAdd = async () => {
     const sharedContest = mockRecommendedContests[2];
 
@@ -511,7 +539,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   };
 
   const showContestVoteResult = () => {
-    if (mockContestVoteResult === "tie") {
+    if (contestVoteResult === "tie") {
       setIsContestRevoteRequested(true);
       setSheetState("closed");
       return;
@@ -596,6 +624,24 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     router.push(`/chat/${roomId}/member-review-preview`);
   };
 
+  const loadPreviousMessages = async () => {
+    if (!messagesQuery.hasNextPage || messagesQuery.isFetchingNextPage) {
+      return;
+    }
+
+    await messagesQuery.fetchNextPage();
+  };
+
+  const handleMessageListScroll = () => {
+    const messageList = messageListRef.current;
+
+    if (!messageList || messageList.scrollTop > 48) {
+      return;
+    }
+
+    void loadPreviousMessages();
+  };
+
   const shouldShowContestVote =
     leaderEvent === "autoLeaderNotice" ||
     leaderEvent === "elected" ||
@@ -607,17 +653,21 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     sheetState === "contestComplete" ||
     sheetState === "contestResult" ||
     sheetState === "contestDetail";
-  const selectedContests = mockRecommendedContests.filter((contest) =>
-    selectedContestIds.includes(contest.id),
-  );
   const apiContestCandidates = contestCandidatesQuery.data ?? [];
+  const contestVoteStatus = contestVoteStatusQuery.data;
+  const contestVoteResult = hasServerMessages
+    ? (contestVoteStatus?.result ?? "normal")
+    : mockContestVoteResult;
   const activeContestCandidates = activeContestCandidateIds?.length
     ? apiContestCandidates.filter((contest) => activeContestCandidateIds.includes(contest.id))
     : apiContestCandidates;
   const candidateContests =
-    hasServerMessages && activeContestCandidates.length > 0
+    hasServerMessages
       ? activeContestCandidates
       : mockRecommendedContests.filter((contest) => candidateContestIds.includes(contest.id));
+  const selectedContests = candidateContests.filter((contest) =>
+    selectedContestIds.includes(contest.id),
+  );
   const sharedContest = mockRecommendedContests[2] ?? mockRecommendedContests[0];
   const winningContest = selectedContests[0] ?? mockRecommendedContests[0];
   const roomTitle = chatMembers
@@ -650,8 +700,20 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     return (
       <ContestCandidateListPage
         contests={candidateContests}
+        deletingContestId={
+          deleteContestCandidateMutation.variables === undefined
+            ? undefined
+            : String(deleteContestCandidateMutation.variables)
+        }
         remainingSeconds={candidateRemainingSeconds}
         onBack={() => setSheetState("closed")}
+        onRemove={(contest) => {
+          const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
+
+          if (Number.isFinite(contestCandidateId)) {
+            void removeContestCandidate(contestCandidateId);
+          }
+        }}
       />
     );
   }
@@ -685,16 +747,18 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       <section
         aria-label="팀장 선출 채팅"
         className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[29px] pb-6"
+        ref={messageListRef}
+        onScroll={handleMessageListScroll}
       >
         {!hasServerMessages ? (
-          <>
-        <ChatbotTextMessage
-          body={
-            leaderScenario === "singleDefinite"
-              ? `안녕하세요. 저는 팀 운영을 도와주는 AI 챗봇이에요. 팀 매칭이 완료되었어요. 이번 팀의 팀장은 ${automaticLeader.name}님입니다. 각자 간단한 자기소개와 인사를 나눠볼까요?`
-              : "안녕하세요. 저는 팀 운영을 도와주는 AI 챗봇이에요. 팀 매칭이 완료되었어요. 각자 간단한 자기소개와 인사를 나눠볼까요?"
-          }
-        />
+          <ChatbotTextMessage
+            body={
+              leaderScenario === "singleDefinite"
+                ? `안녕하세요. 저는 팀 운영을 도와주는 AI 챗봇이에요. 팀 매칭이 완료되었어요. 이번 팀의 팀장은 ${automaticLeader.name}님입니다. 각자 간단한 자기소개와 인사를 나눠볼까요?`
+                : "안녕하세요. 저는 팀 운영을 도와주는 AI 챗봇이에요. 팀 매칭이 완료되었어요. 각자 간단한 자기소개와 인사를 나눠볼까요?"
+            }
+          />
+        ) : null}
 
         {chatbotNotices.map((notice) => (
           <div key={notice.id} className="flex flex-col gap-4">
@@ -702,8 +766,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             {notice.action === "added" ? <ChatbotUsageGuideMessage /> : null}
           </div>
         ))}
-          </>
-        ) : null}
 
         {messagesQuery.isLoading ? (
           <p className="text-center text-[13px] leading-[1.5] text-color-gray-650">
@@ -717,6 +779,17 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           </p>
         ) : null}
 
+        {messagesQuery.hasNextPage ? (
+          <button
+            className="mx-auto flex h-8 items-center justify-center rounded-full bg-color-gray-150 px-4 text-[12px] leading-[1.35] font-semibold text-color-gray-650 disabled:opacity-50"
+            disabled={messagesQuery.isFetchingNextPage}
+            onClick={loadPreviousMessages}
+            type="button"
+          >
+            {messagesQuery.isFetchingNextPage ? "이전 메시지를 불러오는 중" : "이전 메시지 더 보기"}
+          </button>
+        ) : null}
+
         {serverMessages.map((message) => (
           <ChatMessageRenderer
             chatMembers={chatMembers}
@@ -725,6 +798,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             message={message}
             onAddContestCandidate={addContestCandidateByContestId}
             onAcceptRecommendation={acceptRecommendedLeader}
+            onRemoveContestCandidate={(contestCandidateId) => {
+              void removeContestCandidate(contestCandidateId);
+            }}
             onOpenContestList={() => {
               setContestActionError(null);
               setSheetState("contestList");
@@ -822,6 +898,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             <ContestRecommendationMessage
               contests={candidateContests}
               isCandidateClosed={isCandidateClosed}
+              onRemove={(contest) => {
+                const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
+
+                if (Number.isFinite(contestCandidateId)) {
+                  void removeContestCandidate(contestCandidateId);
+                }
+              }}
               onShowAll={openContestList}
               onStartVote={handleContestCardAction}
               remainingSeconds={candidateRemainingSeconds}
@@ -868,7 +951,15 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             </p>
           </div>
         ) : null}
-        <ChatInputBar />
+        {chatRealtime.errorMessage ? (
+          <p className="px-4 pt-2 text-center text-[12px] leading-[1.35] text-color-coral-500">
+            {chatRealtime.errorMessage}
+          </p>
+        ) : null}
+        <ChatInputBar
+          disabled={!messagesQuery.isSuccess || !chatRealtime.isConnected}
+          onSendMessage={chatRealtime.sendMessage}
+        />
       </div>
 
       {sheetState === "willingness" ||
@@ -938,8 +1029,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
             {sheetState === "contestResult" ? (
               <ContestVoteResultSheet
-                hasVotes={mockContestVoteResult !== "noVotes"}
+                hasVotes={contestVoteResult !== "noVotes"}
                 onShowDetail={showContestVoteDetail}
+                participantCount={contestVoteStatus?.participantCount}
               />
             ) : null}
 
@@ -947,6 +1039,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               <ContestVoteDetailSheet
                 contests={candidateContests}
                 onClose={closeContestVoteResult}
+                participantCount={contestVoteStatus?.participantCount}
+                voteResults={contestVoteStatus?.results}
               />
             ) : null}
           </div>
@@ -988,6 +1082,7 @@ function ChatMessageRenderer({
   message,
   onAddContestCandidate,
   onAcceptRecommendation,
+  onRemoveContestCandidate,
   onOpenCandidateVote,
   onOpenContestList,
   onOpenContestVote,
@@ -999,6 +1094,7 @@ function ChatMessageRenderer({
   message: ChatMessage;
   onAddContestCandidate: (contestId: number) => void;
   onAcceptRecommendation: () => void;
+  onRemoveContestCandidate: (contestCandidateId: number) => void;
   onOpenCandidateVote: (candidateIds?: string[]) => void;
   onOpenContestList: () => void;
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
@@ -1080,6 +1176,13 @@ function ChatMessageRenderer({
       <ContestRecommendationMessage
         contests={contests.length > 0 ? contests : contestIds.map(createPlaceholderContest)}
         isCandidateClosed={false}
+        onRemove={(contest) => {
+          const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
+
+          if (Number.isFinite(contestCandidateId)) {
+            onRemoveContestCandidate(contestCandidateId);
+          }
+        }}
         onShowAll={onOpenContestList}
         onStartVote={onOpenContestList}
         remainingSeconds={0}
@@ -1115,6 +1218,13 @@ function ChatMessageRenderer({
       <ContestRecommendationMessage
         contests={contests.length > 0 ? contests : contestCandidates}
         isCandidateClosed
+        onRemove={(contest) => {
+          const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
+
+          if (Number.isFinite(contestCandidateId)) {
+            onRemoveContestCandidate(contestCandidateId);
+          }
+        }}
         onShowAll={onOpenContestList}
         onStartVote={() => onOpenContestVote(candidateIds)}
         remainingSeconds={0}
@@ -1144,6 +1254,18 @@ function ChatMessageRenderer({
   }
 
   if (message.senderType === "SYSTEM" || message.messageType === "SYSTEM") {
+    const chatbotNoticeAction = getChatbotNoticeAction(message.body);
+
+    if (chatbotNoticeAction) {
+      return (
+        <ChatbotSystemNotice
+          action={chatbotNoticeAction}
+          actorName={message.senderName}
+          body={message.body.replace("제거했습니다", "삭제했습니다")}
+        />
+      );
+    }
+
     return <SystemChatMessage body={message.body} />;
   }
 
@@ -1168,6 +1290,22 @@ function getMetadataNumber(metadata: ChatMessageMetadata | undefined, key: strin
   }
 
   return undefined;
+}
+
+function getChatbotNoticeAction(body: string): "added" | "removed" | null {
+  if (!body.includes("챗봇")) {
+    return null;
+  }
+
+  if (body.includes("추가했습니다")) {
+    return "added";
+  }
+
+  if (body.includes("삭제했습니다") || body.includes("제거했습니다")) {
+    return "removed";
+  }
+
+  return null;
 }
 
 function getMetadataNumberArray(metadata: ChatMessageMetadata | undefined, key: string) {

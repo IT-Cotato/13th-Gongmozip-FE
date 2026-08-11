@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import type { ContestVoteResultItem } from "@/queries/useChatQueries";
+
 import { ChatbotAvatar, ChatbotUsageGuideMessage, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
 
@@ -23,12 +25,14 @@ function formatCandidateTimer(seconds: number) {
 export function ContestRecommendationMessage({
   contests,
   isCandidateClosed,
+  onRemove,
   onShowAll,
   onStartVote,
   remainingSeconds,
 }: {
   contests: RecommendedContest[];
   isCandidateClosed: boolean;
+  onRemove?: (contest: RecommendedContest) => void;
   onShowAll: () => void;
   onStartVote: () => void;
   remainingSeconds: number;
@@ -53,6 +57,7 @@ export function ContestRecommendationMessage({
           contests={contests}
           isCandidateClosed={isCandidateClosed}
           onAction={onStartVote}
+          onRemove={onRemove}
           onShowAll={onShowAll}
           remainingSeconds={remainingSeconds}
           title={isCandidateClosed ? "공모전 후보 리스트" : "추천 공모전 리스트"}
@@ -64,11 +69,15 @@ export function ContestRecommendationMessage({
 
 export function ContestCandidateListPage({
   contests,
+  deletingContestId,
   onBack,
+  onRemove,
   remainingSeconds,
 }: {
   contests: RecommendedContest[];
+  deletingContestId?: string;
   onBack: () => void;
+  onRemove?: (contest: RecommendedContest) => void;
   remainingSeconds: number;
 }) {
   return (
@@ -102,9 +111,22 @@ export function ContestCandidateListPage({
       </section>
 
       <section className="mt-4 flex-1 overflow-y-auto">
-        {contests.map((contest) => (
-          <FullContestListItem contest={contest} key={contest.id} />
-        ))}
+        {contests.length > 0 ? (
+          contests.map((contest) => (
+            <FullContestListItem
+              contest={contest}
+              disabled={deletingContestId === contest.id}
+              key={contest.id}
+              onRemove={onRemove}
+            />
+          ))
+        ) : (
+          <div className="flex h-full items-center justify-center px-6 text-center">
+            <p className="text-[13px] leading-[1.5] text-color-gray-650">
+              등록된 후보 공모전이 없습니다.
+            </p>
+          </div>
+        )}
       </section>
     </main>
   );
@@ -405,22 +427,30 @@ export function ContestVoteSheet({
           <SmallTimer label="투표 마감까지" />
         </div>
 
-        <div className="flex flex-col gap-4">
-          {contests.slice(0, 3).map((contest) => (
-            <VoteContestRow
-              contest={contest}
-              isSelected={selectedContestIds.includes(contest.id)}
-              key={contest.id}
-              onClick={() => onToggle(contest.id)}
-            />
-          ))}
-        </div>
+        {contests.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            {contests.slice(0, 3).map((contest) => (
+              <VoteContestRow
+                contest={contest}
+                isSelected={selectedContestIds.includes(contest.id)}
+                key={contest.id}
+                onClick={() => onToggle(contest.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center px-6 text-center">
+            <p className="text-[13px] leading-[1.5] text-color-gray-650">
+              투표할 후보 공모전이 없습니다.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex h-[60px] w-full shrink-0 px-2 py-1">
         <button
           className="flex flex-1 items-center justify-center rounded-[12px] bg-color-coral-500 text-[15px] leading-[1.25] font-semibold text-white disabled:bg-color-gray-200 disabled:text-color-gray-350"
-          disabled={disabled || selectedContestIds.length === 0}
+          disabled={disabled || contests.length === 0 || selectedContestIds.length === 0}
           onClick={onSubmit}
           type="button"
         >
@@ -454,10 +484,15 @@ export function ContestVoteCompleteSheet({
 export function ContestVoteResultSheet({
   hasVotes = true,
   onShowDetail,
+  participantCount,
 }: {
   hasVotes?: boolean;
   onShowDetail: () => void;
+  participantCount?: number;
 }) {
+  const participantLabel =
+    participantCount === undefined ? undefined : `${participantCount.toLocaleString("ko-KR")}명 참여`;
+
   if (!hasVotes) {
     return (
       <ContestStatePopup
@@ -468,7 +503,7 @@ export function ContestVoteResultSheet({
 공모전을 대신 골라드렸습니다.`}
         iconSrc="/icons/chat/vote_2.svg"
         onButtonClick={onShowDetail}
-        participantLabel="0명 참여"
+        participantLabel={participantLabel ?? "0명 참여"}
         title="투표 결과"
       />
     );
@@ -480,7 +515,7 @@ export function ContestVoteResultSheet({
       description="투표 결과를 확인해보세요."
       iconSrc="/icons/chat/vote_2.svg"
       onButtonClick={onShowDetail}
-      participantLabel="2명 참여"
+      participantLabel={participantLabel ?? "2명 참여"}
       title="투표 결과"
     />
   );
@@ -489,11 +524,20 @@ export function ContestVoteResultSheet({
 export function ContestVoteDetailSheet({
   contests,
   onClose,
+  participantCount,
+  voteResults,
 }: {
   contests: RecommendedContest[];
   onClose: () => void;
+  participantCount?: number;
+  voteResults?: ContestVoteResultItem[];
 }) {
   const rows = contests.slice(0, 3);
+  const voteResultByContestId = new Map(
+    voteResults?.map((result) => [String(result.contestCandidateId ?? result.contestId), result]),
+  );
+  const participantLabel =
+    participantCount === undefined ? "2명 참여" : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <ContestPopup className="items-center justify-center px-4 pt-4 pb-6">
@@ -505,7 +549,7 @@ export function ContestVoteDetailSheet({
           </div>
           <span className="h-[14px] w-px bg-color-gray-300" />
           <span className="text-[13px] leading-[1.25] font-medium text-color-gray-500">
-            2명 참여
+            {participantLabel}
           </span>
           <SmallTimer compact label="투표 마감까지" />
         </div>
@@ -514,11 +558,20 @@ export function ContestVoteDetailSheet({
           <div className="flex w-[328px] flex-col items-end gap-4">
             {rows.map((contest, index) => (
               <ResultContestRow
-                countLabel={index < 2 ? "1명" : "0명"}
+                countLabel={getVoteResultCountLabel(
+                  voteResultByContestId.get(String(contest.contestCandidateId ?? contest.contestId)),
+                  index,
+                )}
                 contest={contest}
-                isWinner={index === 0}
+                isWinner={
+                  voteResultByContestId.get(String(contest.contestCandidateId ?? contest.contestId))
+                    ?.isWinner ?? index === 0
+                }
                 key={contest.id}
-                percent={index < 2 ? 28 : 0}
+                percent={
+                  voteResultByContestId.get(String(contest.contestCandidateId ?? contest.contestId))
+                    ?.percent ?? (index < 2 ? 28 : 0)
+                }
               />
             ))}
           </div>
@@ -537,6 +590,7 @@ function ContestListCard({
   contests,
   isCandidateClosed,
   onAction,
+  onRemove,
   onShowAll,
   remainingSeconds,
   title,
@@ -545,6 +599,7 @@ function ContestListCard({
   contests: RecommendedContest[];
   isCandidateClosed: boolean;
   onAction: () => void;
+  onRemove?: (contest: RecommendedContest) => void;
   onShowAll: () => void;
   remainingSeconds: number;
   title: string;
@@ -555,7 +610,12 @@ function ContestListCard({
 
       <div className="mt-4 flex flex-col gap-3">
         {contests.slice(0, 3).map((contest, index) => (
-          <CompactContestListItem contest={contest} key={contest.id} removable={index > 0} />
+          <CompactContestListItem
+            contest={contest}
+            key={contest.id}
+            onRemove={onRemove}
+            removable={index > 0}
+          />
         ))}
       </div>
 
@@ -607,11 +667,13 @@ function CompactContestListItem({
   contest,
   highlight = false,
   muted = false,
+  onRemove,
   removable = false,
 }: {
   contest: RecommendedContest;
   highlight?: boolean;
   muted?: boolean;
+  onRemove?: (contest: RecommendedContest) => void;
   removable?: boolean;
 }) {
   return (
@@ -626,6 +688,16 @@ function CompactContestListItem({
     >
       <ContestPoster contest={contest} />
       <ContestSummary contest={contest} reserveActionSpace={removable} />
+      {removable && onRemove ? (
+        <button
+          aria-label={`${contest.title} 후보 삭제`}
+          className="absolute top-1/2 right-2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(97,97,97,0.10)] text-[20px] leading-none text-color-gray-850"
+          onClick={() => onRemove(contest)}
+          type="button"
+        >
+          횞
+        </button>
+      ) : null}
       {removable ? (
         <span className="absolute top-1/2 right-2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(97,97,97,0.10)] text-[20px] leading-none text-color-gray-850">
           ×
@@ -726,7 +798,15 @@ function ContestSharedCard({
   );
 }
 
-function FullContestListItem({ contest }: { contest: RecommendedContest }) {
+function FullContestListItem({
+  contest,
+  disabled = false,
+  onRemove,
+}: {
+  contest: RecommendedContest;
+  disabled?: boolean;
+  onRemove?: (contest: RecommendedContest) => void;
+}) {
   return (
     <article className="flex w-full border-b border-color-gray-250 bg-white py-2 pr-2 pl-4">
       <div className="flex min-w-0 flex-1 items-center gap-[14px]">
@@ -755,7 +835,9 @@ function FullContestListItem({ contest }: { contest: RecommendedContest }) {
       </div>
       <button
         aria-label={`${contest.title} 후보 삭제`}
-        className="flex size-[38px] shrink-0 items-center justify-center rounded-[14px] text-[24px] leading-none text-color-gray-650"
+        className="flex size-[38px] shrink-0 items-center justify-center rounded-[14px] text-[24px] leading-none text-color-gray-650 disabled:opacity-50"
+        disabled={disabled || !onRemove}
+        onClick={() => onRemove?.(contest)}
         type="button"
       >
         ×
@@ -851,6 +933,14 @@ function LargeCountdown({ remainingSeconds }: { remainingSeconds: number }) {
       )}
     </div>
   );
+}
+
+function getVoteResultCountLabel(result: ContestVoteResultItem | undefined, fallbackIndex: number) {
+  if (result) {
+    return `${result.voteCount.toLocaleString("ko-KR")}명`;
+  }
+
+  return fallbackIndex < 2 ? "1명" : "0명";
 }
 
 function ContestPopup({
