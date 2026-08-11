@@ -577,6 +577,11 @@ export function useLeaderRecommendationQuery(teamId: string, options: { enabled?
     queryKey: leaderRecommendationQueryKey(teamId),
     queryFn: () => fetchLeaderRecommendation(teamId),
     enabled: (options.enabled ?? true) && teamId.length > 0,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+
+      return status === "PENDING" || status === "PROCESSING" ? 5000 : false;
+    },
     retry: false,
   });
 }
