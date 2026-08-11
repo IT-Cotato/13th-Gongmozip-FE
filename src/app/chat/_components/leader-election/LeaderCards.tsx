@@ -74,7 +74,16 @@ export function LeaderNoticeMessage({ body, leader }: { body: string; leader: Le
   );
 }
 
-export function LeaderElectedMessage({ leader }: { leader: LeaderCandidate }) {
+export function LeaderElectedMessage({
+  body,
+  leader,
+}: {
+  body?: string;
+  leader: LeaderCandidate;
+}) {
+  const message =
+    body?.trim() || `${leader.name}님이 팀장으로 확정되었습니다. 이제 공모전을 골라볼까요?`;
+
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -82,9 +91,8 @@ export function LeaderElectedMessage({ leader }: { leader: LeaderCandidate }) {
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            투표 결과, {leader.name}님이 이번 공모전 출품의 팀장으로 선출되셨습니다🎉 이제 팀원들과
-            함께 공모전 준비를 시작해 보세요.
+          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+            {message}
           </p>
           <MessageMeta />
         </div>
@@ -112,9 +120,8 @@ export function LeaderTieMessage({
         <div className="flex w-full items-end gap-2">
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {`투표 결과 동률이 발생했습니다.
-팀의 시너지를 고려한 분석 결과, ${recommendedLeader.name}님을 팀장으로 추천합니다.
-팀원들의 성향과 역할 조합을 바탕으로 가장 높은 협업 시너지가
-기대됩니다. 추천을 수락하시나요?`}
+팀 시너지를 고려한 분석 결과, ${recommendedLeader.name}님을 팀장으로 추천합니다.
+팀원들의 성향과 역할 조합을 바탕으로 가장 높은 작업 시너지가 기대됩니다. 추천을 수락하시겠어요?`}
           </p>
           <MessageMeta />
         </div>
