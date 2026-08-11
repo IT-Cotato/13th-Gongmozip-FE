@@ -34,6 +34,7 @@ export type ReviewTargetResponse = UnknownRecord;
 export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
 
 export type TeamMembersResponse = {
+  chatbotEnabled: boolean;
   members: ChatTeamMemberResponse[];
   leaderSelectionDeadlineAt: string | null;
   myTeamMemberId: number | string | null;
@@ -91,6 +92,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
     | {
         members?: ChatTeamMemberResponse[];
         teamMembers?: ChatTeamMemberResponse[];
+        chatbotEnabled?: boolean;
         leaderSelectionDeadlineAt?: string | null;
         myTeamMemberId?: number | string | null;
       }
@@ -98,6 +100,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
 
   if (Array.isArray(data)) {
     return {
+      chatbotEnabled: true,
       members: data,
       leaderSelectionDeadlineAt: null,
       myTeamMemberId: findMyTeamMemberId(data),
@@ -107,6 +110,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
   const members = data.members ?? data.teamMembers ?? [];
 
   return {
+    chatbotEnabled: data.chatbotEnabled ?? true,
     members,
     leaderSelectionDeadlineAt: data.leaderSelectionDeadlineAt ?? null,
     myTeamMemberId: data.myTeamMemberId ?? findMyTeamMemberId(members),
@@ -824,6 +828,7 @@ function mapChatMember(
 
   return {
     id,
+    profileId: getNumber(member, ["profileId"]),
     name,
     isMe: me,
     avatarTone: avatarTones[index % avatarTones.length] ?? "green",
@@ -850,6 +855,7 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
 
   return {
     id: String(getValue(message, ["messageId", "id"]) ?? `${senderName}-${getMessageTime(message)}`),
+    senderId: senderId === undefined ? undefined : String(senderId),
     senderName,
     body: getString(message, ["content", "body", "message"]) ?? "",
     sentAt: formatMessageTime(getString(message, ["createdAt", "sentAt", "timestamp"])),

@@ -24,7 +24,10 @@ export type LeaderEvent =
   | "revote"
   | "temporaryLeader"
   | "contestVoteReady";
-export type LeaderCandidate = Pick<ChatMember, "avatarSrc" | "avatarTone" | "id" | "isMe" | "name">;
+export type LeaderCandidate = Pick<
+  ChatMember,
+  "avatarSrc" | "avatarTone" | "id" | "isMe" | "name" | "profileId"
+>;
 export type LeaderIntentAnswer = {
   memberId: string;
   intent: LeaderIntent;

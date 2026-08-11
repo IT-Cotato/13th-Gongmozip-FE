@@ -13,8 +13,8 @@ import {
   useReportUserMutation,
   useUpdateChatbotStatusMutation,
 } from "@/queries/useChatQueries";
-import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
 
+import { ChatProfilePreview } from "../../_components/ChatProfilePreview";
 import { ChevronLeftIcon } from "../../_components/icons";
 import { MOCK_CHATBOT_MEMBER, type ChatMember } from "../../_data/mockMessages";
 
@@ -53,10 +53,7 @@ export default function ChatRoomMenuPage() {
       .map((member) => member.name)
       .join(", ") ||
     "채팅방";
-  const isChatbotEnabled = useChatbotNoticeStore(
-    (state) => state.chatbotEnabledByRoomId[params.roomId] ?? true,
-  );
-  const toggleChatbot = useChatbotNoticeStore((state) => state.toggleChatbot);
+  const isChatbotEnabled = membersQuery.data?.chatbotEnabled ?? true;
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [reportedMemberIds, setReportedMemberIds] = useState<string[]>([]);
   const [selectedMember, setSelectedMember] = useState<ChatMember | null>(null);
@@ -87,9 +84,11 @@ export default function ChatRoomMenuPage() {
       return;
     }
 
-    updateChatbotStatusMutation.mutate(!isChatbotEnabled);
-    toggleChatbot(params.roomId, currentMember.name);
-    router.push(`/chat/${params.roomId}`);
+    updateChatbotStatusMutation.mutate(!isChatbotEnabled, {
+      onSuccess: () => {
+        router.push(`/chat/${params.roomId}`);
+      },
+    });
   };
 
   const handleConfirmLeave = () => {
@@ -174,7 +173,7 @@ export default function ChatRoomMenuPage() {
       </div>
 
       {selectedMember && (
-        <ProfileSheet member={selectedMember} onClose={() => setSelectedMember(null)} />
+        <ChatProfilePreview member={selectedMember} onClose={() => setSelectedMember(null)} />
       )}
 
       {reportTarget && (
@@ -522,62 +521,6 @@ function MenuAvatar({
           {initials}
         </span>
       )}
-    </div>
-  );
-}
-
-function ProfileSheet({ member, onClose }: { member: ChatMember; onClose: () => void }) {
-  return (
-    <div className="absolute inset-0 z-30 flex items-end bg-color-gray-850/60" role="presentation">
-      <button
-        className="absolute inset-0 cursor-default"
-        type="button"
-        aria-label="닫기"
-        onClick={onClose}
-      />
-      <section
-        className="relative z-10 w-full rounded-t-[16px] bg-white px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        aria-label={`${member.name} 프로필`}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <MenuAvatar member={member} sizeClassName="size-[60px]" />
-            <div className="min-w-0">
-              <h2 className="truncate text-[20px] leading-[1.35] font-medium text-color-gray-850">
-                {member.isMe ? `(나)${member.name}` : member.name}
-              </h2>
-              <p className="mt-1 text-[13px] leading-[1.5] text-color-gray-650">
-                {[member.school, member.major, member.grade].filter(Boolean).join(" · ") ||
-                  "AI 팀 도우미"}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="flex h-8 shrink-0 items-center justify-center rounded-[12px] px-2 text-[15px] leading-[1.25] font-semibold text-color-gray-650"
-            onClick={onClose}
-          >
-            닫기
-          </button>
-        </div>
-
-        <p className="mt-5 rounded-[12px] bg-color-gray-150 px-4 py-3 text-[13px] leading-[1.5] text-color-gray-850">
-          {member.introduction}
-        </p>
-
-        {member.strengths && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {member.strengths.map((strength) => (
-              <span
-                key={strength}
-                className="rounded-full bg-color-coral-50 px-3 py-1.5 text-[13px] leading-[1.25] font-medium text-color-coral-700"
-              >
-                {strength}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
