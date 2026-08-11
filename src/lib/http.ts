@@ -104,7 +104,17 @@ export async function apiFetch<T>(
   const data = parseResponseBody(text);
 
   if (!response.ok) {
-    if (response.status === 401 && !isRetryAfterReissue && normalizedAccessToken) {
+    const message = isBaseResponse(data) ? data.message : "요청 처리 중 오류가 발생했습니다.";
+    const code = isBaseResponse(data) ? data.code : undefined;
+
+    // AUTH_401_8: 엑세스 토큰 만료 -> reissue로 재발급 후 재시도.
+    // 그 외 401(예: AUTH_401_2)은 재발급 대상이 아니므로 바로 에러 처리.
+    if (
+      response.status === 401 &&
+      code === "AUTH_401_8" &&
+      !isRetryAfterReissue &&
+      normalizedAccessToken
+    ) {
       const newAccessToken = await reissueAccessToken();
 
       if (newAccessToken) {
@@ -112,9 +122,6 @@ export async function apiFetch<T>(
         return apiFetch<T>(path, options, true);
       }
     }
-
-    const message = isBaseResponse(data) ? data.message : "요청 처리 중 오류가 발생했습니다.";
-    const code = isBaseResponse(data) ? data.code : undefined;
 
     if (response.status === 401) {
       useAuthStore.getState().clearAccessToken();
