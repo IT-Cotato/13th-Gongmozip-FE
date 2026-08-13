@@ -374,6 +374,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       </div>
 
       <ShareContestModal
+        contestId={contest.id}
         onOpenChange={setIsShareModalOpen}
         onShareComplete={handleShareComplete}
         open={isShareModalOpen}

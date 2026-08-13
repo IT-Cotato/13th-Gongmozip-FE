@@ -31,7 +31,7 @@ export default function ContestsPage() {
         <ContestListSection />
       </div>
 
-      <BottomNavigation unreadChatCount={9} />
+      <BottomNavigation />
     </main>
   );
 }

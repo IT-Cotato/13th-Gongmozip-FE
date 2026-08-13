@@ -10,6 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:create-leader-teams": "node scripts/create-leader-test-teams.mjs",
     "lint": "eslint",
     "format": "prettier . --write",
     "format:check": "prettier . --check"

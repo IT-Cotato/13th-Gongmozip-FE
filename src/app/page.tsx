@@ -225,7 +225,7 @@ export default function Home() {
         <MatchingCard />
       </div>
 
-      <BottomNavigation unreadChatCount={9} />
+      <BottomNavigation />
     </main>
   );
 }

@@ -216,9 +216,11 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 }
 
 export function ContestVoteNoticeBanner({
+  body,
   isVoteSubmitted,
   onAction,
 }: {
+  body?: string;
   isVoteSubmitted: boolean;
   onAction: () => void;
 }) {
@@ -237,7 +239,8 @@ export function ContestVoteNoticeBanner({
       </div>
       <div className="min-w-0 flex-1">
         <p className="whitespace-pre-line text-center text-[15px] leading-[1.35] text-color-gray-750">
-          {`공모전 투표 완료하셨나요? 투표마감까지 10분
+          {body ??
+            `공모전 투표 완료하셨나요? 투표마감까지 10분
 남았어요!`}
         </p>
         <button
@@ -515,7 +518,7 @@ export function ContestVoteResultSheet({
       description="투표 결과를 확인해보세요."
       iconSrc="/icons/chat/vote_2.svg"
       onButtonClick={onShowDetail}
-      participantLabel={participantLabel ?? "2명 참여"}
+      participantLabel={participantLabel ?? "0명 참여"}
       title="투표 결과"
     />
   );
@@ -533,11 +536,10 @@ export function ContestVoteDetailSheet({
   voteResults?: ContestVoteResultItem[];
 }) {
   const rows = contests.slice(0, 3);
-  const voteResultByContestId = new Map(
-    voteResults?.map((result) => [String(result.contestCandidateId ?? result.contestId), result]),
-  );
+  const hasSuppliedVoteResults = voteResults !== undefined;
+  const voteResultByContestId = createVoteResultMap(voteResults);
   const participantLabel =
-    participantCount === undefined ? "2명 참여" : `${participantCount.toLocaleString("ko-KR")}명 참여`;
+    participantCount === undefined ? "0명 참여" : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <ContestPopup className="items-center justify-center px-4 pt-4 pb-6">
@@ -556,24 +558,19 @@ export function ContestVoteDetailSheet({
 
         <div className="flex w-[338px] flex-col items-center">
           <div className="flex w-[328px] flex-col items-end gap-4">
-            {rows.map((contest, index) => (
-              <ResultContestRow
-                countLabel={getVoteResultCountLabel(
-                  voteResultByContestId.get(String(contest.contestCandidateId ?? contest.contestId)),
-                  index,
-                )}
-                contest={contest}
-                isWinner={
-                  voteResultByContestId.get(String(contest.contestCandidateId ?? contest.contestId))
-                    ?.isWinner ?? index === 0
-                }
-                key={contest.id}
-                percent={
-                  voteResultByContestId.get(String(contest.contestCandidateId ?? contest.contestId))
-                    ?.percent ?? (index < 2 ? 28 : 0)
-                }
-              />
-            ))}
+            {rows.map((contest, index) => {
+              const voteResult = getVoteResultForContest(voteResultByContestId, contest);
+
+              return (
+                <ResultContestRow
+                  countLabel={getVoteResultCountLabel(voteResult, index, hasSuppliedVoteResults)}
+                  contest={contest}
+                  isWinner={voteResult?.isWinner ?? (!hasSuppliedVoteResults && index === 0)}
+                  key={contest.id}
+                  percent={voteResult?.percent ?? (!hasSuppliedVoteResults && index < 2 ? 28 : 0)}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
@@ -935,9 +932,52 @@ function LargeCountdown({ remainingSeconds }: { remainingSeconds: number }) {
   );
 }
 
-function getVoteResultCountLabel(result: ContestVoteResultItem | undefined, fallbackIndex: number) {
+function createVoteResultMap(voteResults: ContestVoteResultItem[] | undefined) {
+  const voteResultByContestId = new Map<string, ContestVoteResultItem>();
+
+  voteResults?.forEach((result) => {
+    if (result.contestCandidateId !== undefined) {
+      voteResultByContestId.set(`candidate:${result.contestCandidateId}`, result);
+    }
+
+    if (result.contestId !== undefined) {
+      voteResultByContestId.set(`contest:${result.contestId}`, result);
+    }
+  });
+
+  return voteResultByContestId;
+}
+
+function getVoteResultForContest(
+  voteResultByContestId: Map<string, ContestVoteResultItem>,
+  contest: RecommendedContest,
+) {
+  if (contest.contestCandidateId !== undefined) {
+    const candidateResult = voteResultByContestId.get(`candidate:${contest.contestCandidateId}`);
+
+    if (candidateResult) {
+      return candidateResult;
+    }
+  }
+
+  if (contest.contestId !== undefined) {
+    return voteResultByContestId.get(`contest:${contest.contestId}`);
+  }
+
+  return undefined;
+}
+
+function getVoteResultCountLabel(
+  result: ContestVoteResultItem | undefined,
+  fallbackIndex: number,
+  hasSuppliedVoteResults: boolean,
+) {
   if (result) {
     return `${result.voteCount.toLocaleString("ko-KR")}명`;
+  }
+
+  if (hasSuppliedVoteResults) {
+    return "0명";
   }
 
   return fallbackIndex < 2 ? "1명" : "0명";

@@ -24,6 +24,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 type UnknownRecord = Record<string, unknown>;
 
 const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL ?? API_BASE_URL).replace(/\/+$/, "");
+const HAS_TIMEZONE_REGEX = /(Z|[+-]\d{2}:?\d{2})$/;
 
 export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
@@ -35,9 +36,11 @@ export type LeaderRecommendationStatus = "PENDING" | "PROCESSING" | "COMPLETED" 
 export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
 
 export type TeamMembersResponse = {
+  chatbotEnabled: boolean;
   members: ChatTeamMemberResponse[];
   leaderSelectionDeadlineAt: string | null;
   myTeamMemberId: number | string | null;
+  projectEndedAt: string | null;
 };
 
 export type TeamMessagesResponse = {
@@ -117,6 +120,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
     | {
         members?: ChatTeamMemberResponse[];
         teamMembers?: ChatTeamMemberResponse[];
+        chatbotEnabled?: boolean;
         leaderSelectionDeadlineAt?: string | null;
         myTeamMemberId?: number | string | null;
       }
@@ -124,18 +128,23 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
 
   if (Array.isArray(data)) {
     return {
+      chatbotEnabled: true,
       members: data,
       leaderSelectionDeadlineAt: null,
       myTeamMemberId: findMyTeamMemberId(data),
+      projectEndedAt: null,
     };
   }
 
   const members = data.members ?? data.teamMembers ?? [];
 
   return {
+    chatbotEnabled: data.chatbotEnabled ?? true,
     members,
     leaderSelectionDeadlineAt: data.leaderSelectionDeadlineAt ?? null,
     myTeamMemberId: data.myTeamMemberId ?? findMyTeamMemberId(members),
+    projectEndedAt:
+      getString(data, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
   };
 }
 
@@ -182,10 +191,11 @@ export async function fetchChatTeamMessages(
   };
 }
 
-export function useChatTeamsQuery() {
+export function useChatTeamsQuery(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: chatTeamsQueryKey,
     queryFn: fetchChatTeams,
+    enabled: options.enabled ?? true,
     select: (data) => {
       const teams = Array.isArray(data) ? data : (data.rooms ?? data.teams ?? data.content ?? []);
 
@@ -235,6 +245,12 @@ export function useMarkChatTeamAsReadMutation(teamId: string) {
 
   return useMutation({
     mutationFn: () => markChatTeamAsRead(teamId),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: chatTeamsQueryKey });
+      queryClient.setQueryData(chatTeamsQueryKey, (current: unknown) =>
+        updateChatTeamUnreadCount(current, teamId, 0),
+      );
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
@@ -449,7 +465,7 @@ export function createLeaderRecommendation(teamId: string) {
   );
 }
 
-export function shareContestToChat(teamId: string, contestId: number) {
+export function shareContestToChat(teamId: string, contestId: number | string) {
   return apiFetch<null>(`/api/teams/${encodeURIComponent(teamId)}/contest-shares`, {
     method: "POST",
     body: { contestId },
@@ -630,6 +646,22 @@ export function useShareContestToChatMutation(teamId: string) {
     mutationFn: (contestId: number) => shareContestToChat(teamId, contestId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+    },
+  });
+}
+
+export function useShareContestToChatsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ contestId, teamIds }: { contestId: number | string; teamIds: string[] }) => {
+      await Promise.all(teamIds.map((teamId) => shareContestToChat(teamId, contestId)));
+    },
+    onSuccess: (_data, variables) => {
+      variables.teamIds.forEach((teamId) => {
+        void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+      });
+      void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
     },
   });
 }
@@ -876,6 +908,49 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
     lastMessageAt: formatRelativeTime(getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"])),
     unreadCount: getNumber(team, ["unreadCount", "unreadMessageCount"]) ?? 0,
     avatarSrcs: getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
+    projectEndedAt:
+      getString(team, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
+  };
+}
+
+function updateChatTeamUnreadCount(current: unknown, teamId: string, unreadCount: number): unknown {
+  if (Array.isArray(current)) {
+    return current.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount));
+  }
+
+  if (!isRecord(current)) {
+    return current;
+  }
+
+  return {
+    ...current,
+    rooms: Array.isArray(current.rooms)
+      ? current.rooms.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount))
+      : current.rooms,
+    teams: Array.isArray(current.teams)
+      ? current.teams.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount))
+      : current.teams,
+    content: Array.isArray(current.content)
+      ? current.content.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount))
+      : current.content,
+  };
+}
+
+function updateChatTeamUnreadCountItem(item: unknown, teamId: string, unreadCount: number): unknown {
+  if (!isRecord(item)) {
+    return item;
+  }
+
+  const itemId = getValue(item, ["teamId", "id", "chatRoomId", "roomId"]);
+
+  if (String(itemId) !== teamId) {
+    return item;
+  }
+
+  return {
+    ...item,
+    unreadCount,
+    unreadMessageCount: unreadCount,
   };
 }
 
@@ -891,6 +966,7 @@ function mapChatMember(
 
   return {
     id,
+    profileId: getNumber(member, ["profileId"]),
     name,
     isMe: me,
     avatarTone: avatarTones[index % avatarTones.length] ?? "green",
@@ -917,6 +993,7 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
 
   return {
     id: String(getValue(message, ["messageId", "id"]) ?? `${senderName}-${getMessageTime(message)}`),
+    senderId: senderId === undefined ? undefined : String(senderId),
     senderName,
     body: getString(message, ["content", "body", "message"]) ?? "",
     sentAt: formatMessageTime(getString(message, ["createdAt", "sentAt", "timestamp"])),
@@ -1057,7 +1134,7 @@ function isChatMessageMetadata(value: unknown): value is ChatMessageMetadata {
 
 function getMessageTime(message: ChatMessageResponse) {
   const dateValue = getString(message, ["createdAt", "sentAt", "timestamp"]);
-  const time = dateValue ? new Date(dateValue).getTime() : 0;
+  const time = dateValue ? parseApiDate(dateValue).getTime() : 0;
 
   return Number.isFinite(time) ? time : 0;
 }
@@ -1115,7 +1192,7 @@ function formatRelativeTime(dateValue: string | undefined) {
     return "";
   }
 
-  const date = new Date(dateValue);
+  const date = parseApiDate(dateValue);
 
   if (Number.isNaN(date.getTime())) {
     return dateValue;
@@ -1145,7 +1222,7 @@ function formatMessageTime(dateValue: string | undefined) {
     return "";
   }
 
-  const date = new Date(dateValue);
+  const date = parseApiDate(dateValue);
 
   if (Number.isNaN(date.getTime())) {
     return dateValue;
@@ -1156,4 +1233,10 @@ function formatMessageTime(dateValue: string | undefined) {
     minute: "2-digit",
     hour12: true,
   }).format(date);
+}
+
+function parseApiDate(dateValue: string) {
+  const normalizedDateValue = HAS_TIMEZONE_REGEX.test(dateValue) ? dateValue : `${dateValue}Z`;
+
+  return new Date(normalizedDateValue);
 }

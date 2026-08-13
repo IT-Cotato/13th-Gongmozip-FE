@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/http";
-import {
-  type ChatbotNotice,
-  useChatbotNoticeStore,
-} from "@/stores/chatbotNoticeStore";
 import {
   useChatTeamMembersQuery,
   useChatTeamMessagesQuery,
@@ -37,13 +33,13 @@ import {
 } from "../_data/mockMessages";
 import { ChatInputBar } from "./ChatInputBar";
 import { ChatMessageBubble } from "./ChatMessageBubble";
+import { ChatProfilePreview } from "./ChatProfilePreview";
 import { ChatTopBar } from "./ChatTopBar";
 import { MemberReviewStartDialog } from "./member-review";
 import {
   BotMessage,
   ChatbotSystemNotice,
   ChatbotTextMessage,
-  ChatbotUsageGuideMessage,
   ContestDeadlineReminderMessage,
 } from "./leader-election/ChatbotMessage";
 import {
@@ -100,7 +96,6 @@ const recommendedLeaderNames = MOCK_CHAT_MEMBERS.filter((member) =>
   mockAiRecommendedLeaderIds.includes(member.id),
 ).map((member) => member.name);
 const DEADLINE_RESPONSE_REMINDER_DELAY_MS = 2 * 60 * 60 * 1000;
-const EMPTY_CHATBOT_NOTICES: ChatbotNotice[] = [];
 const EMPTY_CHAT_MEMBERS: ChatMember[] = [];
 
 function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
@@ -117,14 +112,16 @@ function getInitialLeaderEvent(scenario: LeaderScenario): LeaderEvent {
 
 export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const router = useRouter();
-  const chatbotNotices =
-    useChatbotNoticeStore((state) => state.noticesByRoomId[roomId]) ?? EMPTY_CHATBOT_NOTICES;
   const membersQuery = useChatTeamMembersQuery(roomId);
   const chatMembers = membersQuery.data?.chatMembers ?? EMPTY_CHAT_MEMBERS;
+  const projectEndedAt = membersQuery.data?.projectEndedAt;
   const messagesQuery = useChatTeamMessagesQuery(roomId, chatMembers, {
-    enabled: membersQuery.isSuccess && chatMembers.length > 0,
+    enabled: membersQuery.isSuccess,
   });
-  const serverMessages = messagesQuery.data?.messages ?? [];
+  const serverMessages = useMemo(
+    () => messagesQuery.data?.messages ?? [],
+    [messagesQuery.data?.messages],
+  );
   const hasServerMessages = messagesQuery.isSuccess;
   const chatRealtime = useChatRealtime(roomId, {
     enabled: messagesQuery.isSuccess,
@@ -174,6 +171,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     "completed" | "incomplete" | null
   >(null);
   const [isDeadlineReminderBannerShown, setIsDeadlineReminderBannerShown] = useState(false);
+  const [profileMember, setProfileMember] = useState<ChatMember | null>(null);
   const [candidateRemainingSeconds, setCandidateRemainingSeconds] = useState(10);
   const [candidateContestIds, setCandidateContestIds] = useState<string[]>(
     mockRecommendedContests.slice(0, 3).map((contest) => contest.id),
@@ -181,6 +179,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [activeContestCandidateIds, setActiveContestCandidateIds] = useState<string[] | null>(null);
   const [selectedContestIds, setSelectedContestIds] = useState<string[]>([]);
   const messageListRef = useRef<HTMLElement>(null);
+  const lastReadMarkerRef = useRef<string | null>(null);
 
   const singleDefiniteLeader = findMembersByIds(
     mockLeaderIntentAnswers
@@ -219,13 +218,20 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     candidates.map((candidate) => `${candidate.name}님`),
   );
 
+  const latestReadMarker = useMemo(() => {
+    const latestMessage = serverMessages.at(-1);
+
+    return latestMessage ? `${roomId}:${latestMessage.id}:${latestMessage.sentAt}` : `${roomId}:empty`;
+  }, [roomId, serverMessages]);
+
   useEffect(() => {
-    if (!messagesQuery.isSuccess) {
+    if (!messagesQuery.isSuccess || lastReadMarkerRef.current === latestReadMarker) {
       return;
     }
 
+    lastReadMarkerRef.current = latestReadMarker;
     markAsRead();
-  }, [markAsRead, messagesQuery.isSuccess, roomId]);
+  }, [latestReadMarker, markAsRead, messagesQuery.isSuccess, roomId]);
 
   useEffect(() => {
     const shouldRunCandidateTimer =
@@ -432,14 +438,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     }
   };
 
-  const startContestVote = (contestCandidateIds?: string[]) => {
+  const startContestVote = useCallback((contestCandidateIds?: string[]) => {
     setIsContestRevoteRequested(false);
     setIsContestVoteSubmitted(false);
     setActiveContestCandidateIds(contestCandidateIds?.length ? contestCandidateIds : null);
     setSelectedContestIds([]);
     setContestActionError(null);
     setSheetState("contestVote");
-  };
+  }, []);
 
   const handleContestCardAction = () => {
     if (candidateRemainingSeconds > 0) {
@@ -542,6 +548,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
       try {
         await voteContestCandidatesMutation.mutateAsync(contestCandidateIds);
+        setIsContestVoteSubmitted(true);
         setSheetState("closed");
       } catch (error) {
         setContestActionError(getApiErrorMessage(error, "공모전 투표에 실패했습니다."));
@@ -646,7 +653,38 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       return;
     }
 
+    const messageList = messageListRef.current;
+
+    if (!messageList) {
+      await messagesQuery.fetchNextPage();
+      return;
+    }
+
+    const previousScrollHeight = messageList.scrollHeight;
+    const previousScrollTop = messageList.scrollTop;
+
     await messagesQuery.fetchNextPage();
+
+    const restoreScrollPosition = () => {
+      const currentMessageList = messageListRef.current;
+
+      if (!currentMessageList) {
+        return false;
+      }
+
+      const scrollHeightIncrease = currentMessageList.scrollHeight - previousScrollHeight;
+
+      if (scrollHeightIncrease <= 0) {
+        return false;
+      }
+
+      currentMessageList.scrollTop = previousScrollTop + scrollHeightIncrease;
+      return true;
+    };
+
+    if (!restoreScrollPosition()) {
+      requestAnimationFrame(restoreScrollPosition);
+    }
   };
 
   const handleMessageListScroll = () => {
@@ -671,6 +709,23 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     sheetState === "contestResult" ||
     sheetState === "contestDetail";
   const apiContestCandidates = contestCandidatesQuery.data ?? [];
+  const latestContestVoteReminderMessage = useMemo(
+    () =>
+      [...serverMessages]
+        .reverse()
+        .find((message) => message.messageType === "CONTEST_VOTE_REMINDER_CARD"),
+    [serverMessages],
+  );
+  const latestContestVoteReminderCandidateIds = useMemo(
+    () =>
+      latestContestVoteReminderMessage
+        ? getMetadataNumberArray(
+            latestContestVoteReminderMessage.metadata,
+            "contestCandidateIds",
+          ).map(String)
+        : [],
+    [latestContestVoteReminderMessage],
+  );
   const contestVoteStatus = contestVoteStatusQuery.data;
   const contestVoteResult = hasServerMessages
     ? (contestVoteStatus?.result ?? "normal")
@@ -743,6 +798,18 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         title={roomTitle || undefined}
       />
 
+      {hasServerMessages && latestContestVoteReminderMessage ? (
+        <ContestVoteNoticeBanner
+          body={latestContestVoteReminderMessage.body}
+          isVoteSubmitted={isContestVoteSubmitted}
+          onAction={
+            isContestVoteSubmitted
+              ? showContestVoteResult
+              : () => startContestVote(latestContestVoteReminderCandidateIds)
+          }
+        />
+      ) : null}
+
       {!hasServerMessages && shouldShowContestVote && isCandidateClosed && !isContestResultShown ? (
         <ContestVoteNoticeBanner
           isVoteSubmitted={isContestVoteSubmitted}
@@ -776,13 +843,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             }
           />
         ) : null}
-
-        {chatbotNotices.map((notice) => (
-          <div key={notice.id} className="flex flex-col gap-4">
-            <ChatbotSystemNotice action={notice.action} actorName={notice.actorName} />
-            {notice.action === "added" ? <ChatbotUsageGuideMessage /> : null}
-          </div>
-        ))}
 
         {messagesQuery.isLoading ? (
           <p className="text-center text-[13px] leading-[1.5] text-color-gray-650">
@@ -826,6 +886,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             }}
             onOpenContestVote={startContestVote}
             onOpenCandidateVote={openCandidateVote}
+            onOpenMemberProfile={setProfileMember}
             onOpenWillingness={() => {
               setLeaderActionError(null);
               setSheetState("willingness");
@@ -1081,6 +1142,15 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         />
       ) : null}
 
+      {profileMember ? (
+        <ChatProfilePreview
+          member={profileMember}
+          onClose={() => setProfileMember(null)}
+          projectEndedAt={projectEndedAt}
+          roomId={roomId}
+        />
+      ) : null}
+
     </main>
   );
 }
@@ -1108,6 +1178,7 @@ function ChatMessageRenderer({
   onOpenCandidateVote,
   onOpenContestList,
   onOpenContestVote,
+  onOpenMemberProfile,
   onOpenWillingness,
   onRequestLeaderRecommendation,
   onRequestRevote,
@@ -1123,6 +1194,7 @@ function ChatMessageRenderer({
   onOpenCandidateVote: (candidateIds?: string[]) => void;
   onOpenContestList: () => void;
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
+  onOpenMemberProfile: (member: ChatMember) => void;
   onOpenWillingness: () => void;
   onRequestLeaderRecommendation: () => void;
   onRequestRevote: () => void;
@@ -1205,7 +1277,7 @@ function ChatMessageRenderer({
     const leader = chatMembers.find((member) => member.id === String(leaderTeamMemberId));
 
     return leader ? (
-      <LeaderElectedMessage leader={leader} />
+      <LeaderElectedMessage body={message.body} leader={leader} />
     ) : (
       <CardChatMessage body={message.body} label="팀장 선출" metadata={message.metadata} />
     );
@@ -1254,10 +1326,11 @@ function ChatMessageRenderer({
     );
   }
 
-  if (
-    message.messageType === "CONTEST_VOTE_CARD" ||
-    message.messageType === "CONTEST_VOTE_REMINDER_CARD"
-  ) {
+  if (message.messageType === "CONTEST_VOTE_REMINDER_CARD") {
+    return null;
+  }
+
+  if (message.messageType === "CONTEST_VOTE_CARD") {
     const candidateIds = getMetadataNumberArray(message.metadata, "contestCandidateIds").map(String);
     const contests = getContestsByIds(contestCandidates, candidateIds, "contestCandidateId");
 
@@ -1317,7 +1390,20 @@ function ChatMessageRenderer({
   }
 
   if (!message.messageType || message.messageType === "TALK" || message.messageType === "TEXT") {
-    return <ChatMessageBubble message={message} />;
+    const sender = message.senderId
+      ? chatMembers.find((member) => member.id === message.senderId)
+      : undefined;
+
+    return (
+      <ChatMessageBubble
+        message={message}
+        onOpenProfile={
+          sender && !sender.isMe && sender.profileId !== undefined
+            ? () => onOpenMemberProfile(sender)
+            : undefined
+        }
+      />
+    );
   }
 
   return <ChatbotTextMessage body={message.body} />;
