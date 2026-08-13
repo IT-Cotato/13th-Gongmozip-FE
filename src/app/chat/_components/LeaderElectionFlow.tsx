@@ -893,6 +893,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               setLeaderActionError(null);
               setSheetState("willingness");
             }}
+            onMidtermSubmit={submitMidtermCheck}
             onRequestLeaderRecommendation={requestLeaderRecommendation}
             onRequestRevote={requestRevote}
           />
@@ -1178,6 +1179,7 @@ function ChatMessageRenderer({
   onOpenContestVote,
   onOpenMemberProfile,
   onOpenWillingness,
+  onMidtermSubmit,
   onRequestLeaderRecommendation,
   onRequestRevote,
 }: {
@@ -1194,6 +1196,7 @@ function ChatMessageRenderer({
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
   onOpenMemberProfile: (member: ChatMember) => void;
   onOpenWillingness: () => void;
+  onMidtermSubmit: (progressPercent?: number) => void | Promise<void>;
   onRequestLeaderRecommendation: () => void;
   onRequestRevote: () => void;
 }) {
@@ -1349,7 +1352,7 @@ function ChatMessageRenderer({
       (contestId ? createPlaceholderContest(contestId) : undefined);
 
     return contest ? (
-      <ContestVoteResultMessage contest={contest} onMidtermSubmit={() => undefined} />
+      <ContestVoteResultMessage contest={contest} onMidtermSubmit={onMidtermSubmit} />
     ) : (
       <CardChatMessage body={message.body} label="공모전" metadata={message.metadata} />
     );
