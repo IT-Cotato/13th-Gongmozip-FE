@@ -76,13 +76,17 @@ const MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
 
 function formatPublishedTime(publishedAt: string | null) {
   if (!publishedAt) {
-    return "15분 전";
+    return "게시 시각을 확인할 수 없어요";
   }
 
   const publishedTime = new Date(publishedAt).getTime();
+  if (!Number.isFinite(publishedTime)) {
+    return "게시 시각을 확인할 수 없어요";
+  }
+
   const elapsedMinutes = Math.floor((Date.now() - publishedTime) / 60000);
 
-  if (!Number.isFinite(elapsedMinutes) || elapsedMinutes < 0) {
+  if (elapsedMinutes < 0) {
     return "방금 전";
   }
 
