@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import CancelConfirmationModal from "@/components/team-matching/CancelConfirmationModal";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { getMatchingResultPublishAt } from "@/lib/matchingSchedule";
 import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import {
@@ -152,7 +153,8 @@ export default function TeamMatchingPoolView({
   const currentTodayApplication = todayApplication ?? fetchedTodayApplication;
   const withdrawal = currentTodayApplication?.withdrawal;
   const canWithdraw = withdrawal?.withdrawable ?? true;
-  const deadlineAt = eligibility?.applicationDeadlineAt ?? withdrawal?.deadlineAt ?? undefined;
+  const applicationDeadlineAt = eligibility?.applicationDeadlineAt ?? withdrawal?.deadlineAt;
+  const deadlineAt = getMatchingResultPublishAt(applicationDeadlineAt);
   const memberName = memberProfile?.name?.trim() || "회원";
 
   return (
