@@ -206,7 +206,7 @@ export function MemberReviewFlow({
   }
 
   return (
-    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       {phase === "complete" ? (
         <MemberReviewCompleteScreen onGoHome={goHome} onLeave={leaveReview} />
       ) : (
@@ -326,7 +326,7 @@ function mapReviewKeyword(strength: string) {
 
 function MemberReviewState({ message, roomId }: { message: string; roomId: string }) {
   return (
-    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <ChatTopBar backHref={`/chat/${roomId}`} roomId={roomId} title="팀원 리뷰" />
       <div className="flex flex-1 items-center justify-center px-6 text-center">
         <p className="text-[13px] leading-[1.5] text-color-gray-650">{message}</p>

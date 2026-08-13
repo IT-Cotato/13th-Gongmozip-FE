@@ -81,7 +81,7 @@ export function ContestCandidateListPage({
   remainingSeconds: number;
 }) {
   return (
-    <main className="flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+    <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <header className="flex h-[47px] shrink-0 items-center justify-between px-4">
         <button
           aria-label="뒤로가기"
