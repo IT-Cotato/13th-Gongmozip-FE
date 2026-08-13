@@ -7,20 +7,25 @@ import { PasswordStep } from "./_components/PasswordStep";
 import { InfoStep, type Gender } from "./_components/InfoStep";
 import { TermsStep, type TermsState } from "./_components/TermsStep";
 import { ChevronLeftIcon } from "./_components/icons";
+import {
+  formatBirthdate,
+  isValidCalendarDate,
+  calculateAge,
+  MIN_AGE,
+  type BirthdateError,
+} from "./_lib/birthdate";
 import { useSignupMutation } from "@/queries/useSignupMutation";
 import { useSendVerificationCodeMutation } from "@/queries/useSendVerificationCodeMutation";
 import { useVerifyEmailCodeMutation } from "@/queries/useVerifyEmailCodeMutation";
 import { ApiError } from "@/lib/http";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
-type BirthdateError = "format" | "age" | null;
 
 const CODE_EXPIRED_MESSAGE = "인증번호가 만료되었어요. 인증번호 재전송 버튼을 눌러주세요.";
 const EMAIL_DUPLICATE_CODE = "MEMBER_409_1";
 const EMAIL_NOT_VERIFIED_CODE = "MEMBER_400_3";
 
 const TOTAL_STEPS = 6;
-const MIN_AGE = 14;
 
 const STEP_TITLE: Record<Step, string> = {
   1: "가입을 위한\n기본 정보를 입력해주세요.",
@@ -38,28 +43,6 @@ function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function formatBirthdate(digits: string) {
-  const y = digits.slice(0, 4);
-  const m = digits.slice(4, 6);
-  const d = digits.slice(6, 8);
-  return [y, m, d].filter(Boolean).join("/");
-}
-
-function isValidCalendarDate(year: number, month: number, day: number) {
-  if (month < 1 || month > 12 || day < 1) return false;
-  const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-}
-
-function calculateAge(year: number, month: number, day: number) {
-  const today = new Date();
-  let age = today.getFullYear() - year;
-  const hasHadBirthdayThisYear =
-    today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
 }
 
 export default function SignupPage() {
