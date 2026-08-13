@@ -30,7 +30,7 @@ export type PublicProfile = {
     paletteCode: string;
   } | null;
   isPublic: boolean;
-  schoolRegion: string;
+  schoolRegion?: string | null;
   schoolName: string;
   grade: number;
   major: string;
