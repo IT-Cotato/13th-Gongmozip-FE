@@ -187,10 +187,11 @@ export async function fetchChatTeamMessages(
   };
 }
 
-export function useChatTeamsQuery() {
+export function useChatTeamsQuery(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: chatTeamsQueryKey,
     queryFn: fetchChatTeams,
+    enabled: options.enabled ?? true,
     select: (data) => {
       const teams = Array.isArray(data) ? data : (data.rooms ?? data.teams ?? data.content ?? []);
 

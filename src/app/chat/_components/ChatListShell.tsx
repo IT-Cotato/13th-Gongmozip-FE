@@ -29,8 +29,6 @@ export function ChatListShell() {
     return chatRooms;
   }, [chatRooms, sortMode]);
 
-  const unreadChatCount = rooms.reduce((totalCount, room) => totalCount + room.unreadCount, 0);
-
   return (
     <main className="relative flex h-full w-full flex-col bg-white pt-[env(safe-area-inset-top)]">
       <header className="relative flex h-[46px] shrink-0 items-center justify-center border-b border-[rgba(97,97,97,0.08)] px-4">
@@ -79,7 +77,7 @@ export function ChatListShell() {
         )) : null}
       </section>
 
-      <BottomNavigation unreadChatCount={unreadChatCount} />
+      <BottomNavigation chatRoomCount={chatRooms.length} />
     </main>
   );
 }
