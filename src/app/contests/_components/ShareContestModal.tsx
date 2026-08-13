@@ -85,10 +85,18 @@ export function ShareContestModal({
     }
 
     try {
-      await shareContestMutation.mutateAsync({
+      const result = await shareContestMutation.mutateAsync({
         contestId,
         teamIds: Array.from(selectedRoomIds),
       });
+
+      if (result.failedTeamIds.length > 0) {
+        setSelectedRoomIds(new Set(result.failedTeamIds));
+        setShareErrorMessage("일부 채팅방 공유에 실패했습니다. 실패한 채팅방만 다시 시도해주세요.");
+        onShareError();
+        return;
+      }
+
       handleOpenChange(false);
       onShareComplete();
     } catch (error) {
