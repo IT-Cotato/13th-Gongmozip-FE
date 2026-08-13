@@ -5,15 +5,20 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { getCollaborationResultByCharacterType } from "@/app/collaboration-type/_data/collaborationTest";
+import { ApiError } from "@/lib/http";
 import { usePublicProfileQuery, type PublicProfile } from "@/queries/usePublicProfileQuery";
 
-import type { ChatMember } from "../_data/mockMessages";
-
 type ChatProfilePreviewProps = {
-  member: ChatMember;
+  member: ProfilePreviewMember;
   onClose: () => void;
   projectEndedAt?: string | null;
-  roomId: string;
+  roomId?: string;
+};
+
+export type ProfilePreviewMember = {
+  profileId?: number;
+  name: string;
+  avatarSrc?: string;
 };
 
 const GENDER_LABEL: Record<string, string> = {
@@ -33,6 +38,10 @@ export function ChatProfilePreview({
   const profileQuery = usePublicProfileQuery(profileId);
   const profile = profileQuery.data;
   const hasProfileId = profileId !== null;
+  const isPrivateProfile =
+    profile?.isPublic === false ||
+    (profileQuery.error instanceof ApiError && [403, 404].includes(profileQuery.error.status));
+  const canWriteReview = Boolean(roomId);
   const [isReviewUnavailableToastShown, setIsReviewUnavailableToastShown] = useState(false);
 
   useEffect(() => {
@@ -48,6 +57,10 @@ export function ChatProfilePreview({
   }, [isReviewUnavailableToastShown]);
 
   const openMemberReview = () => {
+    if (!roomId) {
+      return;
+    }
+
     if (isBeforeProjectEnd(projectEndedAt)) {
       setIsReviewUnavailableToastShown(true);
       return;
@@ -67,18 +80,20 @@ export function ChatProfilePreview({
         >
           ×
         </button>
-        <button
-          className="flex w-[75px] flex-col items-center justify-center gap-1 text-[9px] leading-[1.35] text-[#616161]"
-          onClick={openMemberReview}
-          type="button"
-        >
-          <span className="relative flex size-12 items-center justify-center rounded-[16px] bg-[rgba(97,97,97,0.1)]">
-            <span className="absolute top-[13px] left-[21px] size-2 rotate-45 bg-[#1f1f1f]" />
-            <span className="absolute top-[25px] left-[13px] size-2 rounded-full bg-[#1f1f1f]" />
-            <span className="absolute top-[25px] right-[13px] size-2 bg-[#1f1f1f]" />
-          </span>
-          <span>협업후기 작성</span>
-        </button>
+        {canWriteReview ? (
+          <button
+            className="flex w-[75px] flex-col items-center justify-center gap-1 text-[9px] leading-[1.35] text-[#616161]"
+            onClick={openMemberReview}
+            type="button"
+          >
+            <span className="relative flex size-12 items-center justify-center rounded-[16px] bg-[rgba(97,97,97,0.1)]">
+              <span className="absolute top-[13px] left-[21px] size-2 rotate-45 bg-[#1f1f1f]" />
+              <span className="absolute top-[25px] left-[13px] size-2 rounded-full bg-[#1f1f1f]" />
+              <span className="absolute top-[25px] right-[13px] size-2 bg-[#1f1f1f]" />
+            </span>
+            <span>협업후기 작성</span>
+          </button>
+        ) : null}
       </header>
 
       {isReviewUnavailableToastShown ? (
@@ -95,15 +110,9 @@ export function ChatProfilePreview({
         </p>
       ) : null}
 
-      {!hasProfileId ? (
-        <div className="flex flex-col items-center gap-3 px-6 py-16">
-          <p className="text-center text-[13px] leading-[1.5] text-[#949494]">
-            공개 프로필이 없는 사용자예요.
-          </p>
-        </div>
-      ) : null}
+      {!hasProfileId || isPrivateProfile ? <PrivateProfileMessage /> : null}
 
-      {hasProfileId && profileQuery.isError ? (
+      {hasProfileId && profileQuery.isError && !isPrivateProfile ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16">
           <p className="text-center text-[13px] leading-[1.5] text-[#949494]">
             프로필 정보를 불러오지 못했어요.
@@ -118,7 +127,17 @@ export function ChatProfilePreview({
         </div>
       ) : null}
 
-      {profile ? <ProfileBody member={member} profile={profile} /> : null}
+      {profile && profile.isPublic ? <ProfileBody member={member} profile={profile} /> : null}
+    </div>
+  );
+}
+
+function PrivateProfileMessage() {
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 py-16">
+      <p className="text-center text-[13px] leading-[1.5] text-[#949494]">
+        공개 프로필이 없는 사용자예요.
+      </p>
     </div>
   );
 }
@@ -142,7 +161,7 @@ function isBeforeProjectEnd(projectEndedAt: string | null | undefined) {
   return Number.isFinite(endDate.getTime()) && Date.now() < endDate.getTime();
 }
 
-function ProfileBody({ member, profile }: { member: ChatMember; profile: PublicProfile }) {
+function ProfileBody({ member, profile }: { member: ProfilePreviewMember; profile: PublicProfile }) {
   const character = profile.character
     ? getCollaborationResultByCharacterType(profile.character.characterType)
     : undefined;

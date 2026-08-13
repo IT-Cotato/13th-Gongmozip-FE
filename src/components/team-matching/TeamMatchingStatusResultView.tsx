@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { ChatProfilePreview } from "@/app/chat/_components/ChatProfilePreview";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { ApiError } from "@/lib/http";
 import { useAcceptMatchingGroupMutation } from "@/queries/useAcceptMatchingGroupMutation";
@@ -24,6 +26,7 @@ type MatchedMember = {
   badgeTone: "coral" | "blue" | "orange" | "green";
   id: number;
   name: string;
+  profileId: number;
   role: string;
 };
 
@@ -146,6 +149,7 @@ function getMatchedMembers(members: TodayMatchingResultMember[]): MatchedMember[
       ...meta,
       id: member.memberId,
       name: member.nickname,
+      profileId: member.profileId,
     };
   });
 }
@@ -219,7 +223,13 @@ function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: Tod
   );
 }
 
-function MatchedMemberCard({ member }: { member: MatchedMember }) {
+function MatchedMemberCard({
+  member,
+  onOpenProfile,
+}: {
+  member: MatchedMember;
+  onOpenProfile: () => void;
+}) {
   return (
     <article className="relative flex h-[175px] w-[147px] flex-col items-start justify-center gap-[10px] self-stretch rounded-xl bg-[#F9F8F4] pb-4 pl-4 pr-2 pt-2">
       <div
@@ -238,6 +248,7 @@ function MatchedMemberCard({ member }: { member: MatchedMember }) {
       <button
         aria-label={`${member.name} 프로필 자세히 보기`}
         className="absolute right-2 top-2 flex h-7 w-7 flex-col items-center justify-center gap-[10px] rounded-[10px] bg-[#616161]/10 p-0"
+        onClick={onOpenProfile}
         type="button"
       >
         <Image
@@ -289,6 +300,7 @@ export default function TeamMatchingStatusResultView({
   todayMatchingResult,
 }: TeamMatchingStatusResultViewProps) {
   const router = useRouter();
+  const [selectedMember, setSelectedMember] = useState<MatchedMember | null>(null);
   const acceptMatchingGroupMutation = useAcceptMatchingGroupMutation();
   const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
   const canPass =
@@ -334,7 +346,11 @@ export default function TeamMatchingStatusResultView({
 
         <section className="mt-[41px] grid grid-cols-[147px_147px] gap-x-6 gap-y-[47px] px-5">
           {matchedMembers.map((member) => (
-            <MatchedMemberCard key={member.id} member={member} />
+            <MatchedMemberCard
+              key={member.id}
+              member={member}
+              onOpenProfile={() => setSelectedMember(member)}
+            />
           ))}
         </section>
       </div>
@@ -370,6 +386,13 @@ export default function TeamMatchingStatusResultView({
           </button>
         </div>
       </div>
+
+      {selectedMember ? (
+        <ChatProfilePreview
+          member={selectedMember}
+          onClose={() => setSelectedMember(null)}
+        />
+      ) : null}
     </main>
   );
 }
