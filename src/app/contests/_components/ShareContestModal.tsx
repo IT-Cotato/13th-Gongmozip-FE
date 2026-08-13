@@ -1,22 +1,41 @@
 "use client";
 
 import Image from "next/image";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import Dialog from "@/components/Dialog";
 import { MOCK_CHAT_ROOMS } from "@/app/chat/_data/mockMessages";
+import {
+  contestSharePreviewQueryKey,
+  fetchContestSharePreview,
+  type ContestSharePreview,
+} from "@/queries/useContestSharePreviewQuery";
 
 type ShareContestModalProps = {
-  onShareComplete: () => void;
+  contestId: string;
+  onShareComplete: (payload: {
+    selectedRoomIds: string[];
+    sharePreview: ContestSharePreview;
+  }) => void;
+  onShareError: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
 };
 
 const CHARACTER_IMAGE_SRC = "/images/contests/cha.png";
 
-export function ShareContestModal({ onOpenChange, onShareComplete, open }: ShareContestModalProps) {
+export function ShareContestModal({
+  contestId,
+  onOpenChange,
+  onShareComplete,
+  onShareError,
+  open,
+}: ShareContestModalProps) {
+  const queryClient = useQueryClient();
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedRoomIds, setSelectedRoomIds] = useState<Set<string>>(new Set());
+  const [isSending, setIsSending] = useState(false);
 
   const filteredRooms = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
@@ -29,11 +48,13 @@ export function ShareContestModal({ onOpenChange, onShareComplete, open }: Share
   }, [searchKeyword]);
 
   const selectedCount = selectedRoomIds.size;
+  const canSendContest = selectedCount > 0 && !isSending;
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       setSearchKeyword("");
       setSelectedRoomIds(new Set());
+      setIsSending(false);
     }
 
     onOpenChange(nextOpen);
@@ -57,13 +78,32 @@ export function ShareContestModal({ onOpenChange, onShareComplete, open }: Share
     setSelectedRoomIds(new Set());
   };
 
-  const sendContest = () => {
-    if (selectedCount === 0) {
+  const sendContest = async () => {
+    if (!canSendContest) {
       return;
     }
 
-    handleOpenChange(false);
-    onShareComplete();
+    setIsSending(true);
+
+    try {
+      const sharePreview = await queryClient.fetchQuery({
+        queryKey: contestSharePreviewQueryKey(contestId),
+        queryFn: () => fetchContestSharePreview(contestId),
+        staleTime: 1000 * 60,
+      });
+
+      const selectedRoomIdList = Array.from(selectedRoomIds);
+
+      handleOpenChange(false);
+      onShareComplete({
+        selectedRoomIds: selectedRoomIdList,
+        sharePreview,
+      });
+    } catch {
+      onShareError();
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -161,10 +201,12 @@ export function ShareContestModal({ onOpenChange, onShareComplete, open }: Share
           <button
             type="button"
             className="flex h-[50px] w-[174px] shrink-0 items-center justify-center self-stretch rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-center font-[Pretendard] text-[17px] leading-[125%] font-semibold text-semantic-label-inverse disabled:bg-color-gray-300"
-            disabled={selectedCount === 0}
-            onClick={sendContest}
+            disabled={!canSendContest}
+            onClick={() => {
+              void sendContest();
+            }}
           >
-            보내기
+            {isSending ? "보내는 중..." : "보내기"}
           </button>
         </div>
       </div>
