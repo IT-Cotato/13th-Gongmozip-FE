@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { getCollaborationResultByCharacterType } from "@/app/collaboration-type/_data/collaborationTest";
 import { usePublicProfileQuery, type PublicProfile } from "@/queries/usePublicProfileQuery";
@@ -10,17 +12,49 @@ import type { ChatMember } from "../_data/mockMessages";
 type ChatProfilePreviewProps = {
   member: ChatMember;
   onClose: () => void;
+  projectEndedAt?: string | null;
+  roomId: string;
 };
 
 const GENDER_LABEL: Record<string, string> = {
   MALE: "남성",
   FEMALE: "여성",
 };
+const PRIVATE_SCHOOL_LABEL = "학교 정보 비공개";
 
-export function ChatProfilePreview({ member, onClose }: ChatProfilePreviewProps) {
+export function ChatProfilePreview({
+  member,
+  onClose,
+  projectEndedAt,
+  roomId,
+}: ChatProfilePreviewProps) {
+  const router = useRouter();
   const profileId = member.profileId === undefined ? null : String(member.profileId);
   const profileQuery = usePublicProfileQuery(profileId);
   const profile = profileQuery.data;
+  const hasProfileId = profileId !== null;
+  const [isReviewUnavailableToastShown, setIsReviewUnavailableToastShown] = useState(false);
+
+  useEffect(() => {
+    if (!isReviewUnavailableToastShown) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsReviewUnavailableToastShown(false);
+    }, 2500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isReviewUnavailableToastShown]);
+
+  const openMemberReview = () => {
+    if (isBeforeProjectEnd(projectEndedAt)) {
+      setIsReviewUnavailableToastShown(true);
+      return;
+    }
+
+    router.push(`/chat/${roomId}/member-review-preview`);
+  };
 
   return (
     <div className="absolute inset-0 z-50 flex h-full w-full flex-col bg-white">
@@ -35,6 +69,7 @@ export function ChatProfilePreview({ member, onClose }: ChatProfilePreviewProps)
         </button>
         <button
           className="flex w-[75px] flex-col items-center justify-center gap-1 text-[9px] leading-[1.35] text-[#616161]"
+          onClick={openMemberReview}
           type="button"
         >
           <span className="relative flex size-12 items-center justify-center rounded-[16px] bg-[rgba(97,97,97,0.1)]">
@@ -46,26 +81,40 @@ export function ChatProfilePreview({ member, onClose }: ChatProfilePreviewProps)
         </button>
       </header>
 
+      {isReviewUnavailableToastShown ? (
+        <div className="pointer-events-none absolute top-[107px] left-1/2 z-10 flex h-[54px] w-[min(calc(100%-50px),340px)] -translate-x-1/2 items-center justify-center rounded-full bg-[rgba(17,17,17,0.6)] px-5 py-2">
+          <p className="whitespace-pre-line text-center text-[15px] leading-[1.25] font-medium text-white">
+            {`현재 협업후기 작성 기간이 아닙니다.\n프로젝트 종료일 이후 작성 가능합니다.`}
+          </p>
+        </div>
+      ) : null}
+
       {profileQuery.isLoading ? (
         <p className="px-6 py-16 text-center text-[13px] leading-[1.5] text-[#949494]">
           프로필을 불러오는 중이에요.
         </p>
       ) : null}
 
-      {profileQuery.isError || !profileId ? (
+      {!hasProfileId ? (
+        <div className="flex flex-col items-center gap-3 px-6 py-16">
+          <p className="text-center text-[13px] leading-[1.5] text-[#949494]">
+            공개 프로필이 없는 사용자예요.
+          </p>
+        </div>
+      ) : null}
+
+      {hasProfileId && profileQuery.isError ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16">
           <p className="text-center text-[13px] leading-[1.5] text-[#949494]">
             프로필 정보를 불러오지 못했어요.
           </p>
-          {profileId ? (
-            <button
-              className="rounded-full bg-[#f5f5f5] px-4 py-2 text-[13px] font-medium text-[#1f1f1f]"
-              onClick={() => profileQuery.refetch()}
-              type="button"
-            >
-              다시 시도
-            </button>
-          ) : null}
+          <button
+            className="rounded-full bg-[#f5f5f5] px-4 py-2 text-[13px] font-medium text-[#1f1f1f]"
+            onClick={() => profileQuery.refetch()}
+            type="button"
+          >
+            다시 시도
+          </button>
         </div>
       ) : null}
 
@@ -74,12 +123,31 @@ export function ChatProfilePreview({ member, onClose }: ChatProfilePreviewProps)
   );
 }
 
+function isBeforeProjectEnd(projectEndedAt: string | null | undefined) {
+  if (!projectEndedAt) {
+    return true;
+  }
+
+  const dateOnlyMatch = projectEndedAt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    const endOfDay = new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999);
+
+    return Date.now() <= endOfDay.getTime();
+  }
+
+  const endDate = new Date(projectEndedAt);
+
+  return Number.isFinite(endDate.getTime()) && Date.now() < endDate.getTime();
+}
+
 function ProfileBody({ member, profile }: { member: ChatMember; profile: PublicProfile }) {
   const character = profile.character
     ? getCollaborationResultByCharacterType(profile.character.characterType)
     : undefined;
   const profileImageSrc = member.avatarSrc ?? character?.imageSrc;
-  const schoolTitle = profile.schoolRegion || profile.schoolName;
+  const schoolTitle = profile.schoolRegion?.trim() || PRIVATE_SCHOOL_LABEL;
   const age = profile.age ?? calculateAge(profile.birthDate);
   const birthYear = profile.birthYear ?? getBirthYear(profile.birthDate);
   const genderText = profile.gender ? (GENDER_LABEL[profile.gender] ?? profile.gender) : null;

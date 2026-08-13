@@ -53,6 +53,9 @@ export default function ChatRoomMenuPage() {
       .map((member) => member.name)
       .join(", ") ||
     "채팅방";
+  const projectEndedAt =
+    membersQuery.data?.projectEndedAt ??
+    teamsQuery.data?.find((room) => room.id === params.roomId)?.projectEndedAt;
   const isChatbotEnabled = membersQuery.data?.chatbotEnabled ?? true;
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [reportedMemberIds, setReportedMemberIds] = useState<string[]>([]);
@@ -150,7 +153,11 @@ export default function ChatRoomMenuPage() {
               key={member.id}
               member={member}
               isReported={reportedMemberIds.includes(member.id)}
-              onOpenProfile={() => setSelectedMember(member)}
+              onOpenProfile={
+                member.profileId !== undefined && !member.isChatbot
+                  ? () => setSelectedMember(member)
+                  : undefined
+              }
               onOpenReport={() => setReportTarget(member)}
             />
           )) : null}
@@ -173,7 +180,12 @@ export default function ChatRoomMenuPage() {
       </div>
 
       {selectedMember && (
-        <ChatProfilePreview member={selectedMember} onClose={() => setSelectedMember(null)} />
+        <ChatProfilePreview
+          member={selectedMember}
+          onClose={() => setSelectedMember(null)}
+          projectEndedAt={projectEndedAt}
+          roomId={params.roomId}
+        />
       )}
 
       {reportTarget && (
@@ -209,7 +221,7 @@ function MemberRow({
 }: {
   member: ChatMember;
   isReported: boolean;
-  onOpenProfile: () => void;
+  onOpenProfile?: () => void;
   onOpenReport: () => void;
 }) {
   return (
@@ -217,6 +229,7 @@ function MemberRow({
       <button
         type="button"
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        disabled={!onOpenProfile}
         onClick={onOpenProfile}
       >
         <MenuAvatar member={member} />

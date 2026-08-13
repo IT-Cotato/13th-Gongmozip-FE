@@ -114,6 +114,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const router = useRouter();
   const membersQuery = useChatTeamMembersQuery(roomId);
   const chatMembers = membersQuery.data?.chatMembers ?? EMPTY_CHAT_MEMBERS;
+  const projectEndedAt = membersQuery.data?.projectEndedAt;
   const messagesQuery = useChatTeamMessagesQuery(roomId, chatMembers, {
     enabled: membersQuery.isSuccess,
   });
@@ -1142,7 +1143,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       ) : null}
 
       {profileMember ? (
-        <ChatProfilePreview member={profileMember} onClose={() => setProfileMember(null)} />
+        <ChatProfilePreview
+          member={profileMember}
+          onClose={() => setProfileMember(null)}
+          projectEndedAt={projectEndedAt}
+          roomId={roomId}
+        />
       ) : null}
 
     </main>
@@ -1391,7 +1397,11 @@ function ChatMessageRenderer({
     return (
       <ChatMessageBubble
         message={message}
-        onOpenProfile={sender && !sender.isMe ? () => onOpenMemberProfile(sender) : undefined}
+        onOpenProfile={
+          sender && !sender.isMe && sender.profileId !== undefined
+            ? () => onOpenMemberProfile(sender)
+            : undefined
+        }
       />
     );
   }

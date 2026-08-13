@@ -40,6 +40,7 @@ export type TeamMembersResponse = {
   members: ChatTeamMemberResponse[];
   leaderSelectionDeadlineAt: string | null;
   myTeamMemberId: number | string | null;
+  projectEndedAt: string | null;
 };
 
 export type TeamMessagesResponse = {
@@ -131,6 +132,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
       members: data,
       leaderSelectionDeadlineAt: null,
       myTeamMemberId: findMyTeamMemberId(data),
+      projectEndedAt: null,
     };
   }
 
@@ -141,6 +143,8 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
     members,
     leaderSelectionDeadlineAt: data.leaderSelectionDeadlineAt ?? null,
     myTeamMemberId: data.myTeamMemberId ?? findMyTeamMemberId(members),
+    projectEndedAt:
+      getString(data, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
   };
 }
 
@@ -904,6 +908,8 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
     lastMessageAt: formatRelativeTime(getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"])),
     unreadCount: getNumber(team, ["unreadCount", "unreadMessageCount"]) ?? 0,
     avatarSrcs: getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
+    projectEndedAt:
+      getString(team, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
   };
 }
 

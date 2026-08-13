@@ -39,6 +39,7 @@ export type ChatRoom = {
   lastMessageAt: string;
   unreadCount: number;
   avatarSrcs: string[];
+  projectEndedAt?: string | null;
 };
 
 export type ChatMember = {
