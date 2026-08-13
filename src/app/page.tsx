@@ -16,12 +16,11 @@ import {
 
 function Header() {
   return (
-    <header className="flex h-[46px] shrink-0 items-center justify-between bg-white px-4 py-1">
-      <span className="size-[38px]" aria-hidden="true" />
-      <h1 className="flex h-[38px] items-center justify-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
+    <header className="relative flex h-[46px] shrink-0 items-center bg-white px-4 py-1">
+      <h1 className="pointer-events-none absolute inset-x-4 top-1 flex h-[38px] items-center justify-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
         공모집
       </h1>
-      <div className="flex items-center">
+      <div className="ml-auto flex items-center">
         <Link
           href="/alarm"
           aria-label="알림"
