@@ -135,6 +135,12 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       window.clearTimeout(shareToastTimerRef.current);
     }
 
+    if (shareErrorToastTimerRef.current !== null) {
+      window.clearTimeout(shareErrorToastTimerRef.current);
+      shareErrorToastTimerRef.current = null;
+    }
+
+    setShowShareErrorToast(false);
     setShowShareToast(true);
     shareToastTimerRef.current = window.setTimeout(() => {
       setShowShareToast(false);
@@ -143,10 +149,16 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   };
 
   const handleShareError = () => {
+    if (shareToastTimerRef.current !== null) {
+      window.clearTimeout(shareToastTimerRef.current);
+      shareToastTimerRef.current = null;
+    }
+
     if (shareErrorToastTimerRef.current !== null) {
       window.clearTimeout(shareErrorToastTimerRef.current);
     }
 
+    setShowShareToast(false);
     setShowShareErrorToast(true);
     shareErrorToastTimerRef.current = window.setTimeout(() => {
       setShowShareErrorToast(false);
