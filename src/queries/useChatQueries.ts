@@ -31,6 +31,7 @@ export type ChatMessageResponse = UnknownRecord;
 export type ContestCandidateResponse = UnknownRecord;
 export type ContestVoteStatusResponse = UnknownRecord;
 export type ReviewTargetResponse = UnknownRecord;
+export type LeaderRecommendationStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | (string & {});
 export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
 
 export type TeamMembersResponse = {
@@ -63,6 +64,29 @@ export type ContestVoteStatus = {
   results: ContestVoteResultItem[];
 };
 
+export type LeaderRecommendationCandidate = {
+  memberId: number;
+  nickname: string;
+  rank: number;
+  score: number;
+  reason: string;
+};
+
+export type LeaderRecommendation = {
+  recommendationId: number;
+  teamId: number;
+  status: LeaderRecommendationStatus;
+  recommendedMemberId: number | null;
+  recommendedMemberNickname: string | null;
+  recommendationReason: string | null;
+  candidates: LeaderRecommendationCandidate[];
+  teamSummary: string | null;
+  caution: string | null;
+  failureMessage: string | null;
+  generatedAt: string | null;
+  createdAt: string;
+};
+
 export const chatTeamsQueryKey = ["chat", "teams"] as const;
 export const chatTeamMembersQueryKey = (teamId: string) => ["chat", "teams", teamId, "members"] as const;
 export const chatTeamMessagesQueryKey = (teamId: string) => ["chat", "teams", teamId, "messages"] as const;
@@ -72,6 +96,8 @@ export const contestVotesQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "contest-candidates", "votes"] as const;
 export const reviewTargetsQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "reviews", "targets"] as const;
+export const leaderRecommendationQueryKey = (teamId: string) =>
+  ["chat", "teams", teamId, "leader-recommendation"] as const;
 
 export function fetchChatTeams() {
   return apiFetch<
@@ -408,6 +434,21 @@ export function fetchContestVoteStatus(teamId: string) {
   );
 }
 
+export function fetchLeaderRecommendation(teamId: string) {
+  return apiFetch<LeaderRecommendation>(
+    `/api/ai/teams/${encodeURIComponent(teamId)}/leader-recommendation`,
+  );
+}
+
+export function createLeaderRecommendation(teamId: string) {
+  return apiFetch<Pick<LeaderRecommendation, "recommendationId" | "teamId" | "status" | "createdAt">>(
+    `/api/ai/teams/${encodeURIComponent(teamId)}/leader-recommendation`,
+    {
+      method: "POST",
+    },
+  );
+}
+
 export function shareContestToChat(teamId: string, contestId: number) {
   return apiFetch<null>(`/api/teams/${encodeURIComponent(teamId)}/contest-shares`, {
     method: "POST",
@@ -531,6 +572,20 @@ export function useContestVoteStatusQuery(teamId: string, options: { enabled?: b
   });
 }
 
+export function useLeaderRecommendationQuery(teamId: string, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: leaderRecommendationQueryKey(teamId),
+    queryFn: () => fetchLeaderRecommendation(teamId),
+    enabled: (options.enabled ?? true) && teamId.length > 0,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+
+      return status === "PENDING" || status === "PROCESSING" ? 5000 : false;
+    },
+    retry: false,
+  });
+}
+
 export function useAddContestCandidateMutation(teamId: string) {
   const queryClient = useQueryClient();
 
@@ -649,6 +704,18 @@ export function useVoteLeaderMutation(teamId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
       void queryClient.invalidateQueries({ queryKey: chatTeamMembersQueryKey(teamId) });
+    },
+  });
+}
+
+export function useCreateLeaderRecommendationMutation(teamId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => createLeaderRecommendation(teamId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: leaderRecommendationQueryKey(teamId) });
+      void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
     },
   });
 }
