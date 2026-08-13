@@ -481,13 +481,19 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     }
   };
 
-  const removeContestCandidate = async (contestCandidateId: number) => {
+  const removeContestCandidate = async (contest: RecommendedContest) => {
     setContestActionError(null);
 
     if (!hasServerMessages) {
       setCandidateContestIds((currentIds) =>
-        currentIds.filter((contestId) => Number(contestId) !== contestCandidateId),
+        currentIds.filter((contestId) => contestId !== contest.id),
       );
+      return;
+    }
+
+    const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
+
+    if (!Number.isFinite(contestCandidateId)) {
       return;
     }
 
@@ -780,11 +786,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         remainingSeconds={candidateRemainingSeconds}
         onBack={() => setSheetState("closed")}
         onRemove={(contest) => {
-          const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
-
-          if (Number.isFinite(contestCandidateId)) {
-            void removeContestCandidate(contestCandidateId);
-          }
+          void removeContestCandidate(contest);
         }}
       />
     );
@@ -877,8 +879,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             message={message}
             onAddContestCandidate={addContestCandidateByContestId}
             onAcceptRecommendation={acceptRecommendedLeader}
-            onRemoveContestCandidate={(contestCandidateId) => {
-              void removeContestCandidate(contestCandidateId);
+            onRemoveContestCandidate={(contest) => {
+              void removeContestCandidate(contest);
             }}
             onOpenContestList={() => {
               setContestActionError(null);
@@ -980,11 +982,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               contests={candidateContests}
               isCandidateClosed={isCandidateClosed}
               onRemove={(contest) => {
-                const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
-
-                if (Number.isFinite(contestCandidateId)) {
-                  void removeContestCandidate(contestCandidateId);
-                }
+                void removeContestCandidate(contest);
               }}
               onShowAll={openContestList}
               onStartVote={handleContestCardAction}
@@ -1190,7 +1188,7 @@ function ChatMessageRenderer({
   message: ChatMessage;
   onAddContestCandidate: (contestId: number) => void;
   onAcceptRecommendation: () => void;
-  onRemoveContestCandidate: (contestCandidateId: number) => void;
+  onRemoveContestCandidate: (contest: RecommendedContest) => void;
   onOpenCandidateVote: (candidateIds?: string[]) => void;
   onOpenContestList: () => void;
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
@@ -1296,11 +1294,7 @@ function ChatMessageRenderer({
         contests={contests.length > 0 ? contests : contestIds.map(createPlaceholderContest)}
         isCandidateClosed={false}
         onRemove={(contest) => {
-          const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
-
-          if (Number.isFinite(contestCandidateId)) {
-            onRemoveContestCandidate(contestCandidateId);
-          }
+          onRemoveContestCandidate(contest);
         }}
         onShowAll={onOpenContestList}
         onStartVote={onOpenContestList}
@@ -1339,11 +1333,7 @@ function ChatMessageRenderer({
         contests={contests.length > 0 ? contests : contestCandidates}
         isCandidateClosed
         onRemove={(contest) => {
-          const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
-
-          if (Number.isFinite(contestCandidateId)) {
-            onRemoveContestCandidate(contestCandidateId);
-          }
+          onRemoveContestCandidate(contest);
         }}
         onShowAll={onOpenContestList}
         onStartVote={() => onOpenContestVote(candidateIds)}
