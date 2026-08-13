@@ -103,7 +103,8 @@ export default function CollaborationTypeResultLoadingPage() {
               ? "다른 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요."
               : submitError.message
       : "검사 결과를 제출하지 못했습니다.";
-  const isLoadingExistingResult = shouldLoadExistingResult && existingResultQuery.isFetching;
+  const isLoadingExistingResult =
+    shouldLoadExistingResult && !existingResultQuery.data && existingResultQuery.isFetching;
   const isSubmitting = submitState.status === "submitting";
   const isSubmitted =
     submitState.status === "success" ||
