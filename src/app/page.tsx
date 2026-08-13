@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import Image from "next/image";
@@ -9,12 +9,10 @@ import { ApiError } from "@/lib/http";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useHasAuthHydrated } from "@/stores/useHasAuthHydrated";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
-
-const heroContest = {
-  title: "2026년 『KB Dream Wave 2030』\nKB라스쿨 중등 4기 멘토링 멘토 모집",
-  organizer: "KB국민은행 / 아이들과미래재단",
-  period: "2026년 05월 26일 ~ 2026년 06월 17일",
-};
+import {
+  type RecommendedContest,
+  useRecommendedContestsQuery,
+} from "@/queries/useRecommendedContestsQuery";
 
 function Header() {
   return (
@@ -56,38 +54,68 @@ function Header() {
   );
 }
 
-function HeroCard() {
+function HeroCard({ contest }: { contest: RecommendedContest }) {
   return (
-    <section className="relative h-[268.5px] w-full overflow-hidden rounded-2xl bg-white shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]">
-      <Image
-        src="/images/home/hero-kb-dream-wave.png"
-        alt=""
-        fill
-        priority
-        sizes="358px"
-        className="object-cover"
-      />
+    <Link
+      href={`/contests/${contest.id}`}
+      aria-label={`${contest.title} 상세정보 보기`}
+      className="relative block h-[268.5px] w-full overflow-hidden rounded-2xl bg-white shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]"
+    >
+      <HeroImage src={contest.posterImageUrl} />
       <div className="absolute inset-0 bg-gradient-to-b from-color-gray-850/0 from-[10%] to-color-gray-850/90 to-[70%]" />
       <div className="absolute inset-x-4 bottom-7 flex flex-col gap-3 text-white">
         <h2 className="whitespace-pre-line text-[17px] leading-[1.35] font-bold">
-          {heroContest.title}
+          {contest.title}
         </h2>
         <div className="flex flex-col gap-1 text-xs leading-[1.35] font-semibold text-white/70">
-          <p className="truncate">{heroContest.organizer}</p>
-          <p className="truncate">{heroContest.period}</p>
+          <p className="truncate">{contest.organizer}</p>
+          <p className="truncate">{contest.period}</p>
         </div>
       </div>
-    </section>
+    </Link>
   );
 }
 
-function HeroIndicator() {
+function HeroIndicator({ activeIndex, count }: { activeIndex: number; count: number }) {
+  const indicatorCount = Math.max(1, Math.min(count, 3));
+
   return (
-    <div className="flex items-center gap-1" aria-label="추천 공모전 1 / 3">
-      <span className="size-1 rounded-full bg-color-gray-850" />
-      <span className="size-1 rounded-full bg-color-gray-400" />
-      <span className="size-1 rounded-full bg-color-gray-400" />
+    <div
+      className="flex items-center gap-1"
+      aria-label={`추천 공모전 ${activeIndex + 1} / ${indicatorCount}`}
+    >
+      {Array.from({ length: indicatorCount }, (_, index) => (
+        <span
+          key={index}
+          className={`size-1 rounded-full ${index === activeIndex ? "bg-color-gray-850" : "bg-color-gray-400"}`}
+        />
+      ))}
     </div>
+  );
+}
+
+function HeroImage({ src }: { src: string }) {
+  if (!src) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-color-gray-250 text-[13px] font-semibold text-color-gray-500">
+        이미지 준비 중
+      </div>
+    );
+  }
+
+  if (isExternalUrl(src)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt="" className="h-full w-full object-cover" />;
+  }
+
+  return <Image src={src} alt="" fill priority sizes="358px" className="object-cover" />;
+}
+
+function HeroStatus({ message }: { message: string }) {
+  return (
+    <section className="flex h-[268.5px] w-full items-center justify-center rounded-2xl bg-color-gray-150 px-6 text-center text-[13px] leading-[1.35] font-medium text-color-gray-650">
+      {message}
+    </section>
   );
 }
 
@@ -181,8 +209,15 @@ export default function Home() {
   const hasHydrated = useHasAuthHydrated();
   const accessToken = useAuthStore((state) => state.accessToken);
   const memberProfileQuery = useMemberProfileQuery();
+  const recommendedContestsQuery = useRecommendedContestsQuery();
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const isUnauthorized =
     memberProfileQuery.error instanceof ApiError && memberProfileQuery.error.status === 401;
+  const heroContests = useMemo(() => {
+    return recommendedContestsQuery.data?.slice(0, 3) ?? [];
+  }, [recommendedContestsQuery.data]);
+  const safeActiveHeroIndex = heroContests.length > 0 ? activeHeroIndex % heroContests.length : 0;
+  const heroContest = heroContests[safeActiveHeroIndex];
 
   // 홈화면은 "1. 회원가입/로그인"을 마친 사용자가 도착하는 화면이라
   // (기능명세서 1.7 앱 시작하기 참고), 토큰이 없거나 만료된 경우 로그인
@@ -200,6 +235,18 @@ export default function Home() {
     }
   }, [isUnauthorized, router]);
 
+  useEffect(() => {
+    if (heroContests.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveHeroIndex((currentIndex) => (currentIndex + 1) % heroContests.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [heroContests.length]);
+
   if (!hasHydrated || !accessToken || isUnauthorized) {
     return (
       <p className="px-4 py-16 text-center text-[13px] text-[#949494]">
@@ -214,8 +261,18 @@ export default function Home() {
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto pb-4">
         <div className="flex flex-col items-center gap-2 px-4 pt-[14px]">
-          <HeroCard />
-          <HeroIndicator />
+          {recommendedContestsQuery.isLoading ? (
+            <HeroStatus message="추천 공모전을 불러오는 중이에요." />
+          ) : recommendedContestsQuery.isError ? (
+            <HeroStatus message="추천 공모전을 불러오지 못했어요." />
+          ) : heroContest ? (
+            <>
+              <HeroCard contest={heroContest} />
+              <HeroIndicator activeIndex={safeActiveHeroIndex} count={heroContests.length} />
+            </>
+          ) : (
+            <HeroStatus message="추천 공모전이 아직 없어요." />
+          )}
         </div>
 
         <div className="px-4 py-3">
@@ -228,4 +285,8 @@ export default function Home() {
       <BottomNavigation />
     </main>
   );
+}
+
+function isExternalUrl(src: string) {
+  return src.startsWith("http://") || src.startsWith("https://");
 }
