@@ -115,7 +115,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const membersQuery = useChatTeamMembersQuery(roomId);
   const chatMembers = membersQuery.data?.chatMembers ?? EMPTY_CHAT_MEMBERS;
   const messagesQuery = useChatTeamMessagesQuery(roomId, chatMembers, {
-    enabled: membersQuery.isSuccess && chatMembers.length > 0,
+    enabled: membersQuery.isSuccess,
   });
   const serverMessages = useMemo(
     () => messagesQuery.data?.messages ?? [],
@@ -178,6 +178,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [activeContestCandidateIds, setActiveContestCandidateIds] = useState<string[] | null>(null);
   const [selectedContestIds, setSelectedContestIds] = useState<string[]>([]);
   const messageListRef = useRef<HTMLElement>(null);
+  const lastReadMarkerRef = useRef<string | null>(null);
 
   const singleDefiniteLeader = findMembersByIds(
     mockLeaderIntentAnswers
@@ -216,13 +217,20 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     candidates.map((candidate) => `${candidate.name}님`),
   );
 
+  const latestReadMarker = useMemo(() => {
+    const latestMessage = serverMessages.at(-1);
+
+    return latestMessage ? `${roomId}:${latestMessage.id}:${latestMessage.sentAt}` : `${roomId}:empty`;
+  }, [roomId, serverMessages]);
+
   useEffect(() => {
-    if (!messagesQuery.isSuccess) {
+    if (!messagesQuery.isSuccess || lastReadMarkerRef.current === latestReadMarker) {
       return;
     }
 
+    lastReadMarkerRef.current = latestReadMarker;
     markAsRead();
-  }, [markAsRead, messagesQuery.isSuccess, roomId]);
+  }, [latestReadMarker, markAsRead, messagesQuery.isSuccess, roomId]);
 
   useEffect(() => {
     const shouldRunCandidateTimer =

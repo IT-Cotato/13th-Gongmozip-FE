@@ -24,6 +24,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 type UnknownRecord = Record<string, unknown>;
 
 const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL ?? API_BASE_URL).replace(/\/+$/, "");
+const HAS_TIMEZONE_REGEX = /(Z|[+-]\d{2}:?\d{2})$/;
 
 export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
@@ -239,6 +240,12 @@ export function useMarkChatTeamAsReadMutation(teamId: string) {
 
   return useMutation({
     mutationFn: () => markChatTeamAsRead(teamId),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: chatTeamsQueryKey });
+      queryClient.setQueryData(chatTeamsQueryKey, (current: unknown) =>
+        updateChatTeamUnreadCount(current, teamId, 0),
+      );
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
@@ -899,6 +906,47 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
   };
 }
 
+function updateChatTeamUnreadCount(current: unknown, teamId: string, unreadCount: number): unknown {
+  if (Array.isArray(current)) {
+    return current.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount));
+  }
+
+  if (!isRecord(current)) {
+    return current;
+  }
+
+  return {
+    ...current,
+    rooms: Array.isArray(current.rooms)
+      ? current.rooms.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount))
+      : current.rooms,
+    teams: Array.isArray(current.teams)
+      ? current.teams.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount))
+      : current.teams,
+    content: Array.isArray(current.content)
+      ? current.content.map((team) => updateChatTeamUnreadCountItem(team, teamId, unreadCount))
+      : current.content,
+  };
+}
+
+function updateChatTeamUnreadCountItem(item: unknown, teamId: string, unreadCount: number): unknown {
+  if (!isRecord(item)) {
+    return item;
+  }
+
+  const itemId = getValue(item, ["teamId", "id", "chatRoomId", "roomId"]);
+
+  if (String(itemId) !== teamId) {
+    return item;
+  }
+
+  return {
+    ...item,
+    unreadCount,
+    unreadMessageCount: unreadCount,
+  };
+}
+
 function mapChatMember(
   member: ChatTeamMemberResponse,
   myTeamMemberId: number | string | null,
@@ -1079,7 +1127,7 @@ function isChatMessageMetadata(value: unknown): value is ChatMessageMetadata {
 
 function getMessageTime(message: ChatMessageResponse) {
   const dateValue = getString(message, ["createdAt", "sentAt", "timestamp"]);
-  const time = dateValue ? new Date(dateValue).getTime() : 0;
+  const time = dateValue ? parseApiDate(dateValue).getTime() : 0;
 
   return Number.isFinite(time) ? time : 0;
 }
@@ -1137,7 +1185,7 @@ function formatRelativeTime(dateValue: string | undefined) {
     return "";
   }
 
-  const date = new Date(dateValue);
+  const date = parseApiDate(dateValue);
 
   if (Number.isNaN(date.getTime())) {
     return dateValue;
@@ -1167,7 +1215,7 @@ function formatMessageTime(dateValue: string | undefined) {
     return "";
   }
 
-  const date = new Date(dateValue);
+  const date = parseApiDate(dateValue);
 
   if (Number.isNaN(date.getTime())) {
     return dateValue;
@@ -1178,4 +1226,10 @@ function formatMessageTime(dateValue: string | undefined) {
     minute: "2-digit",
     hour12: true,
   }).format(date);
+}
+
+function parseApiDate(dateValue: string) {
+  const normalizedDateValue = HAS_TIMEZONE_REGEX.test(dateValue) ? dateValue : `${dateValue}Z`;
+
+  return new Date(normalizedDateValue);
 }
