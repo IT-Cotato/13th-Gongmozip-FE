@@ -338,7 +338,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
           ) : null}
 
           {showShareErrorToast ? (
-            <ContestActionToast message="공유 정보를 불러오지 못했습니다." />
+            <ContestActionToast message="공유에 실패했습니다. 다시 시도해주세요." />
           ) : null}
 
           {showScrapToast ? (
