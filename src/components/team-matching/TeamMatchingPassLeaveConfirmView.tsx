@@ -44,8 +44,9 @@ export default function TeamMatchingPassLeaveConfirmView() {
   const passProposal = useTeamMatchingProposalStore((state) => state.passProposal);
   const pendingProposalId = useTeamMatchingProposalStore((state) => state.pendingProposalId);
   const withdrawMutation = useWithdrawMatchingApplicationMutation();
-  const applicationId = pendingProposalId ? Number(pendingProposalId) : null;
-  const canPass = Number.isInteger(applicationId);
+  const applicationId =
+    pendingProposalId && /^[1-9]\d*$/.test(pendingProposalId) ? Number(pendingProposalId) : null;
+  const canPass = applicationId !== null && Number.isSafeInteger(applicationId);
   const errorMessage = withdrawMutation.error
     ? withdrawMutation.error instanceof ApiError
       ? withdrawMutation.error.message

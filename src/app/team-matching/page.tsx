@@ -501,7 +501,7 @@ export default function TeamMatchingPage() {
         <div className="shrink-0 bg-white px-4 pb-3 pt-2">
           <FixedApplyButton
             disabled={isLoading || (isError && !isUnauthorized) || !canOpenApplyDestination}
-            href={isUnauthorized ? "/login/email" : applyHref}
+            href={isUnauthorized ? "/login" : applyHref}
             label={isUnauthorized ? "로그인하기" : applyLabel}
           />
         </div>
