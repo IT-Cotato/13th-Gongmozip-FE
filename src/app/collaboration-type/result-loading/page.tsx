@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/http";
 import {
@@ -71,10 +71,26 @@ export default function CollaborationTypeResultLoadingPage() {
     return answers.map((answer) => `${answer.questionId}:${answer.selectedOptionId}`).join("|");
   }, [answers]);
   const isEveryQuestionAnswered = answers.length >= requiredQuestionCount;
-  const submitError = submitState.status === "error" ? submitState.error : null;
+  const shouldLoadExistingResult =
+    !isEveryQuestionAnswered && !answersKey && submitState.status === "idle";
+  const existingResultQuery = useQuery({
+    queryKey: surveyResultQueryKey,
+    queryFn: fetchSurveyResult,
+    retry: shouldRetrySurveyResultQuery,
+    enabled: shouldLoadExistingResult,
+  });
+  const existingResultHref = existingResultQuery.data
+    ? `/collaboration-type/results/${existingResultQuery.data.characterType}`
+    : null;
+  const activeResultHref = resultHref ?? existingResultHref;
+  const submitError =
+    submitState.status === "error" ? submitState.error : (existingResultQuery.error ?? null);
   const isUnauthorized = submitError instanceof ApiError && submitError.status === 401;
   const isSurveyRetakeLimited =
     submitError instanceof ApiError && submitError.code === "SURVEY_409_1";
+  const isNoExistingSurveyResult =
+    submitError instanceof ApiError &&
+    (submitError.status === 404 || submitError.code === "SURVEY_404_1");
   const errorMessage =
     submitError instanceof ApiError
       ? isUnauthorized
@@ -87,10 +103,14 @@ export default function CollaborationTypeResultLoadingPage() {
               ? "다른 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요."
               : submitError.message
       : "검사 결과를 제출하지 못했습니다.";
+  const isLoadingExistingResult = shouldLoadExistingResult && existingResultQuery.isFetching;
   const isSubmitting = submitState.status === "submitting";
-  const isSubmitted = submitState.status === "success" || submitState.status === "existing";
-  const hasExistingResult = submitState.status === "existing";
-  const hasSubmitError = submitState.status === "error";
+  const isSubmitted =
+    submitState.status === "success" ||
+    submitState.status === "existing" ||
+    Boolean(existingResultQuery.data);
+  const hasExistingResult = submitState.status === "existing" || Boolean(existingResultQuery.data);
+  const hasSubmitError = Boolean(submitError) && !isNoExistingSurveyResult;
 
   useEffect(() => {
     let isCurrent = true;
@@ -240,8 +260,10 @@ export default function CollaborationTypeResultLoadingPage() {
 
         <section className="relative z-10 pt-[49px] text-center">
           <h2 className="text-center font-[Pretendard] text-[20px] font-bold leading-[135%] text-[#1F1F1F]">
-            {isSubmitting
-              ? "검사 결과를 분석하고 있어요"
+            {isLoadingExistingResult
+              ? "검사 결과를 확인하고 있어요"
+              : isSubmitting
+                ? "검사 결과를 분석하고 있어요"
               : isSubmitted
                 ? hasExistingResult
                   ? "기존 검사 결과가 있어요"
@@ -251,7 +273,13 @@ export default function CollaborationTypeResultLoadingPage() {
                   : "검사 답변을 확인해 주세요"}
           </h2>
           <p className="mt-[17px] text-center font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
-            {isSubmitting ? (
+            {isLoadingExistingResult ? (
+              <>
+                이전에 제출한 협업 유형 검사가 있는지
+                <br />
+                확인하고 있어요.
+              </>
+            ) : isSubmitting ? (
               <>
                 제출한 답변을 바탕으로
                 <br />
@@ -294,10 +322,18 @@ export default function CollaborationTypeResultLoadingPage() {
       </div>
 
       <div className="shrink-0 bg-white px-4 pb-3 pt-2">
-        {isSubmitted && resultHref ? (
+        {isLoadingExistingResult ? (
+          <button
+            className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#EFEFEF] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-[#C8C8C8]"
+            disabled
+            type="button"
+          >
+            확인 중
+          </button>
+        ) : isSubmitted && activeResultHref ? (
           <Link
             className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] font-[Roboto] text-[18px] font-bold leading-none text-white"
-            href={resultHref}
+            href={activeResultHref}
           >
             {hasExistingResult ? "기존 결과 보기" : "검사 결과 확인하기"}
           </Link>
@@ -340,7 +376,7 @@ export default function CollaborationTypeResultLoadingPage() {
       <CollaborationResultPendingLeaveModal
         onOpenChange={setIsLeaveModalOpen}
         open={isLeaveModalOpen}
-        resultHref={resultHref}
+        resultHref={activeResultHref}
       />
     </main>
   );
