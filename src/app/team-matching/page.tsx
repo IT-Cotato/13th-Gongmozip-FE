@@ -12,12 +12,21 @@ import {
   useMatchingEligibilityQuery,
 } from "@/queries/useMatchingEligibilityQuery";
 import {
+  type MatchingParticipantCount,
+  useMatchingParticipantCountQuery,
+} from "@/queries/useMatchingParticipantCountQuery";
+import {
   type MatchingApplicationStatus,
   type TodayMatchingApplication,
   useTodayMatchingApplicationQuery,
 } from "@/queries/useTodayMatchingApplicationQuery";
 
 const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
+const countdownLabels = {
+  application: "팀원 매칭 마감까지",
+  publish: "매칭 결과 발표까지",
+  next: "다음 매칭 신청 접수 중",
+} as const;
 
 const reasonPriority: MatchingEligibilityReason[] = [
   "PROFILE_REQUIRED",
@@ -60,14 +69,24 @@ function formatParticipantCount(participantCount?: number) {
   return participantCount.toLocaleString("ko-KR");
 }
 
+function getTimestamp(dateTime?: string) {
+  if (!dateTime) {
+    return null;
+  }
+
+  const timestamp = new Date(dateTime).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 function getRemainingSeconds(deadlineAt?: string, baseTime = Date.now()) {
   if (!deadlineAt) {
     return 0;
   }
 
-  const deadlineTime = new Date(deadlineAt).getTime();
+  const deadlineTime = getTimestamp(deadlineAt);
 
-  if (Number.isNaN(deadlineTime)) {
+  if (deadlineTime === null) {
     return 0;
   }
 
@@ -150,11 +169,61 @@ function getTodayApplicationStatusMessage(todayApplication?: TodayMatchingApplic
   return todayApplicationStatusMessages[todayApplication.status];
 }
 
-function useCountdownDigits(deadlineAt?: string) {
+function getServerOffsetMs(serverTime?: string) {
+  const serverTimestamp = getTimestamp(serverTime);
+
+  return serverTimestamp === null ? 0 : serverTimestamp - Date.now();
+}
+
+function getCountdownState(
+  participantCountData?: MatchingParticipantCount,
+  fallbackDeadlineAt?: string,
+  nowOnServer = Date.now(),
+) {
+  if (!participantCountData) {
+    return {
+      deadlineAt: fallbackDeadlineAt,
+      label: countdownLabels.application,
+    };
+  }
+
+  const applicationDeadlineAt = participantCountData.applicationDeadlineAt;
+  const resultPublishAt = participantCountData.resultPublishAt;
+  const deadlineLeftMs = (getTimestamp(applicationDeadlineAt) ?? 0) - nowOnServer;
+  const publishLeftMs = (getTimestamp(resultPublishAt) ?? 0) - nowOnServer;
+
+  if (deadlineLeftMs > 0) {
+    return {
+      deadlineAt: applicationDeadlineAt,
+      label: countdownLabels.application,
+    };
+  }
+
+  if (publishLeftMs > 0) {
+    return {
+      deadlineAt: resultPublishAt,
+      label: countdownLabels.publish,
+    };
+  }
+
+  return {
+    deadlineAt: undefined,
+    label: countdownLabels.next,
+  };
+}
+
+function useCountdownState(
+  participantCountData?: MatchingParticipantCount,
+  fallbackDeadlineAt?: string,
+) {
+  const serverOffsetMs = useMemo(
+    () => getServerOffsetMs(participantCountData?.serverTime),
+    [participantCountData?.serverTime],
+  );
   const [baseTime, setBaseTime] = useState(Date.now);
 
   useEffect(() => {
-    if (!deadlineAt) {
+    if (!participantCountData && !fallbackDeadlineAt) {
       return;
     }
 
@@ -165,18 +234,32 @@ function useCountdownDigits(deadlineAt?: string) {
     return () => {
       window.clearInterval(timerId);
     };
-  }, [deadlineAt]);
+  }, [fallbackDeadlineAt, participantCountData]);
 
-  return deadlineAt ? getCountdownDigits(deadlineAt, baseTime) : fallbackCountdownDigits;
+  const nowOnServer = baseTime + serverOffsetMs;
+  const countdownState = getCountdownState(participantCountData, fallbackDeadlineAt, nowOnServer);
+
+  return {
+    label: countdownState.label,
+    digits: countdownState.deadlineAt
+      ? getCountdownDigits(countdownState.deadlineAt, nowOnServer)
+      : fallbackCountdownDigits,
+  };
 }
 
-function CountdownCard({ deadlineAt }: { deadlineAt?: string }) {
-  const countdownDigits = useCountdownDigits(deadlineAt);
+function CountdownCard({
+  deadlineAt,
+  participantCountData,
+}: {
+  deadlineAt?: string;
+  participantCountData?: MatchingParticipantCount;
+}) {
+  const { digits: countdownDigits, label } = useCountdownState(participantCountData, deadlineAt);
 
   return (
     <section className="mx-auto mt-4 flex h-[143px] w-[358px] max-w-[calc(100%-32px)] flex-col items-center gap-2 rounded-2xl bg-[#F9F8F4] p-4 text-center">
       <div className="flex items-start justify-center gap-[10px] rounded-[10px] bg-[#1F1F1F] px-2 py-[5px] text-[14px] font-bold leading-none text-white">
-        팀원 매칭 마감까지
+        {label}
       </div>
 
       <div className="flex h-[49px] items-center justify-center gap-1 self-stretch">
@@ -274,13 +357,16 @@ function FixedApplyButton({
 
 export default function TeamMatchingPage() {
   const { data: eligibility, error, isError, isLoading } = useMatchingEligibilityQuery();
+  const { data: participantCountData } = useMatchingParticipantCountQuery();
   const {
     data: todayApplication,
     error: todayApplicationError,
     isError: isTodayApplicationError,
     isLoading: isTodayApplicationLoading,
   } = useTodayMatchingApplicationQuery();
-  const participantCount = formatParticipantCount(eligibility?.participantCount);
+  const participantCount = formatParticipantCount(
+    participantCountData?.participantCount ?? eligibility?.participantCount,
+  );
   const alreadyAppliedToday = eligibility?.appliedToday || todayApplication?.appliedToday;
   const applyHref = alreadyAppliedToday
     ? "/team-matching/modal-preview/already-applied"
@@ -389,7 +475,10 @@ export default function TeamMatchingPage() {
             </div>
           </section>
 
-          <CountdownCard deadlineAt={eligibility?.applicationDeadlineAt} />
+          <CountdownCard
+            deadlineAt={eligibility?.applicationDeadlineAt}
+            participantCountData={participantCountData}
+          />
 
           <div className="mt-6 h-[6px] w-[390px] max-w-full bg-[rgba(97,97,97,0.08)]" />
 
@@ -412,7 +501,7 @@ export default function TeamMatchingPage() {
         <div className="shrink-0 bg-white px-4 pb-3 pt-2">
           <FixedApplyButton
             disabled={isLoading || (isError && !isUnauthorized) || !canOpenApplyDestination}
-            href={isUnauthorized ? "/login/email" : applyHref}
+            href={isUnauthorized ? "/login" : applyHref}
             label={isUnauthorized ? "로그인하기" : applyLabel}
           />
         </div>

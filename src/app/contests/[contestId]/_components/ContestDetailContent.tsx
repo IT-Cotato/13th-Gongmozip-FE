@@ -44,7 +44,7 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
         {!isAuthenticated ? (
           <ContestDetailStatus
             actionLabel="로그인하기"
-            href="/login/email"
+            href="/login"
             message="로그인 후 공모전 상세 정보를 확인할 수 있습니다."
             state="status"
             title="인증이 필요합니다"
@@ -60,7 +60,7 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
             actionLabel={
               error instanceof ApiError && error.status === 401 ? "로그인하기" : "목록으로 돌아가기"
             }
-            href={error instanceof ApiError && error.status === 401 ? "/login/email" : "/contests"}
+            href={error instanceof ApiError && error.status === 401 ? "/login" : "/contests"}
             message={
               isNotFound
                 ? "삭제되었거나 존재하지 않는 공모전입니다."

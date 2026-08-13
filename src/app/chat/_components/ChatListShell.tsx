@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type AriaRole } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import { ApiError } from "@/lib/http";
@@ -20,6 +20,7 @@ export function ChatListShell() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("latest");
   const { data: chatRooms = [], error, isError, isLoading, refetch } = useChatTeamsQuery();
+  const canShowRooms = !isLoading && !isError;
 
   const rooms = useMemo(() => {
     if (sortMode === "unread") {
@@ -28,8 +29,6 @@ export function ChatListShell() {
 
     return chatRooms;
   }, [chatRooms, sortMode]);
-
-  const unreadChatCount = rooms.reduce((totalCount, room) => totalCount + room.unreadCount, 0);
 
   return (
     <main className="relative flex h-full w-full flex-col bg-white pt-[env(safe-area-inset-top)]">
@@ -60,26 +59,23 @@ export function ChatListShell() {
 
         {isError ? (
           <ChatListStateMessage
+            role="alert"
             message={
-              error instanceof ApiError
-                ? error.message
-                : "채팅방 목록을 불러오지 못했습니다."
+              error instanceof ApiError ? error.message : "채팅방 목록을 불러오지 못했습니다."
             }
             actionLabel="다시 시도"
             onAction={() => void refetch()}
           />
         ) : null}
 
-        {!isLoading && !isError && rooms.length === 0 ? (
+        {canShowRooms && rooms.length === 0 ? (
           <ChatListStateMessage message="아직 참여 중인 채팅방이 없습니다." />
         ) : null}
 
-        {!isLoading && !isError ? rooms.map((room) => (
-          <ChatRoomRow key={room.id} room={room} />
-        )) : null}
+        {canShowRooms ? rooms.map((room) => <ChatRoomRow key={room.id} room={room} />) : null}
       </section>
 
-      <BottomNavigation unreadChatCount={unreadChatCount} />
+      <BottomNavigation chatRoomCount={chatRooms.length} />
     </main>
   );
 }
@@ -88,13 +84,18 @@ function ChatListStateMessage({
   actionLabel,
   message,
   onAction,
+  role,
 }: {
   actionLabel?: string;
   message: string;
   onAction?: () => void;
+  role?: AriaRole;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+    <div
+      role={role}
+      className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
+    >
       <p className="text-[13px] leading-[1.5] text-color-gray-650">{message}</p>
       {actionLabel && onAction ? (
         <button

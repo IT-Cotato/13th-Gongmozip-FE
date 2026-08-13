@@ -81,7 +81,7 @@ export function ContestScrapsContent() {
     return (
       <ContestScrapsStatus
         actionLabel="로그인하기"
-        href="/login/email"
+        href="/login"
         message="로그인 후 스크랩한 공모전을 확인할 수 있습니다."
       />
     );

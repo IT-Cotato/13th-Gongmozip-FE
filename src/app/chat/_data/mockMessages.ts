@@ -1,5 +1,6 @@
 export type ChatMessage = {
   id: string;
+  senderId?: string;
   senderName: string;
   body: string;
   sentAt: string;
@@ -38,10 +39,12 @@ export type ChatRoom = {
   lastMessageAt: string;
   unreadCount: number;
   avatarSrcs: string[];
+  projectEndedAt?: string | null;
 };
 
 export type ChatMember = {
   id: string;
+  profileId?: number;
   name: string;
   isMe?: boolean;
   isChatbot?: boolean;
