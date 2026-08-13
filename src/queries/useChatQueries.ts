@@ -453,7 +453,7 @@ export function createLeaderRecommendation(teamId: string) {
   );
 }
 
-export function shareContestToChat(teamId: string, contestId: number) {
+export function shareContestToChat(teamId: string, contestId: number | string) {
   return apiFetch<null>(`/api/teams/${encodeURIComponent(teamId)}/contest-shares`, {
     method: "POST",
     body: { contestId },
@@ -634,6 +634,22 @@ export function useShareContestToChatMutation(teamId: string) {
     mutationFn: (contestId: number) => shareContestToChat(teamId, contestId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+    },
+  });
+}
+
+export function useShareContestToChatsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ contestId, teamIds }: { contestId: number | string; teamIds: string[] }) => {
+      await Promise.all(teamIds.map((teamId) => shareContestToChat(teamId, contestId)));
+    },
+    onSuccess: (_data, variables) => {
+      variables.teamIds.forEach((teamId) => {
+        void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+      });
+      void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
     },
   });
 }
