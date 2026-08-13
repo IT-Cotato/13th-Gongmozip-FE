@@ -2,26 +2,82 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import CancelConfirmationModal from "@/components/team-matching/CancelConfirmationModal";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import {
   type TodayMatchingApplication,
   useTodayMatchingApplicationQuery,
 } from "@/queries/useTodayMatchingApplicationQuery";
 
-const countdownGroups = [
-  { digits: ["0", "1"], label: "시간" },
-  { digits: ["3", "0"], label: "분" },
-  { digits: ["1", "0"], label: "초" },
-];
+const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
 
 type TeamMatchingPoolViewProps = {
   showCancelModal?: boolean;
   todayApplication?: TodayMatchingApplication;
 };
 
-function MatchingCountdown() {
+function getRemainingSeconds(deadlineAt?: string, baseTime = Date.now()) {
+  if (!deadlineAt) {
+    return 0;
+  }
+
+  const deadlineTime = new Date(deadlineAt).getTime();
+
+  if (Number.isNaN(deadlineTime)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((deadlineTime - baseTime) / 1000));
+}
+
+function getCountdownDigits(deadlineAt?: string, baseTime?: number) {
+  const remainingSeconds = getRemainingSeconds(deadlineAt, baseTime);
+  const hours = Math.floor(remainingSeconds / 3600);
+  const minutes = Math.floor((remainingSeconds % 3600) / 60);
+  const seconds = remainingSeconds % 60;
+
+  return `${String(hours).padStart(2, "0")}${String(minutes).padStart(2, "0")}${String(
+    seconds,
+  ).padStart(2, "0")}`.split("");
+}
+
+function useCountdownDigits(deadlineAt?: string) {
+  const [baseTime, setBaseTime] = useState(Date.now);
+
+  useEffect(() => {
+    if (!deadlineAt) {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      setBaseTime(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [deadlineAt]);
+
+  return deadlineAt ? getCountdownDigits(deadlineAt, baseTime) : fallbackCountdownDigits;
+}
+
+function useCountdownGroups(deadlineAt?: string) {
+  const countdownDigits = useCountdownDigits(deadlineAt);
+
+  return [
+    { digits: countdownDigits.slice(0, 2), label: "시간" },
+    { digits: countdownDigits.slice(2, 4), label: "분" },
+    { digits: countdownDigits.slice(4, 6), label: "초" },
+  ];
+}
+
+function MatchingCountdown({ deadlineAt, memberName }: { deadlineAt?: string; memberName: string }) {
+  const countdownGroups = useCountdownGroups(deadlineAt);
+
   return (
     <section className="relative mx-auto mt-9 flex w-full max-w-[358px] flex-col items-start gap-4 overflow-hidden rounded-2xl bg-[#F9F8F4] px-5 py-4 shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]">
       <Image
@@ -35,7 +91,7 @@ function MatchingCountdown() {
 
       <div className="relative z-10 flex w-full flex-col items-start gap-4">
         <h2 className="font-[Roboto] text-[17px] font-semibold leading-[135%] text-[#1F1F1F]">
-          공모집이 김철수님을 위한
+          공모집이 {memberName}님을 위한
           <br />
           팀원을 아직 구성중이에요.
         </h2>
@@ -91,9 +147,13 @@ export default function TeamMatchingPoolView({
   const { data: fetchedTodayApplication } = useTodayMatchingApplicationQuery({
     enabled: !todayApplication,
   });
+  const { data: eligibility } = useMatchingEligibilityQuery();
+  const { data: memberProfile } = useMemberProfileQuery();
   const currentTodayApplication = todayApplication ?? fetchedTodayApplication;
   const withdrawal = currentTodayApplication?.withdrawal;
   const canWithdraw = withdrawal?.withdrawable ?? true;
+  const deadlineAt = eligibility?.applicationDeadlineAt ?? withdrawal?.deadlineAt ?? undefined;
+  const memberName = memberProfile?.name?.trim() || "회원";
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -155,7 +215,7 @@ export default function TeamMatchingPoolView({
           </div>
         </div>
 
-        <MatchingCountdown />
+        <MatchingCountdown deadlineAt={deadlineAt} memberName={memberName} />
       </div>
 
       <div className="relative z-10 shrink-0 bg-white px-4 pb-3 pt-2">

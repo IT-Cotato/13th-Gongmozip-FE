@@ -24,13 +24,18 @@ export type LeaderEvent =
   | "revote"
   | "temporaryLeader"
   | "contestVoteReady";
-export type LeaderCandidate = Pick<ChatMember, "avatarSrc" | "avatarTone" | "id" | "isMe" | "name">;
+export type LeaderCandidate = Pick<
+  ChatMember,
+  "avatarSrc" | "avatarTone" | "id" | "isMe" | "name" | "profileId"
+>;
 export type LeaderIntentAnswer = {
   memberId: string;
   intent: LeaderIntent;
 };
 export type RecommendedContest = {
   id: string;
+  contestId?: number;
+  contestCandidateId?: number;
   category: string;
   dday: string;
   imageSrc?: string;

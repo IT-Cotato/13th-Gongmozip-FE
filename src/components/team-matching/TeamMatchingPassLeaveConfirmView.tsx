@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { PassIllustration } from "@/components/team-matching/TeamMatchingPassView";
+import { ApiError } from "@/lib/http";
+import { useWithdrawMatchingApplicationMutation } from "@/queries/useWithdrawMatchingApplicationMutation";
 import { useTeamMatchingProposalStore } from "@/stores/teamMatchingProposalStore";
-
-const FALLBACK_MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
 
 function PassLeaveNoticeCard() {
   return (
@@ -43,10 +43,27 @@ export default function TeamMatchingPassLeaveConfirmView() {
   const router = useRouter();
   const passProposal = useTeamMatchingProposalStore((state) => state.passProposal);
   const pendingProposalId = useTeamMatchingProposalStore((state) => state.pendingProposalId);
+  const withdrawMutation = useWithdrawMatchingApplicationMutation();
+  const applicationId =
+    pendingProposalId && /^[1-9]\d*$/.test(pendingProposalId) ? Number(pendingProposalId) : null;
+  const canPass = applicationId !== null && Number.isSafeInteger(applicationId);
+  const errorMessage = withdrawMutation.error
+    ? withdrawMutation.error instanceof ApiError
+      ? withdrawMutation.error.message
+      : "매칭 패스 중 오류가 발생했어요."
+    : null;
 
   function handlePassClick() {
-    passProposal(pendingProposalId ?? FALLBACK_MATCHING_PROPOSAL_ID);
-    router.push("/team-matching/status/pass");
+    if (!canPass || applicationId === null || withdrawMutation.isPending) {
+      return;
+    }
+
+    withdrawMutation.mutate(applicationId, {
+      onSuccess: (data) => {
+        passProposal(String(data.applicationId), data.collaborationPenalty);
+        router.push("/team-matching/status/pass");
+      },
+    });
   }
 
   return (
@@ -72,20 +89,31 @@ export default function TeamMatchingPassLeaveConfirmView() {
         <PassLeaveNoticeCard />
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-20 flex items-stretch gap-4 bg-white px-4 pb-9 pt-3">
-        <Link
-          className="flex h-[50px] flex-1 items-center justify-center self-stretch rounded-[14px] bg-[rgba(97,97,97,0.10)] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
-          href="/team-matching/status"
-        >
-          뒤로가기
-        </Link>
-        <button
-          className="flex h-[50px] flex-1 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-          onClick={handlePassClick}
-          type="button"
-        >
-          패스하기
-        </button>
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-white px-4 pb-9 pt-3">
+        {errorMessage ? (
+          <p
+            role="alert"
+            className="mb-2 text-center font-[Pretendard] text-[12px] font-medium leading-[150%] text-[#D04A2F]"
+          >
+            {errorMessage}
+          </p>
+        ) : null}
+        <div className="flex items-stretch gap-4">
+          <Link
+            className="flex h-[50px] flex-1 items-center justify-center self-stretch rounded-[14px] bg-[rgba(97,97,97,0.10)] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161]"
+            href="/team-matching/status"
+          >
+            뒤로가기
+          </Link>
+          <button
+            className="flex h-[50px] flex-1 items-center justify-center self-stretch rounded-[14px] bg-[#FF7658] px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white disabled:bg-[#DFDFDF]"
+            disabled={!canPass || withdrawMutation.isPending}
+            onClick={handlePassClick}
+            type="button"
+          >
+            {withdrawMutation.isPending ? "패스 중..." : "패스하기"}
+          </button>
+        </div>
       </div>
     </main>
   );

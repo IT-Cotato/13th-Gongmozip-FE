@@ -6,11 +6,6 @@ import { useRouter } from "next/navigation";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { ApiError } from "@/lib/http";
 import { useAcceptMatchingGroupMutation } from "@/queries/useAcceptMatchingGroupMutation";
-import {
-  type MatchingReasonTextBlock,
-  useCreateMatchingReasonMutation,
-  useMatchingReasonQuery,
-} from "@/queries/useMatchingReasonQuery";
 import type {
   MatchingCharacterType,
   TodayMatchingResult,
@@ -28,9 +23,7 @@ type MatchedMember = {
   avatarSrc: string;
   badgeTone: "coral" | "blue" | "orange" | "green";
   id: number;
-  me: boolean;
   name: string;
-  responseStatus: TodayMatchingResultMember["responseStatus"];
   role: string;
 };
 
@@ -65,10 +58,11 @@ const characterMeta: Record<
 };
 
 const memberDescriptions = [
-  "신청 당시 프로필 기준",
-  "협업 유형 검사 반영",
-  "팀장 희망 여부 반영",
-  "궁합 점수 기반 매칭",
+  "서울권 대학 재학중",
+  "사회과학 분야 전공",
+  "주요 프로젝트",
+  "주요 프로젝트",
+  "주요 프로젝트",
 ];
 
 const badgeClassName: Record<MatchedMember["badgeTone"], string> = {
@@ -78,23 +72,62 @@ const badgeClassName: Record<MatchedMember["badgeTone"], string> = {
   orange: "bg-[#FFAD62]",
 };
 
-const MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
-
-function formatScore(score: number | null) {
-  if (score === null) {
-    return "-";
+function formatPublishedTime(publishedAt: string | null) {
+  if (!publishedAt) {
+    return "게시 시각을 확인할 수 없어요";
   }
 
-  return Number.isInteger(score) ? String(score) : score.toFixed(1);
+  const publishedTime = new Date(publishedAt).getTime();
+  if (!Number.isFinite(publishedTime)) {
+    return "게시 시각을 확인할 수 없어요";
+  }
+
+  const elapsedMinutes = Math.floor((Date.now() - publishedTime) / 60000);
+
+  if (elapsedMinutes < 0) {
+    return "방금 전";
+  }
+
+  if (elapsedMinutes < 1) {
+    return "방금 전";
+  }
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes}분 전`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+
+  if (elapsedHours < 24) {
+    return `${elapsedHours}시간 전`;
+  }
+
+  return new Date(publishedAt).toLocaleDateString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function getMatchingReasons(todayMatchingResult: TodayMatchingResult): MatchingReason[] {
-  const score = formatScore(todayMatchingResult.matchingScore);
-  const teamSize = todayMatchingResult.teamSize ?? todayMatchingResult.members.length;
+  const contestCategoryLabels: Record<
+    NonNullable<TodayMatchingResult["contestCategory"]>,
+    string
+  > = {
+    ART_DESIGN: "미술·디자인 분야",
+    DATA_ANALYSIS: "데이터 분석 분야",
+    IDEA_PLANNING: "아이디어·기획 분야",
+    IT_AI_TECH: "IT·AI·기술 분야",
+    MARKETING_AD_BRANDING: "마케팅·광고·브랜딩 분야",
+    PHOTO_VIDEO: "사진·영상 분야",
+  };
+  const matchingReason = todayMatchingResult.contestCategory
+    ? `공통된 ${contestCategoryLabels[todayMatchingResult.contestCategory]}`
+    : "공통된 분야 전공";
 
   return [
-    { label: "궁합 점수", value: score === "-" ? "계산 완료" : `${score}점` },
-    { label: "제안 팀", value: `${teamSize}명 팀` },
+    { label: "매칭 이유", value: matchingReason },
+    { label: "팀의 강점", value: "프로젝트 완주율 높음" },
   ];
 }
 
@@ -112,209 +145,9 @@ function getMatchedMembers(members: TodayMatchingResultMember[]): MatchedMember[
     return {
       ...meta,
       id: member.memberId,
-      me: member.me,
       name: member.nickname,
-      responseStatus: member.responseStatus,
     };
   });
-}
-
-function formatReasonScore(score: number | null) {
-  if (score === null) {
-    return null;
-  }
-
-  return Number.isInteger(score) ? `${score}점` : `${score.toFixed(1)}점`;
-}
-
-function isReasonGenerating(status: string | undefined) {
-  return status === "PENDING" || status === "PROCESSING";
-}
-
-function MatchingReasonList({
-  items,
-  title,
-}: {
-  items: MatchingReasonTextBlock[];
-  title: string;
-}) {
-  if (items.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mt-4">
-      <h4 className="font-[Pretendard] text-[13px] font-semibold leading-[135%] text-[#2A2A2A]">
-        {title}
-      </h4>
-      <ul className="mt-2 space-y-2">
-        {items.map((item) => (
-          <li className="rounded-[8px] bg-white px-3 py-2" key={`${title}-${item.title}`}>
-            <p className="font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#1F1F1F]">
-              {item.title}
-            </p>
-            <p className="mt-1 font-[Pretendard] text-[11px] font-normal leading-[145%] text-[#616161]">
-              {item.description}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function MatchingReasonBulletList({ items, title }: { items: string[]; title: string }) {
-  if (items.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mt-4">
-      <h4 className="font-[Pretendard] text-[13px] font-semibold leading-[135%] text-[#2A2A2A]">
-        {title}
-      </h4>
-      <ul className="mt-2 space-y-1.5">
-        {items.map((item) => (
-          <li
-            className="flex gap-2 font-[Pretendard] text-[11px] font-normal leading-[145%] text-[#616161]"
-            key={`${title}-${item}`}
-          >
-            <span aria-hidden="true">·</span>
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function MatchingReasonSection({ matchingGroupId }: { matchingGroupId: number | null }) {
-  const reasonQuery = useMatchingReasonQuery(matchingGroupId, {
-    refetchInterval: (query) =>
-      isReasonGenerating(query.state.data?.status) ? 4000 : false,
-  });
-  const createReasonMutation = useCreateMatchingReasonMutation();
-  const reason = reasonQuery.data;
-  const isNotFound = reasonQuery.error instanceof ApiError && reasonQuery.error.status === 404;
-  const createError =
-    createReasonMutation.error instanceof ApiError ? createReasonMutation.error : null;
-  const isCreating =
-    createReasonMutation.isPending || isReasonGenerating(createReasonMutation.data?.status);
-  const isGenerating = isReasonGenerating(reason?.status) || isCreating;
-  const totalScore = formatReasonScore(reason?.totalCompatibilityScore ?? null);
-  const scoreItems = [
-    { label: "목표", value: formatReasonScore(reason?.teamGoalScore ?? null) },
-    { label: "성향", value: formatReasonScore(reason?.personalityScore ?? null) },
-    { label: "외향 보완", value: formatReasonScore(reason?.extraversionComplementScore ?? null) },
-  ].filter((item): item is { label: string; value: string } => item.value !== null);
-
-  function handleCreateReason() {
-    if (typeof matchingGroupId !== "number" || createReasonMutation.isPending) {
-      return;
-    }
-
-    createReasonMutation.mutate(matchingGroupId);
-  }
-
-  if (typeof matchingGroupId !== "number") {
-    return null;
-  }
-
-  return (
-    <section className="mx-auto mt-5 w-[358px] max-w-full rounded-[14px] bg-[#F9F8F4] px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-[Pretendard] text-[11px] font-medium leading-[135%] text-[#FF7658]">
-            AI 추천 사유
-          </p>
-          <h3 className="mt-1 font-[Pretendard] text-[16px] font-bold leading-[135%] text-[#1F1F1F]">
-            {reason?.headline || "팀 궁합 분석을 확인해 보세요"}
-          </h3>
-        </div>
-        <button
-          className="h-8 shrink-0 rounded-[9px] bg-[#FF7658] px-3 font-[Pretendard] text-[12px] font-semibold leading-[135%] text-white disabled:bg-[#DFDFDF]"
-          disabled={isGenerating}
-          onClick={handleCreateReason}
-          type="button"
-        >
-          {reason ? "재생성" : "생성"}
-        </button>
-      </div>
-
-      {reasonQuery.isLoading ? (
-        <p className="mt-3 font-[Pretendard] text-[12px] font-normal leading-[145%] text-[#616161]">
-          추천 사유를 불러오고 있어요.
-        </p>
-      ) : null}
-
-      {isNotFound ? (
-        <p className="mt-3 font-[Pretendard] text-[12px] font-normal leading-[145%] text-[#616161]">
-          아직 생성된 추천 사유가 없어요.
-        </p>
-      ) : null}
-
-      {isGenerating ? (
-        <p className="mt-3 rounded-[8px] bg-white px-3 py-2 font-[Pretendard] text-[12px] font-medium leading-[145%] text-[#616161]">
-          AI가 추천 사유를 생성하고 있어요. 완료되면 자동으로 갱신됩니다.
-        </p>
-      ) : null}
-
-      {reason?.status === "FAILED" ? (
-        <p className="mt-3 rounded-[8px] bg-white px-3 py-2 font-[Pretendard] text-[12px] font-medium leading-[145%] text-[#D56046]">
-          {reason.failureMessage || "추천 사유 생성에 실패했어요. 다시 시도해 주세요."}
-        </p>
-      ) : null}
-
-      {createError ? (
-        <p
-          role="alert"
-          className="mt-3 font-[Pretendard] text-[12px] font-medium leading-[145%] text-[#D56046]"
-        >
-          {createError.status === 409
-            ? "이미 추천 사유 생성이 진행 중이에요. 잠시 후 확인해 주세요."
-            : createError.message}
-        </p>
-      ) : null}
-
-      {reason?.summary ? (
-        <p className="mt-3 font-[Pretendard] text-[12px] font-normal leading-[145%] text-[#616161]">
-          {reason.summary}
-        </p>
-      ) : null}
-
-      {totalScore ? (
-        <div className="mt-4 rounded-[10px] bg-white px-3 py-3">
-          <div className="flex items-center justify-between">
-            <span className="font-[Pretendard] text-[12px] font-semibold leading-[135%] text-[#616161]">
-              총 궁합 점수
-            </span>
-            <strong className="font-[Pretendard] text-[18px] font-bold leading-[135%] text-[#FF7658]">
-              {totalScore}
-            </strong>
-          </div>
-          {scoreItems.length > 0 ? (
-            <dl className="mt-2 grid grid-cols-3 gap-2">
-              {scoreItems.map((item) => (
-                <div className="min-w-0 text-center" key={item.label}>
-                  <dt className="font-[Pretendard] text-[10px] font-medium leading-[135%] text-[#616161]">
-                    {item.label}
-                  </dt>
-                  <dd className="mt-0.5 font-[Pretendard] text-[11px] font-semibold leading-[135%] text-[#1F1F1F]">
-                    {item.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-        </div>
-      ) : null}
-
-      <MatchingReasonList items={reason?.strengths ?? []} title="팀의 강점" />
-      <MatchingReasonBulletList items={reason?.commonPoints ?? []} title="공통점" />
-      <MatchingReasonList items={reason?.complementaryPoints ?? []} title="보완 포인트" />
-      <MatchingReasonBulletList items={reason?.cautions ?? []} title="주의할 점" />
-    </section>
-  );
 }
 
 function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: TodayMatchingResult }) {
@@ -348,18 +181,9 @@ function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: Tod
       />
 
       <div className="relative z-10">
-        {todayMatchingResult.publishedAt ? (
-          <p className="font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
-            {new Date(todayMatchingResult.publishedAt).toLocaleString("ko-KR", {
-              timeZone: "Asia/Seoul",
-              hour: "2-digit",
-              minute: "2-digit",
-              month: "long",
-              day: "numeric",
-            })}{" "}
-            공개
-          </p>
-        ) : null}
+        <p className="font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
+          {formatPublishedTime(todayMatchingResult.publishedAt)}
+        </p>
         <h2 className="mt-1 font-[Pretendard] text-[17px] font-bold leading-[135%] text-[#2A2A2A]">
           오늘의 팀원 매칭 제안이 도착했어요
         </h2>
@@ -396,14 +220,6 @@ function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: Tod
 }
 
 function MatchedMemberCard({ member }: { member: MatchedMember }) {
-  const responseText: Record<TodayMatchingResultMember["responseStatus"], string> = {
-    ACCEPTED: "수락",
-    EXPIRED: "만료",
-    PASSED: "패스",
-    PENDING: "대기",
-    REJECTED: "거절",
-  };
-
   return (
     <article className="relative flex h-[175px] w-[147px] flex-col items-start justify-center gap-[10px] self-stretch rounded-xl bg-[#F9F8F4] pb-4 pl-4 pr-2 pt-2">
       <div
@@ -443,27 +259,23 @@ function MatchedMemberCard({ member }: { member: MatchedMember }) {
         >
           <span className="translate-y-px">{member.role}</span>
         </span>
-        {member.me ? (
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="ml-1 aspect-square h-5 w-5"
-            height={20}
-            src="/images/team-matching/medal.png"
-            width={20}
-          />
-        ) : null}
+        <Image
+          alt=""
+          aria-hidden="true"
+          className="ml-1 aspect-square h-5 w-5"
+          height={20}
+          src="/images/team-matching/medal.png"
+          width={20}
+        />
       </div>
 
       <ul className="absolute left-4 top-[85px] space-y-1 font-[Pretendard] text-[9px] font-normal leading-[135%] text-[#616161]">
-        {[`응답 상태: ${responseText[member.responseStatus]}`, ...memberDescriptions].map(
-          (description, index) => (
-            <li className="flex gap-2" key={`${member.name}-${index}`}>
-              <span aria-hidden="true">·</span>
-              <span>{description}</span>
-            </li>
-          ),
-        )}
+        {memberDescriptions.map((description, index) => (
+          <li className="flex gap-2" key={`${member.name}-${index}`}>
+            <span aria-hidden="true">·</span>
+            <span>{description}</span>
+          </li>
+        ))}
       </ul>
     </article>
   );
@@ -479,15 +291,18 @@ export default function TeamMatchingStatusResultView({
   const router = useRouter();
   const acceptMatchingGroupMutation = useAcceptMatchingGroupMutation();
   const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
-  const proposalId = todayMatchingResult.matchingGroupId
-    ? String(todayMatchingResult.matchingGroupId)
-    : todayMatchingResult.applicationId
-      ? String(todayMatchingResult.applicationId)
-      : MATCHING_PROPOSAL_ID;
+  const canPass =
+    typeof todayMatchingResult.applicationId === "number" &&
+    Number.isSafeInteger(todayMatchingResult.applicationId) &&
+    todayMatchingResult.applicationId > 0;
   const matchedMembers = getMatchedMembers(todayMatchingResult.members);
 
   function handlePassClick() {
-    setPendingProposalId(proposalId);
+    if (!canPass) {
+      return;
+    }
+
+    setPendingProposalId(String(todayMatchingResult.applicationId));
     router.push("/team-matching/status/pass/leave");
   }
 
@@ -516,7 +331,6 @@ export default function TeamMatchingStatusResultView({
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-[116px]">
         <MatchingSummaryCard todayMatchingResult={todayMatchingResult} />
-        <MatchingReasonSection matchingGroupId={todayMatchingResult.matchingGroupId} />
 
         <section className="mt-[41px] grid grid-cols-[147px_147px] gap-x-6 gap-y-[47px] px-5">
           {matchedMembers.map((member) => (
@@ -537,7 +351,7 @@ export default function TeamMatchingStatusResultView({
         <div className="flex items-stretch gap-4">
           <button
             className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161] disabled:opacity-50"
-            disabled={acceptMatchingGroupMutation.isPending}
+            disabled={acceptMatchingGroupMutation.isPending || !canPass}
             onClick={handlePassClick}
             type="button"
           >

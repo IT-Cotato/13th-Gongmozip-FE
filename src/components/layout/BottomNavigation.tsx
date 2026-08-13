@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useChatTeamsQuery } from "@/queries/useChatQueries";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useHasAuthHydrated } from "@/stores/useHasAuthHydrated";
 import { ChatIcon, ContestIcon, HomeIcon, MatchingIcon, MypageIcon } from "./icons";
 
 type NavItemId = "home" | "contests" | "team-matching" | "chat" | "mypage";
@@ -23,12 +26,17 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 type BottomNavigationProps = {
-  /** 채팅방 탭에 표시할 안 읽은 채팅 수. 0이거나 생략하면 배지를 표시하지 않음 */
-  unreadChatCount?: number;
+  /** 채팅방 탭에 표시할 채팅방 수. 생략하면 실제 채팅방 목록 API 기준으로 표시합니다. */
+  chatRoomCount?: number;
 };
 
-export default function BottomNavigation({ unreadChatCount = 0 }: BottomNavigationProps) {
+export default function BottomNavigation({ chatRoomCount }: BottomNavigationProps) {
   const pathname = usePathname();
+  const hasHydrated = useHasAuthHydrated();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const shouldFetchChatRooms = chatRoomCount === undefined && hasHydrated && Boolean(accessToken);
+  const { data: chatRooms = [] } = useChatTeamsQuery({ enabled: shouldFetchChatRooms });
+  const displayedChatRoomCount = chatRoomCount ?? (shouldFetchChatRooms ? chatRooms.length : 0);
 
   return (
     <nav
@@ -50,9 +58,9 @@ export default function BottomNavigation({ unreadChatCount = 0 }: BottomNavigati
           >
             <span className="relative block size-6">
               {item.renderIcon(isActive)}
-              {item.id === "chat" && unreadChatCount > 0 && (
+              {item.id === "chat" && displayedChatRoomCount > 0 && (
                 <span className="absolute -top-[5px] -right-[7.62px] flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-color-coral-500 px-1 text-[8px] leading-[1.35] font-semibold text-white">
-                  {unreadChatCount > 99 ? "99+" : unreadChatCount}
+                  {displayedChatRoomCount > 99 ? "99+" : displayedChatRoomCount}
                 </span>
               )}
             </span>

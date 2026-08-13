@@ -18,7 +18,7 @@ type TeamMatchingProposalState = {
   lastResult: TeamMatchingProposalResult | null;
   pendingProposalId: string | null;
   acceptProposal: (proposalId: string) => void;
-  passProposal: (proposalId: string) => void;
+  passProposal: (proposalId: string, distanceReductionMeters?: number) => void;
   setPendingProposalId: (proposalId: string) => void;
 };
 
@@ -36,11 +36,12 @@ export const useTeamMatchingProposalStore = create<TeamMatchingProposalState>()(
           },
           pendingProposalId: null,
         }),
-      passProposal: (proposalId) =>
+      passProposal: (proposalId, distanceReductionMeters) =>
         set({
           lastResult: {
             decidedAt: new Date().toISOString(),
-            distanceReductionMeters: TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
+            distanceReductionMeters:
+              distanceReductionMeters ?? TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
             proposalId,
             status: "passed",
           },

@@ -4,10 +4,12 @@ import { MedalIcon, MemberAvatar } from "./LeaderCards";
 import type { LeaderCandidate, LeaderChoice } from "./types";
 
 export function LeaderWillingnessSheet({
+  disabled = false,
   onSelect,
   onSubmit,
   selectedChoice,
 }: {
+  disabled?: boolean;
   onSelect: (choice: LeaderChoice) => void;
   onSubmit: () => void;
   selectedChoice: LeaderChoice;
@@ -37,18 +39,20 @@ export function LeaderWillingnessSheet({
         />
       </div>
 
-      <SheetButton label="제출하기" onClick={onSubmit} tone="brand" />
+      <SheetButton disabled={disabled} label="제출하기" onClick={onSubmit} tone="brand" />
     </BottomSheet>
   );
 }
 
 export function LeaderCandidateVoteSheet({
   candidates,
+  disabled = false,
   onSelect,
   onSubmit,
   selectedCandidateId,
 }: {
   candidates: LeaderCandidate[];
+  disabled?: boolean;
   onSelect: (candidateId: string) => void;
   onSubmit: () => void;
   selectedCandidateId: string;
@@ -82,7 +86,7 @@ export function LeaderCandidateVoteSheet({
         ))}
       </div>
 
-      <SheetButton label="투표하기" onClick={onSubmit} tone="brand" />
+      <SheetButton disabled={disabled} label="투표하기" onClick={onSubmit} tone="brand" />
     </BottomSheet>
   );
 }

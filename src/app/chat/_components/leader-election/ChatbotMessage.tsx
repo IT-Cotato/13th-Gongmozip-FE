@@ -107,16 +107,19 @@ export function ContestDeadlineReminderMessage({
 export function ChatbotSystemNotice({
   action,
   actorName,
+  body,
 }: {
   action: "added" | "removed";
   actorName: string;
+  body?: string;
 }) {
-  const actionLabel = action === "added" ? "추가" : "제거";
+  const actionLabel = action === "added" ? "추가" : "삭제";
+  const noticeText = body ?? `${actorName}님이 챗봇을 ${actionLabel}했습니다.`;
 
   return (
     <div className="flex w-full justify-center">
       <p className="rounded-full bg-color-coral-100 px-2 py-1 text-center text-[12px] leading-[1.35] font-semibold whitespace-nowrap text-color-coral-700">
-        {actorName}님이 챗봇을 {actionLabel}했습니다.
+        {noticeText}
       </p>
     </div>
   );

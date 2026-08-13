@@ -5,16 +5,18 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { useChatbotNoticeStore } from "@/stores/chatbotNoticeStore";
-
-import { ChevronLeftIcon } from "../../_components/icons";
+import { ApiError } from "@/lib/http";
 import {
-  CHAT_MEMBER_COUNT,
-  CHAT_ROOM_TITLE,
-  MOCK_CHATBOT_MEMBER,
-  MOCK_CHAT_MEMBERS,
-  type ChatMember,
-} from "../../_data/mockMessages";
+  useChatTeamMembersQuery,
+  useChatTeamsQuery,
+  useLeaveChatTeamMutation,
+  useReportUserMutation,
+  useUpdateChatbotStatusMutation,
+} from "@/queries/useChatQueries";
+
+import { ChatProfilePreview } from "../../_components/ChatProfilePreview";
+import { ChevronLeftIcon } from "../../_components/icons";
+import { MOCK_CHATBOT_MEMBER, type ChatMember } from "../../_data/mockMessages";
 
 const memberNameClass = "text-[15px] leading-[1.25] font-semibold text-color-gray-850";
 const reportReasons = [
@@ -37,18 +39,42 @@ const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
 export default function ChatRoomMenuPage() {
   const params = useParams<{ roomId: string }>();
   const router = useRouter();
-  const isChatbotEnabled = useChatbotNoticeStore(
-    (state) => state.chatbotEnabledByRoomId[params.roomId] ?? true,
-  );
-  const toggleChatbot = useChatbotNoticeStore((state) => state.toggleChatbot);
+  const membersQuery = useChatTeamMembersQuery(params.roomId);
+  const teamsQuery = useChatTeamsQuery();
+  const leaveMutation = useLeaveChatTeamMutation(params.roomId);
+  const updateChatbotStatusMutation = useUpdateChatbotStatusMutation(params.roomId);
+  const reportUserMutation = useReportUserMutation();
+
+  const chatMembers = membersQuery.data?.chatMembers ?? [];
+  const roomTitle =
+    teamsQuery.data?.find((room) => room.id === params.roomId)?.title ||
+    chatMembers
+      .filter((member) => !member.isMe && !member.isChatbot)
+      .map((member) => member.name)
+      .join(", ") ||
+    "채팅방";
+  const projectEndedAt =
+    membersQuery.data?.projectEndedAt ??
+    teamsQuery.data?.find((room) => room.id === params.roomId)?.projectEndedAt;
+  const isChatbotEnabled = membersQuery.data?.chatbotEnabled ?? true;
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [reportedMemberIds, setReportedMemberIds] = useState<string[]>([]);
   const [selectedMember, setSelectedMember] = useState<ChatMember | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatMember | null>(null);
   const [completedReportReason, setCompletedReportReason] = useState("");
-  const currentMember = MOCK_CHAT_MEMBERS.find((member) => member.isMe) ?? MOCK_CHAT_MEMBERS[0];
+  const currentMember = chatMembers.find((member) => member.isMe) ?? chatMembers[0];
 
   const submitReport = (member: ChatMember, reason: string) => {
+    if (!membersQuery.isSuccess) {
+      return;
+    }
+
+    reportUserMutation.mutate({
+      reportedMemberId: member.id,
+      teamId: params.roomId,
+      reasonCode: reason,
+      customReasonText: reason,
+    });
     setReportedMemberIds((currentIds) =>
       currentIds.includes(member.id) ? currentIds : [...currentIds, member.id],
     );
@@ -57,9 +83,25 @@ export default function ChatRoomMenuPage() {
   };
 
   const handleChatbotToggle = () => {
-    toggleChatbot(params.roomId, currentMember.name);
-    router.push(`/chat/${params.roomId}`);
+    if (!currentMember) {
+      return;
+    }
+
+    updateChatbotStatusMutation.mutate(!isChatbotEnabled, {
+      onSuccess: () => {
+        router.push(`/chat/${params.roomId}`);
+      },
+    });
   };
+
+  const handleConfirmLeave = () => {
+    leaveMutation.mutate(undefined, {
+      onSettled: () => {
+        router.push("/chat");
+      },
+    });
+  };
+
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
@@ -73,8 +115,8 @@ export default function ChatRoomMenuPage() {
             <ChevronLeftIcon />
           </Link>
           <h1 className="flex max-w-[250px] items-center justify-center gap-2 truncate text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
-            <span className="truncate">{CHAT_ROOM_TITLE}</span>
-            <span className="shrink-0">{CHAT_MEMBER_COUNT}</span>
+            <span className="truncate">{roomTitle}</span>
+            <span className="shrink-0">{chatMembers.length}</span>
           </h1>
         </div>
       </header>
@@ -82,19 +124,43 @@ export default function ChatRoomMenuPage() {
       <section className="flex-1 overflow-y-auto px-4 pt-4 pb-[120px]" aria-label="채팅방 메뉴">
         <h2 className="flex items-center gap-2 text-[15px] leading-[1.25] font-bold text-color-gray-850">
           <span>대화상대</span>
-          <span>{CHAT_MEMBER_COUNT}</span>
+          <span>{chatMembers.length}</span>
         </h2>
 
+        {membersQuery.isLoading ? (
+          <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
+            대화상대를 불러오는 중입니다.
+          </p>
+        ) : null}
+
+        {membersQuery.isError ? (
+          <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
+            {membersQuery.error instanceof ApiError
+              ? membersQuery.error.message
+              : "대화상대를 불러오지 못했습니다."}
+          </p>
+        ) : null}
+
+        {membersQuery.isSuccess && chatMembers.length === 0 ? (
+          <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
+            표시할 대화상대가 없습니다.
+          </p>
+        ) : null}
+
         <div className="mt-6 flex flex-col gap-4">
-          {MOCK_CHAT_MEMBERS.map((member) => (
+          {membersQuery.isSuccess ? chatMembers.map((member) => (
             <MemberRow
               key={member.id}
               member={member}
               isReported={reportedMemberIds.includes(member.id)}
-              onOpenProfile={() => setSelectedMember(member)}
+              onOpenProfile={
+                member.profileId !== undefined && !member.isChatbot
+                  ? () => setSelectedMember(member)
+                  : undefined
+              }
               onOpenReport={() => setReportTarget(member)}
             />
-          ))}
+          )) : null}
 
           <ChatbotRow
             isEnabled={isChatbotEnabled}
@@ -114,7 +180,12 @@ export default function ChatRoomMenuPage() {
       </div>
 
       {selectedMember && (
-        <ProfileSheet member={selectedMember} onClose={() => setSelectedMember(null)} />
+        <ChatProfilePreview
+          member={selectedMember}
+          onClose={() => setSelectedMember(null)}
+          projectEndedAt={projectEndedAt}
+          roomId={params.roomId}
+        />
       )}
 
       {reportTarget && (
@@ -135,7 +206,7 @@ export default function ChatRoomMenuPage() {
       {isLeaveDialogOpen && (
         <LeaveChatRoomDialog
           onClose={() => setIsLeaveDialogOpen(false)}
-          onConfirm={() => router.push("/chat")}
+          onConfirm={handleConfirmLeave}
         />
       )}
     </main>
@@ -150,7 +221,7 @@ function MemberRow({
 }: {
   member: ChatMember;
   isReported: boolean;
-  onOpenProfile: () => void;
+  onOpenProfile?: () => void;
   onOpenReport: () => void;
 }) {
   return (
@@ -158,6 +229,7 @@ function MemberRow({
       <button
         type="button"
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        disabled={!onOpenProfile}
         onClick={onOpenProfile}
       >
         <MenuAvatar member={member} />
@@ -462,62 +534,6 @@ function MenuAvatar({
           {initials}
         </span>
       )}
-    </div>
-  );
-}
-
-function ProfileSheet({ member, onClose }: { member: ChatMember; onClose: () => void }) {
-  return (
-    <div className="absolute inset-0 z-30 flex items-end bg-color-gray-850/60" role="presentation">
-      <button
-        className="absolute inset-0 cursor-default"
-        type="button"
-        aria-label="닫기"
-        onClick={onClose}
-      />
-      <section
-        className="relative z-10 w-full rounded-t-[16px] bg-white px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
-        aria-label={`${member.name} 프로필`}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <MenuAvatar member={member} sizeClassName="size-[60px]" />
-            <div className="min-w-0">
-              <h2 className="truncate text-[20px] leading-[1.35] font-medium text-color-gray-850">
-                {member.isMe ? `(나)${member.name}` : member.name}
-              </h2>
-              <p className="mt-1 text-[13px] leading-[1.5] text-color-gray-650">
-                {[member.school, member.major, member.grade].filter(Boolean).join(" · ") ||
-                  "AI 팀 도우미"}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="flex h-8 shrink-0 items-center justify-center rounded-[12px] px-2 text-[15px] leading-[1.25] font-semibold text-color-gray-650"
-            onClick={onClose}
-          >
-            닫기
-          </button>
-        </div>
-
-        <p className="mt-5 rounded-[12px] bg-color-gray-150 px-4 py-3 text-[13px] leading-[1.5] text-color-gray-850">
-          {member.introduction}
-        </p>
-
-        {member.strengths && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {member.strengths.map((strength) => (
-              <span
-                key={strength}
-                className="rounded-full bg-color-coral-50 px-3 py-1.5 text-[13px] leading-[1.25] font-medium text-color-coral-700"
-              >
-                {strength}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }

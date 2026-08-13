@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { ApiError } from "@/lib/http";
+import { useReviewTargetsQuery, useSubmitTeamReviewMutation } from "@/queries/useChatQueries";
 import { ChatTopBar } from "../ChatTopBar";
 import {
   MemberReviewAvatar,
@@ -21,29 +23,59 @@ type MemberReviewFlowProps = {
   roomId: string;
 };
 
+const reviewKeywordValues = [
+  "LEADERSHIP",
+  "GOOD_COMMUNICATOR",
+  "CREATIVE",
+  "PROBLEM_SOLVER",
+  "TRUSTWORTHY",
+  "PROACTIVE",
+  "CONSIDERATE",
+] as const;
+
+const reviewScoreValues: Record<ReviewScore, "DISAGREE" | "NEUTRAL" | "AGREE"> = {
+  bad: "DISAGREE",
+  okay: "NEUTRAL",
+  good: "AGREE",
+};
+
 export function MemberReviewFlow({
-  initialMembers = mockReviewMembers,
+  initialMembers,
   onComplete,
   onLeave,
   reviewerName = "김철수",
   roomId,
 }: MemberReviewFlowProps) {
   const router = useRouter();
+  const reviewTargetsQuery = useReviewTargetsQuery(roomId, { enabled: !initialMembers });
+  const submitReviewMutation = useSubmitTeamReviewMutation(roomId);
+  const sourceMembers = reviewTargetsQuery.data ?? initialMembers ?? mockReviewMembers;
   const reviewMembers = useMemo(
-    () => initialMembers.filter((member) => !member.isMe),
-    [initialMembers],
+    () => sourceMembers.filter((member) => !member.isMe),
+    [sourceMembers],
   );
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [isStopOpen, setIsStopOpen] = useState(false);
   const [currentMemberIndex, setCurrentMemberIndex] = useState<number | null>(null);
   const [answers, setAnswers] = useState<MemberReviewAnswer[]>([]);
   const [completedMemberIds, setCompletedMemberIds] = useState<string[]>([]);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"reviewing" | "complete">("reviewing");
 
   const currentMember = currentMemberIndex === null ? undefined : reviewMembers[currentMemberIndex];
   const currentAnswer = answers.find((answer) => answer.memberId === currentMember?.id);
+  const reviewedMemberIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...reviewMembers.filter((member) => member.alreadyReviewed).map((member) => member.id),
+          ...completedMemberIds,
+        ]),
+      ),
+    [completedMemberIds, reviewMembers],
+  );
   const isCurrentMemberReviewed = Boolean(
-    currentMember && completedMemberIds.includes(currentMember.id),
+    currentMember && reviewedMemberIds.includes(currentMember.id),
   );
   const isCurrentComplete =
     Boolean(currentAnswer) &&
@@ -94,18 +126,45 @@ export function MemberReviewFlow({
     });
   };
 
-  const submitCurrentReview = () => {
+  const submitCurrentReview = async () => {
     if (!canSubmit || !currentMember) {
+      return;
+    }
+
+    const answer = answers.find((item) => item.memberId === currentMember.id);
+    const revieweeTeamMemberId = Number(currentMember.id);
+
+    if (!answer || !Number.isFinite(revieweeTeamMemberId)) {
+      setReviewError("리뷰 대상 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    setReviewError(null);
+
+    try {
+      await submitReviewMutation.mutateAsync({
+        revieweeTeamMemberId,
+        communicationScore: reviewScoreValues[answer.scores.communication],
+        participationScore: reviewScoreValues[answer.scores.responsibility],
+        keywords: answer.strengths.map(mapReviewKeyword).filter(Boolean),
+      });
+    } catch (error) {
+      setReviewError(
+        error instanceof ApiError ? error.message : "팀원 리뷰 작성에 실패했습니다.",
+      );
       return;
     }
 
     const nextCompletedMemberIds = completedMemberIds.includes(currentMember.id)
       ? completedMemberIds
       : [...completedMemberIds, currentMember.id];
+    const nextReviewedMemberIds = Array.from(
+      new Set([...reviewedMemberIds, currentMember.id]),
+    );
 
     setCompletedMemberIds(nextCompletedMemberIds);
 
-    if (nextCompletedMemberIds.length >= reviewMembers.length) {
+    if (nextReviewedMemberIds.length >= reviewMembers.length) {
       setPhase("complete");
       onComplete?.(answers);
     }
@@ -126,6 +185,23 @@ export function MemberReviewFlow({
   };
 
   if (!reviewMembers.length) {
+    if (reviewTargetsQuery.isLoading && !initialMembers) {
+      return <MemberReviewState roomId={roomId} message="리뷰 대상을 불러오는 중입니다." />;
+    }
+
+    if (reviewTargetsQuery.isError && !initialMembers) {
+      return (
+        <MemberReviewState
+          roomId={roomId}
+          message={
+            reviewTargetsQuery.error instanceof ApiError
+              ? reviewTargetsQuery.error.message
+              : "리뷰 대상을 불러오지 못했습니다."
+          }
+        />
+      );
+    }
+
     return null;
   }
 
@@ -148,7 +224,7 @@ export function MemberReviewFlow({
             <div className="mt-1 flex w-full items-center justify-between">
               {reviewMembers.map((member, index) => {
                 const isSelected = index === currentMemberIndex;
-                const isReviewed = completedMemberIds.includes(member.id);
+                const isReviewed = reviewedMemberIds.includes(member.id);
                 const isFilled = isSelected || isReviewed;
 
                 return (
@@ -192,6 +268,12 @@ export function MemberReviewFlow({
             ) : (
               <MemberReviewEmptyScreen />
             )}
+
+            {reviewError ? (
+              <p className="mt-4 text-center text-[13px] leading-[1.5] text-color-coral-500">
+                {reviewError}
+              </p>
+            ) : null}
           </section>
         </>
       )}
@@ -209,7 +291,7 @@ export function MemberReviewFlow({
             className={`flex h-[51px] flex-1 items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
               canSubmit ? "bg-color-coral-500 text-white" : "bg-color-gray-200 text-color-gray-350"
             }`}
-            disabled={!canSubmit}
+            disabled={!canSubmit || submitReviewMutation.isPending}
             onClick={submitCurrentReview}
             type="button"
           >
@@ -232,6 +314,23 @@ export function MemberReviewFlow({
         onLeave={leaveReview}
         open={isStopOpen}
       />
+    </main>
+  );
+}
+
+function mapReviewKeyword(strength: string) {
+  const index = memberReviewStrengths.indexOf(strength);
+
+  return reviewKeywordValues[index];
+}
+
+function MemberReviewState({ message, roomId }: { message: string; roomId: string }) {
+  return (
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+      <ChatTopBar backHref={`/chat/${roomId}`} roomId={roomId} title="팀원 리뷰" />
+      <div className="flex flex-1 items-center justify-center px-6 text-center">
+        <p className="text-[13px] leading-[1.5] text-color-gray-650">{message}</p>
+      </div>
     </main>
   );
 }

@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+
 import { ArrowUpIcon } from "./icons";
 
 const MAX_TEXTAREA_HEIGHT = 128;
 
-export function ChatInputBar() {
+export function ChatInputBar({
+  disabled = false,
+  onSendMessage,
+}: {
+  disabled?: boolean;
+  onSendMessage?: (message: string) => boolean;
+}) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const canSend = message.trim().length > 0;
+  const canSend = message.trim().length > 0 && !disabled;
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -26,7 +33,14 @@ export function ChatInputBar() {
       className="flex w-full items-end justify-end gap-2 overflow-hidden px-4 py-2.5"
       onSubmit={(event) => {
         event.preventDefault();
-        setMessage("");
+
+        if (!canSend) {
+          return;
+        }
+
+        if (onSendMessage?.(message) ?? true) {
+          setMessage("");
+        }
       }}
     >
       <label htmlFor="chat-message" className="sr-only">
