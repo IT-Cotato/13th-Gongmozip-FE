@@ -239,6 +239,11 @@ export type TeamSubmissionPayload = {
   completed: boolean;
 };
 
+export type ShareContestToChatsPayload = {
+  contestId: number | string;
+  teamIds: string[];
+};
+
 export type ReviewScoreValue = "DISAGREE" | "NEUTRAL" | "AGREE";
 
 export type TeamReviewPayload = {
@@ -415,6 +420,16 @@ export function shareContestToChat(teamId: string, contestId: number) {
   });
 }
 
+export async function shareContestToChats(payload: ShareContestToChatsPayload) {
+  const contestId = Number(payload.contestId);
+
+  if (!Number.isFinite(contestId)) {
+    throw new Error("공모전 정보를 확인할 수 없습니다.");
+  }
+
+  await Promise.all(payload.teamIds.map((teamId) => shareContestToChat(teamId, contestId)));
+}
+
 export function updateTeamProgress(teamId: string, payload: TeamProgressPayload) {
   return apiFetch<null>(`/api/teams/${encodeURIComponent(teamId)}/progress`, {
     method: "PATCH",
@@ -575,6 +590,20 @@ export function useShareContestToChatMutation(teamId: string) {
     mutationFn: (contestId: number) => shareContestToChat(teamId, contestId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+    },
+  });
+}
+
+export function useShareContestToChatsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: shareContestToChats,
+    onSuccess: (_data, variables) => {
+      variables.teamIds.forEach((teamId) => {
+        void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
+      });
+      void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
     },
   });
 }
