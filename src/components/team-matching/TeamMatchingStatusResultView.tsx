@@ -72,17 +72,19 @@ const badgeClassName: Record<MatchedMember["badgeTone"], string> = {
   orange: "bg-[#FFAD62]",
 };
 
-const MATCHING_PROPOSAL_ID = "today-team-matching-proposal";
-
 function formatPublishedTime(publishedAt: string | null) {
   if (!publishedAt) {
-    return "15분 전";
+    return "게시 시각을 확인할 수 없어요";
   }
 
   const publishedTime = new Date(publishedAt).getTime();
+  if (!Number.isFinite(publishedTime)) {
+    return "게시 시각을 확인할 수 없어요";
+  }
+
   const elapsedMinutes = Math.floor((Date.now() - publishedTime) / 60000);
 
-  if (!Number.isFinite(elapsedMinutes) || elapsedMinutes < 0) {
+  if (elapsedMinutes < 0) {
     return "방금 전";
   }
 
@@ -289,13 +291,18 @@ export default function TeamMatchingStatusResultView({
   const router = useRouter();
   const acceptMatchingGroupMutation = useAcceptMatchingGroupMutation();
   const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
-  const passApplicationId = todayMatchingResult.applicationId
-    ? String(todayMatchingResult.applicationId)
-    : MATCHING_PROPOSAL_ID;
+  const canPass =
+    typeof todayMatchingResult.applicationId === "number" &&
+    Number.isSafeInteger(todayMatchingResult.applicationId) &&
+    todayMatchingResult.applicationId > 0;
   const matchedMembers = getMatchedMembers(todayMatchingResult.members);
 
   function handlePassClick() {
-    setPendingProposalId(passApplicationId);
+    if (!canPass) {
+      return;
+    }
+
+    setPendingProposalId(String(todayMatchingResult.applicationId));
     router.push("/team-matching/status/pass/leave");
   }
 
@@ -344,7 +351,7 @@ export default function TeamMatchingStatusResultView({
         <div className="flex items-stretch gap-4">
           <button
             className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161] disabled:opacity-50"
-            disabled={acceptMatchingGroupMutation.isPending}
+            disabled={acceptMatchingGroupMutation.isPending || !canPass}
             onClick={handlePassClick}
             type="button"
           >
