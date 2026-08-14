@@ -1040,24 +1040,54 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
 }
 
 function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedContest {
-  const contestId = getNumber(candidate, ["contestId", "id"]);
+  const contest = getRecord(candidate, "contest");
+  const contestId =
+    (contest ? getNumber(contest, ["contestId", "id"]) : undefined) ??
+    getNumber(candidate, ["contestId"]);
   const contestCandidateId =
-    getNumber(candidate, ["contestCandidateId", "candidateId"]) ?? contestId ?? 0;
-  const dday = getString(candidate, ["dDay", "dday", "deadlineLabel"]) ?? "";
-  const viewCount = getNumber(candidate, ["viewCount", "views"]) ?? 0;
+    getNumber(candidate, ["contestCandidateId", "candidateId", "id"]) ?? contestId ?? 0;
+  const dday =
+    getString(candidate, ["dDay", "dday", "deadlineLabel"]) ??
+    (contest ? getString(contest, ["dDay", "dday", "deadlineLabel"]) : undefined) ??
+    "";
+  const viewCount =
+    (contest ? getNumber(contest, ["viewCount", "views"]) : undefined) ??
+    getNumber(candidate, ["viewCount", "views"]) ??
+    0;
 
   return {
     id: String(contestCandidateId),
     contestId,
     contestCandidateId,
-    category: getString(candidate, ["category", "contestCategory"]) ?? "공모전",
+    candidateDeadlineAt:
+      getString(candidate, ["candidateDeadlineAt", "candidateEndsAt", "candidateClosedAt"]) ??
+      (contest ? getString(contest, ["candidateDeadlineAt", "candidateEndsAt"]) : undefined),
+    category:
+      (contest ? getString(contest, ["category", "contestCategory"]) : undefined) ??
+      getString(candidate, ["category", "contestCategory"]) ??
+      "공모전",
     dday,
     imageSrc:
-      getString(candidate, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"]) ?? undefined,
-    organizer: getString(candidate, ["organizer", "host", "organization"]) ?? "",
+      (contest
+        ? getString(contest, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"])
+        : undefined) ??
+      getString(candidate, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"]) ??
+      undefined,
+    organizer:
+      (contest ? getString(contest, ["organizer", "host", "organization"]) : undefined) ??
+      getString(candidate, ["organizer", "host", "organization"]) ??
+      "",
+    isRecommended:
+      getBoolean(candidate, ["recommended", "isRecommended", "aiRecommended", "isAiRecommended"]) ??
+      getString(candidate, ["source", "type"])?.toUpperCase().includes("RECOMMEND") ??
+      false,
     title:
+      (contest ? getString(contest, ["title", "contestTitle", "name"]) : undefined) ??
       getString(candidate, ["title", "contestTitle", "name"]) ??
       (contestId ? `공모전 #${contestId}` : "공모전"),
+    voteDeadlineAt:
+      getString(candidate, ["voteDeadlineAt", "voteEndsAt", "voteClosedAt"]) ??
+      (contest ? getString(contest, ["voteDeadlineAt", "voteEndsAt"]) : undefined),
     viewCount: viewCount.toLocaleString("ko-KR"),
   };
 }
@@ -1088,9 +1118,18 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
 }
 
 function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem {
+  const candidate =
+    getRecord(result, "candidate") ?? getRecord(result, "contestCandidate");
+  const contest =
+    (candidate ? getRecord(candidate, "contest") : undefined) ?? getRecord(result, "contest");
+
   return {
-    contestCandidateId: getNumber(result, ["contestCandidateId", "candidateId", "id"]),
-    contestId: getNumber(result, ["contestId"]),
+    contestCandidateId:
+      getNumber(result, ["contestCandidateId", "candidateId", "id"]) ??
+      (candidate ? getNumber(candidate, ["contestCandidateId", "candidateId", "id"]) : undefined),
+    contestId:
+      (contest ? getNumber(contest, ["contestId", "id"]) : undefined) ??
+      getNumber(result, ["contestId"]),
     voteCount: getNumber(result, ["voteCount", "votes", "count"]) ?? 0,
     percent: getNumber(result, ["percent", "votePercent", "rate"]) ?? 0,
     isWinner: getBoolean(result, ["winner", "isWinner"]) ?? false,
@@ -1178,6 +1217,12 @@ function getValue(record: UnknownRecord, keys: string[]) {
   }
 
   return undefined;
+}
+
+function getRecord(record: UnknownRecord, key: string): UnknownRecord | undefined {
+  const value = record[key];
+
+  return isRecord(value) ? value : undefined;
 }
 
 function getString(record: UnknownRecord, keys: string[]) {
