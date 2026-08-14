@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
-export function ChatbotTextMessage({ body }: { body: string }) {
+export function ChatbotTextMessage({ body, sentAt }: { body: string; sentAt?: string }) {
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -12,7 +12,7 @@ export function ChatbotTextMessage({ body }: { body: string }) {
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {body}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
       </div>
     </article>
@@ -25,12 +25,14 @@ export function BotMessage({
   buttonLabel,
   children,
   onButtonClick,
+  sentAt,
 }: {
   body: string;
   buttonDisabled?: boolean;
   buttonLabel: string;
   children?: ReactNode;
   onButtonClick: () => void;
+  sentAt?: string;
 }) {
   return (
     <article className="flex w-full items-start gap-2">
@@ -42,7 +44,7 @@ export function BotMessage({
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {body}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         {children}
         <button
@@ -65,9 +67,11 @@ export function BotMessage({
 export function ContestDeadlineReminderMessage({
   onComplete,
   onIncomplete,
+  sentAt,
 }: {
   onComplete: () => void;
   onIncomplete: () => void;
+  sentAt?: string;
 }) {
   return (
     <article className="flex w-full items-start gap-2">
@@ -81,7 +85,7 @@ export function ContestDeadlineReminderMessage({
 공모전 제출을 완료했다면 '진행 완료'를, 완료하지 못했다면 '미완료'를 선택해주세요.
 해당 버튼은 팀장님만 선택할 수 있습니다. 팀장님이 '진행 완료'를 선택하면 본 공모전 프로젝트가 종료되며, 팀원 리뷰 단계로 이동합니다.`}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         <div className="mt-1 flex h-9 w-[230px] gap-2">
           <button
@@ -125,7 +129,7 @@ export function ChatbotSystemNotice({
   );
 }
 
-export function ChatbotUsageGuideMessage() {
+export function ChatbotUsageGuideMessage({ sentAt }: { sentAt?: string } = {}) {
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -144,7 +148,7 @@ export function ChatbotUsageGuideMessage() {
               </div>
             </div>
           </div>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         <button
           className="mt-1 flex h-9 w-[230px] items-center justify-center rounded-[10px] bg-color-coral-500 px-3 text-[13px] leading-[1.25] font-semibold text-white"
@@ -165,11 +169,17 @@ export function ChatbotAvatar() {
   );
 }
 
-export function MessageMeta() {
+export function MessageMeta({
+  sentAt = "오후 8:28",
+  unreadLabel = "1",
+}: {
+  sentAt?: string;
+  unreadLabel?: string;
+}) {
   return (
     <span className="flex shrink-0 items-end gap-2 text-[12px] leading-[1.35]">
-      <span className="text-color-gray-650">오후 8:28</span>
-      <span className="text-color-coral-500">1</span>
+      <span className="text-color-gray-650">{sentAt}</span>
+      {unreadLabel ? <span className="text-color-coral-500">{unreadLabel}</span> : null}
     </span>
   );
 }

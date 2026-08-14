@@ -55,7 +55,15 @@ function LeaderCandidatePreviewProfile({
   );
 }
 
-export function LeaderNoticeMessage({ body, leader }: { body: string; leader: LeaderCandidate }) {
+export function LeaderNoticeMessage({
+  body,
+  leader,
+  sentAt,
+}: {
+  body: string;
+  leader: LeaderCandidate;
+  sentAt?: string;
+}) {
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -66,7 +74,7 @@ export function LeaderNoticeMessage({ body, leader }: { body: string; leader: Le
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {body}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         <LeaderProfileCard leader={leader} />
       </div>
@@ -77,9 +85,11 @@ export function LeaderNoticeMessage({ body, leader }: { body: string; leader: Le
 export function LeaderElectedMessage({
   body,
   leader,
+  sentAt,
 }: {
   body?: string;
   leader: LeaderCandidate;
+  sentAt?: string;
 }) {
   const message =
     body?.trim() || `${leader.name}님이 팀장으로 확정되었습니다. 이제 공모전을 골라볼까요?`;
@@ -94,7 +104,7 @@ export function LeaderElectedMessage({
           <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {message}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         <LeaderProfileCard leader={leader} />
       </div>
@@ -107,11 +117,13 @@ export function LeaderTieMessage({
   onRevote,
   recommendationReason,
   recommendedLeader,
+  sentAt,
 }: {
   onAccept: () => void;
   onRevote: () => void;
   recommendationReason?: string | null;
   recommendedLeader: LeaderCandidate;
+  sentAt?: string;
 }) {
   const reason =
     recommendationReason ??
@@ -130,7 +142,7 @@ export function LeaderTieMessage({
             {`투표 결과 동률이 발생했습니다.
 ${reason} 추천을 수락하시겠어요?`}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         <div className="mt-1 flex h-9 w-[230px] gap-2">
           <button
