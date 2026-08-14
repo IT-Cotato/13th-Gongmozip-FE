@@ -73,6 +73,8 @@ export function ContestListSection() {
           <input
             id="contest-search"
             type="text"
+            inputMode="search"
+            aria-label="공모전 검색"
             disabled={!isAuthenticated}
             value={searchKeyword}
             placeholder="원하는 공모전을 검색하세요"
