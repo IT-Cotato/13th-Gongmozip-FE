@@ -25,6 +25,7 @@ function formatCandidateTimer(seconds: number) {
 
 export function ContestRecommendationMessage({
   contests,
+  isActionDisabled = false,
   isCandidateClosed,
   onRemove,
   onShowAll,
@@ -33,6 +34,7 @@ export function ContestRecommendationMessage({
   sentAt,
 }: {
   contests: RecommendedContest[];
+  isActionDisabled?: boolean;
   isCandidateClosed: boolean;
   onRemove?: (contest: RecommendedContest) => void;
   onShowAll: () => void;
@@ -58,6 +60,7 @@ export function ContestRecommendationMessage({
         <ContestListCard
           actionLabel={isCandidateClosed ? "공모전 투표하기" : "다른 공모전 보러가기"}
           contests={contests}
+          disabled={isActionDisabled}
           isCandidateClosed={isCandidateClosed}
           onAction={onStartVote}
           onRemove={onRemove}
@@ -332,13 +335,17 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 
 export function ContestVoteNoticeBanner({
   body,
+  isActionDisabled = false,
   isVoteSubmitted,
   onAction,
 }: {
   body?: string;
+  isActionDisabled?: boolean;
   isVoteSubmitted: boolean;
   onAction: () => void;
 }) {
+  const isButtonDisabled = !isVoteSubmitted && isActionDisabled;
+
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
       <div className="relative shrink-0">
@@ -360,10 +367,13 @@ export function ContestVoteNoticeBanner({
         </p>
         <button
           className={`mt-2 flex h-9 w-full items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
-            isVoteSubmitted
+            isButtonDisabled
+              ? "bg-color-gray-200 text-color-gray-350"
+              : isVoteSubmitted
               ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
               : "bg-color-gray-650 text-white"
           }`}
+          disabled={isButtonDisabled}
           onClick={onAction}
           type="button"
         >
@@ -709,6 +719,7 @@ export function ContestVoteDetailSheet({
 function ContestListCard({
   actionLabel,
   contests,
+  disabled = false,
   isCandidateClosed,
   onAction,
   onRemove,
@@ -718,6 +729,7 @@ function ContestListCard({
 }: {
   actionLabel: string;
   contests: RecommendedContest[];
+  disabled?: boolean;
   isCandidateClosed: boolean;
   onAction: () => void;
   onRemove?: (contest: RecommendedContest) => void;
@@ -748,7 +760,10 @@ function ContestListCard({
         전체보기
       </button>
       <button
-        className="mt-4 flex h-9 w-full items-center justify-center gap-1 rounded-[10px] bg-color-coral-500 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+        className={`mt-4 flex h-9 w-full items-center justify-center gap-1 rounded-[10px] px-3 text-[13px] leading-[1.25] font-semibold ${
+          disabled ? "bg-color-gray-200 text-color-gray-350" : "bg-color-coral-500 text-white"
+        }`}
+        disabled={disabled}
         onClick={onAction}
         type="button"
       >

@@ -817,6 +817,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       DEFAULT_CONTEST_VOTE_SECONDS)
     : DEFAULT_CONTEST_VOTE_SECONDS;
   const isCandidateClosed = candidateCountdownSeconds <= 0;
+  const isContestVoteClosed = voteCountdownSeconds <= 0;
   const activeContestCandidates = activeContestCandidateIds?.length
     ? apiContestCandidates.filter((contest) => activeContestCandidateIds.includes(contest.id))
     : apiContestCandidates;
@@ -902,6 +903,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       {hasServerMessages && latestContestVoteReminderMessage && !hasContestResultMessage && !isContestResultShown ? (
         <ContestVoteNoticeBanner
           body={latestContestVoteReminderMessage.body}
+          isActionDisabled={isContestVoteClosed}
           isVoteSubmitted={isContestVoteSubmitted}
           onAction={
             isContestVoteSubmitted
@@ -914,6 +916,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       {!hasServerMessages && shouldShowContestVote && isCandidateClosed && !isContestResultShown ? (
         <ContestVoteNoticeBanner
           isVoteSubmitted={isContestVoteSubmitted}
+          isActionDisabled={isContestVoteClosed}
           onAction={isContestVoteSubmitted ? showContestVoteResult : startContestVote}
         />
       ) : null}
@@ -974,6 +977,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             candidateRemainingSeconds={candidateCountdownSeconds}
             contestCandidates={apiContestCandidates}
             isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
+            isContestVoteClosed={isContestVoteClosed}
             leaderRecommendation={leaderRecommendationQuery.data}
             key={message.id}
             message={message}
@@ -1083,6 +1087,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           <>
             <ContestRecommendationMessage
               contests={candidateContests}
+              isActionDisabled={isContestVoteClosed}
               isCandidateClosed={isCandidateClosed}
               onRemove={(contest) => {
                 void removeContestCandidate(contest);
@@ -1199,7 +1204,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             {sheetState === "contestVote" ? (
               <ContestVoteSheet
                 contests={candidateContests}
-                disabled={voteContestCandidatesMutation.isPending}
+                disabled={voteContestCandidatesMutation.isPending || isContestVoteClosed}
                 onSubmit={submitContestVote}
                 onToggle={toggleContestVote}
                 remainingSeconds={voteCountdownSeconds}
@@ -1278,6 +1283,7 @@ function ChatMessageRenderer({
   candidateRemainingSeconds,
   contestCandidates,
   isLeaderRecommendationPending,
+  isContestVoteClosed,
   leaderRecommendation,
   message,
   onAddContestCandidate,
@@ -1298,6 +1304,7 @@ function ChatMessageRenderer({
   candidateRemainingSeconds: number;
   contestCandidates: RecommendedContest[];
   isLeaderRecommendationPending: boolean;
+  isContestVoteClosed: boolean;
   leaderRecommendation?: LeaderRecommendation;
   message: ChatMessage;
   onAddContestCandidate: (contestId: number) => void;
@@ -1426,6 +1433,7 @@ function ChatMessageRenderer({
     return (
       <ContestRecommendationMessage
         contests={displayContests}
+        isActionDisabled={isContestCandidateClosed && isContestVoteClosed}
         isCandidateClosed={isContestCandidateClosed}
         onRemove={(contest) => {
           onRemoveContestCandidate(contest);
@@ -1476,6 +1484,7 @@ function ChatMessageRenderer({
     return (
       <ContestRecommendationMessage
         contests={contests.length > 0 ? contests : contestCandidates}
+        isActionDisabled={isContestVoteClosed}
         isCandidateClosed
         onRemove={(contest) => {
           onRemoveContestCandidate(contest);
