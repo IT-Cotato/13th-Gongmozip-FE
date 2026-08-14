@@ -8,14 +8,28 @@ const MAX_TEXTAREA_HEIGHT = 128;
 
 export function ChatInputBar({
   disabled = false,
+  focusToken,
+  onChange,
   onSendMessage,
+  value,
 }: {
   disabled?: boolean;
+  focusToken?: number;
+  onChange?: (message: string) => void;
   onSendMessage?: (message: string) => boolean;
+  value?: string;
 }) {
-  const [message, setMessage] = useState("");
+  const [internalMessage, setInternalMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const message = value ?? internalMessage;
   const canSend = message.trim().length > 0 && !disabled;
+  const setMessage = (nextMessage: string) => {
+    if (value === undefined) {
+      setInternalMessage(nextMessage);
+    }
+
+    onChange?.(nextMessage);
+  };
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -27,6 +41,14 @@ export function ChatInputBar({
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
   }, [message]);
+
+  useEffect(() => {
+    if (focusToken === undefined) {
+      return;
+    }
+
+    textareaRef.current?.focus();
+  }, [focusToken]);
 
   return (
     <form

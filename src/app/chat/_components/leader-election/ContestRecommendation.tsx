@@ -422,10 +422,12 @@ export function ProjectSubmissionReminderBanner({
 export function ContestVoteResultMessage({
   contest,
   onMidtermSubmit,
+  onUseChatbot,
   sentAt,
 }: {
   contest: RecommendedContest;
   onMidtermSubmit: (progressPercent: number) => void;
+  onUseChatbot?: () => void;
   sentAt?: string;
 }) {
   const [midtermProgress, setMidtermProgress] = useState(0);
@@ -472,7 +474,7 @@ export function ContestVoteResultMessage({
         </div>
       </article>
 
-      <ChatbotUsageGuideMessage sentAt={sentAt} />
+      <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={sentAt} />
 
       <div className="flex w-full items-center gap-1 text-[9px] leading-[1.35] text-color-gray-650">
         <span className="h-px min-w-0 flex-1 bg-color-gray-200" />

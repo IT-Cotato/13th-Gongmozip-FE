@@ -164,6 +164,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     },
   );
   const [leaderChoice, setLeaderChoice] = useState<LeaderChoice>("no");
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatFocusToken, setChatFocusToken] = useState(0);
   const [leaderActionError, setLeaderActionError] = useState<string | null>(null);
   const [leaderEvent, setLeaderEvent] = useState<LeaderEvent>(() =>
     getInitialLeaderEvent(leaderScenario),
@@ -461,6 +463,17 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       setLeaderActionError(getApiErrorMessage(error, "AI 팀장 추천 생성에 실패했습니다."));
     }
   };
+
+  const insertChatbotMention = useCallback(() => {
+    setChatDraft((currentDraft) => {
+      if (currentDraft.trimStart().startsWith("@챗봇")) {
+        return currentDraft;
+      }
+
+      return currentDraft.length > 0 ? `@챗봇 ${currentDraft}` : "@챗봇 ";
+    });
+    setChatFocusToken((token) => token + 1);
+  }, []);
 
   const startContestVote = useCallback((contestCandidateIds?: string[]) => {
     setIsContestRevoteRequested(false);
@@ -983,6 +996,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             onMidtermSubmit={submitMidtermCheck}
             onRequestLeaderRecommendation={requestLeaderRecommendation}
             onRequestRevote={requestRevote}
+            onUseChatbot={insertChatbotMention}
             voteRemainingSeconds={voteCountdownSeconds}
           />
         ))}
@@ -1091,6 +1105,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           <ContestVoteResultMessage
             contest={winningContest}
             onMidtermSubmit={submitMidtermCheck}
+            onUseChatbot={insertChatbotMention}
           />
         ) : null}
 
@@ -1126,7 +1141,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         ) : null}
         <ChatInputBar
           disabled={!messagesQuery.isSuccess || !chatRealtime.isConnected}
+          focusToken={chatFocusToken}
+          onChange={setChatDraft}
           onSendMessage={chatRealtime.sendMessage}
+          value={chatDraft}
         />
       </div>
 
@@ -1273,6 +1291,7 @@ function ChatMessageRenderer({
   onMidtermSubmit,
   onRequestLeaderRecommendation,
   onRequestRevote,
+  onUseChatbot,
   voteRemainingSeconds,
 }: {
   chatMembers: LeaderCandidate[];
@@ -1292,6 +1311,7 @@ function ChatMessageRenderer({
   onMidtermSubmit: (progressPercent?: number) => void | Promise<void>;
   onRequestLeaderRecommendation: () => void;
   onRequestRevote: () => void;
+  onUseChatbot: () => void;
   voteRemainingSeconds: number;
 }) {
   if (message.messageType === "LEADER_NOMINATION_CARD") {
@@ -1478,6 +1498,7 @@ function ChatMessageRenderer({
       <ContestVoteResultMessage
         contest={contest}
         onMidtermSubmit={onMidtermSubmit}
+        onUseChatbot={onUseChatbot}
         sentAt={message.sentAt}
       />
     ) : (

@@ -129,7 +129,13 @@ export function ChatbotSystemNotice({
   );
 }
 
-export function ChatbotUsageGuideMessage({ sentAt }: { sentAt?: string } = {}) {
+export function ChatbotUsageGuideMessage({
+  onUseChatbot,
+  sentAt,
+}: {
+  onUseChatbot?: () => void;
+  sentAt?: string;
+} = {}) {
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -152,6 +158,7 @@ export function ChatbotUsageGuideMessage({ sentAt }: { sentAt?: string } = {}) {
         </div>
         <button
           className="mt-1 flex h-9 w-[230px] items-center justify-center rounded-[10px] bg-color-coral-500 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+          onClick={onUseChatbot}
           type="button"
         >
           @챗봇에게 말하기
