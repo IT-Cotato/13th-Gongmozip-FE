@@ -35,7 +35,7 @@ function OAuthRedirectPageInner() {
       }
 
       setAccessToken(accessToken);
-      router.replace(isNewMember ? "/signup/complete" : "/");
+      router.replace(isNewMember ? "/signup/info" : "/");
     });
 
     return () => {

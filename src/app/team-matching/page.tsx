@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import { ApiError } from "@/lib/http";
+import { getMatchingResultPublishAt } from "@/lib/matchingSchedule";
 import {
   type MatchingEligibility,
   type MatchingEligibilityReason,
@@ -188,7 +189,8 @@ function getCountdownState(
   }
 
   const applicationDeadlineAt = participantCountData.applicationDeadlineAt;
-  const resultPublishAt = participantCountData.resultPublishAt;
+  const resultPublishAt =
+    getMatchingResultPublishAt(applicationDeadlineAt) ?? participantCountData.resultPublishAt;
   const deadlineLeftMs = (getTimestamp(applicationDeadlineAt) ?? 0) - nowOnServer;
   const publishLeftMs = (getTimestamp(resultPublishAt) ?? 0) - nowOnServer;
 

@@ -38,11 +38,13 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const [showScrapToast, setShowScrapToast] = useState(false);
   const [showScrapErrorToast, setShowScrapErrorToast] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [showShareErrorToast, setShowShareErrorToast] = useState(false);
   const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
   const [isWebSharePending, setIsWebSharePending] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
   const scrapErrorToastTimerRef = useRef<number | null>(null);
   const shareToastTimerRef = useRef<number | null>(null);
+  const shareErrorToastTimerRef = useRef<number | null>(null);
   const linkCopiedToastTimerRef = useRef<number | null>(null);
   const isScrapped =
     scrapStatus?.isScrapped ?? (scrappedContestIds.includes(contest.id) || contest.isScrapped);
@@ -63,6 +65,10 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
       if (shareToastTimerRef.current !== null) {
         window.clearTimeout(shareToastTimerRef.current);
+      }
+
+      if (shareErrorToastTimerRef.current !== null) {
+        window.clearTimeout(shareErrorToastTimerRef.current);
       }
 
       if (scrapErrorToastTimerRef.current !== null) {
@@ -129,10 +135,34 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
       window.clearTimeout(shareToastTimerRef.current);
     }
 
+    if (shareErrorToastTimerRef.current !== null) {
+      window.clearTimeout(shareErrorToastTimerRef.current);
+      shareErrorToastTimerRef.current = null;
+    }
+
+    setShowShareErrorToast(false);
     setShowShareToast(true);
     shareToastTimerRef.current = window.setTimeout(() => {
       setShowShareToast(false);
       shareToastTimerRef.current = null;
+    }, 2000);
+  };
+
+  const handleShareError = () => {
+    if (shareToastTimerRef.current !== null) {
+      window.clearTimeout(shareToastTimerRef.current);
+      shareToastTimerRef.current = null;
+    }
+
+    if (shareErrorToastTimerRef.current !== null) {
+      window.clearTimeout(shareErrorToastTimerRef.current);
+    }
+
+    setShowShareToast(false);
+    setShowShareErrorToast(true);
+    shareErrorToastTimerRef.current = window.setTimeout(() => {
+      setShowShareErrorToast(false);
+      shareErrorToastTimerRef.current = null;
     }, 2000);
   };
 
@@ -307,6 +337,10 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
             <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
           ) : null}
 
+          {showShareErrorToast ? (
+            <ContestActionToast message="공유에 실패했습니다. 다시 시도해주세요." />
+          ) : null}
+
           {showScrapToast ? (
             <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
           ) : null}
@@ -377,6 +411,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
         contestId={contest.id}
         onOpenChange={setIsShareModalOpen}
         onShareComplete={handleShareComplete}
+        onShareError={handleShareError}
         open={isShareModalOpen}
       />
     </section>
