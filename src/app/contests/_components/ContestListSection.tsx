@@ -72,29 +72,32 @@ export function ContestListSection() {
         >
           <input
             id="contest-search"
-            type="search"
+            type="text"
+            inputMode="search"
+            aria-label="공모전 검색"
             disabled={!isAuthenticated}
             value={searchKeyword}
             placeholder="원하는 공모전을 검색하세요"
             className="min-w-0 flex-1 bg-transparent text-[15px] leading-[135%] font-normal text-color-gray-650 outline-none placeholder:text-color-gray-650"
             onChange={(event) => setSearchKeyword(event.target.value)}
           />
-          {searchKeyword ? (
-            <button
-              type="button"
-              aria-label="검색어 지우기"
-              className="flex size-6 shrink-0 items-center justify-center"
-              onClick={() => setSearchKeyword("")}
-            >
-              <Image
-                src="/icons/contests/x.svg"
-                alt=""
-                width={20}
-                height={20}
-                className="size-5 shrink-0"
-              />
-            </button>
-          ) : (
+          <span className="flex shrink-0 items-center gap-2">
+            {searchKeyword ? (
+              <button
+                type="button"
+                aria-label="검색어 지우기"
+                className="flex size-6 shrink-0 items-center justify-center"
+                onClick={() => setSearchKeyword("")}
+              >
+                <Image
+                  src="/icons/contests/x.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="size-5 shrink-0"
+                />
+              </button>
+            ) : null}
             <Image
               src="/icons/contests/tabler_search.svg"
               alt=""
@@ -102,7 +105,7 @@ export function ContestListSection() {
               height={24}
               className="size-6 shrink-0"
             />
-          )}
+          </span>
         </label>
       </section>
 

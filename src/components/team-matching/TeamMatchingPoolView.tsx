@@ -35,6 +35,48 @@ function getRemainingSeconds(deadlineAt?: string, baseTime = Date.now()) {
   return Math.max(0, Math.floor((deadlineTime - baseTime) / 1000));
 }
 
+function getTimestamp(dateTime?: string | null) {
+  if (!dateTime) {
+    return undefined;
+  }
+
+  const timestamp = new Date(dateTime).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : undefined;
+}
+
+function getMatchingProgress(
+  startAt?: string | null,
+  endAt?: string | null,
+  baseTime = Date.now(),
+) {
+  const startTime = getTimestamp(startAt);
+  const endTime = getTimestamp(endAt);
+
+  if (!startTime || !endTime || endTime <= startTime) {
+    return 0;
+  }
+
+  const progress = ((baseTime - startTime) / (endTime - startTime)) * 100;
+
+  return Math.min(100, Math.max(0, progress));
+}
+
+function isInMatchingResultCountdown(
+  startAt?: string | null,
+  endAt?: string | null,
+  baseTime = Date.now(),
+) {
+  const startTime = getTimestamp(startAt);
+  const endTime = getTimestamp(endAt);
+
+  if (!startTime || !endTime) {
+    return false;
+  }
+
+  return baseTime >= startTime && baseTime < endTime;
+}
+
 function getCountdownDigits(deadlineAt?: string, baseTime?: number) {
   const remainingSeconds = getRemainingSeconds(deadlineAt, baseTime);
   const hours = Math.floor(remainingSeconds / 3600);
@@ -46,11 +88,11 @@ function getCountdownDigits(deadlineAt?: string, baseTime?: number) {
   ).padStart(2, "0")}`.split("");
 }
 
-function useCountdownDigits(deadlineAt?: string) {
+function useCurrentTime(shouldTick: boolean) {
   const [baseTime, setBaseTime] = useState(Date.now);
 
   useEffect(() => {
-    if (!deadlineAt) {
+    if (!shouldTick) {
       return;
     }
 
@@ -61,13 +103,17 @@ function useCountdownDigits(deadlineAt?: string) {
     return () => {
       window.clearInterval(timerId);
     };
-  }, [deadlineAt]);
+  }, [shouldTick]);
 
+  return baseTime;
+}
+
+function useCountdownDigits(deadlineAt?: string, baseTime?: number) {
   return deadlineAt ? getCountdownDigits(deadlineAt, baseTime) : fallbackCountdownDigits;
 }
 
-function useCountdownGroups(deadlineAt?: string) {
-  const countdownDigits = useCountdownDigits(deadlineAt);
+function useCountdownGroups(deadlineAt?: string, baseTime?: number) {
+  const countdownDigits = useCountdownDigits(deadlineAt, baseTime);
 
   return [
     { digits: countdownDigits.slice(0, 2), label: "시간" },
@@ -76,8 +122,16 @@ function useCountdownGroups(deadlineAt?: string) {
   ];
 }
 
-function MatchingCountdown({ deadlineAt, memberName }: { deadlineAt?: string; memberName: string }) {
-  const countdownGroups = useCountdownGroups(deadlineAt);
+function MatchingCountdown({
+  deadlineAt,
+  memberName,
+  now,
+}: {
+  deadlineAt?: string;
+  memberName: string;
+  now: number;
+}) {
+  const countdownGroups = useCountdownGroups(deadlineAt, now);
 
   return (
     <section className="relative mx-auto mt-9 flex w-full max-w-[358px] flex-col items-start gap-4 overflow-hidden rounded-2xl bg-[#F9F8F4] px-5 py-4 shadow-[0_16px_4px_0_rgba(0,0,0,0),0_10px_4px_0_rgba(0,0,0,0.01),0_6px_3px_0_rgba(0,0,0,0.05),0_3px_3px_0_rgba(0,0,0,0.09),0_1px_1px_0_rgba(0,0,0,0.10)]">
@@ -141,6 +195,30 @@ function MatchingCountdown({ deadlineAt, memberName }: { deadlineAt?: string; me
   );
 }
 
+function MatchingProgressBar({
+  deadlineAt,
+  matchingStartedAt,
+  now,
+}: {
+  deadlineAt?: string;
+  matchingStartedAt?: string | null;
+  now: number;
+}) {
+  const progress = getMatchingProgress(matchingStartedAt, deadlineAt, now);
+
+  return (
+    <div
+      aria-hidden="true"
+      className="mx-auto mt-8 h-[6px] w-full max-w-[322px] overflow-hidden rounded-[90px] bg-[#D9D9D9]"
+    >
+      <div
+        className="h-full rounded-[90px] bg-[#FFAD62] transition-[width] duration-500 ease-out"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
+}
+
 export default function TeamMatchingPoolView({
   showCancelModal = false,
   todayApplication,
@@ -155,6 +233,12 @@ export default function TeamMatchingPoolView({
   const canWithdraw = withdrawal?.withdrawable ?? true;
   const applicationDeadlineAt = eligibility?.applicationDeadlineAt ?? withdrawal?.deadlineAt;
   const deadlineAt = getMatchingResultPublishAt(applicationDeadlineAt);
+  const now = useCurrentTime(Boolean(deadlineAt));
+  const isMatchingResultCountdownActive = isInMatchingResultCountdown(
+    applicationDeadlineAt,
+    deadlineAt,
+    now,
+  );
   const memberName = memberProfile?.name?.trim() || "회원";
 
   return (
@@ -185,18 +269,14 @@ export default function TeamMatchingPoolView({
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
-          {canWithdraw ? (
+          {!isMatchingResultCountdownActive && canWithdraw ? (
             <Link
               className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
               href="/team-matching/cancel"
             >
               매칭신청취소
             </Link>
-          ) : (
-            <span className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#949494]">
-              매칭신청취소 불가
-            </span>
-          )}
+          ) : null}
         </section>
 
         <div className="relative z-10 mt-[7px]">
@@ -209,15 +289,14 @@ export default function TeamMatchingPoolView({
             width={313}
           />
 
-          <div
-            aria-hidden="true"
-            className="mx-auto mt-8 flex h-[6px] w-full max-w-[322px] flex-col items-start gap-[10px] overflow-hidden rounded-[90px] bg-[#D9D9D9]"
-          >
-            <div className="h-[6px] w-20 shrink-0 rounded-[90px] bg-[#FFAD62]" />
-          </div>
+          <MatchingProgressBar
+            deadlineAt={deadlineAt}
+            matchingStartedAt={applicationDeadlineAt}
+            now={now}
+          />
         </div>
 
-        <MatchingCountdown deadlineAt={deadlineAt} memberName={memberName} />
+        <MatchingCountdown deadlineAt={deadlineAt} memberName={memberName} now={now} />
       </div>
 
       <div className="relative z-10 shrink-0 bg-white px-4 pb-3 pt-2">
