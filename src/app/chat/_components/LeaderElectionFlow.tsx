@@ -793,7 +793,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   }
 
   return (
-    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <ChatTopBar
         memberCount={chatMembers.filter((member) => !member.isChatbot).length}
         roomId={roomId}
@@ -1156,7 +1156,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
 function ChatRoomState({ message, roomId }: { message: string; roomId: string }) {
   return (
-    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <ChatTopBar roomId={roomId} title="채팅방" />
       <div className="flex flex-1 items-center justify-center px-6 text-center">
         <p className="text-[13px] leading-[1.5] text-color-gray-650">{message}</p>

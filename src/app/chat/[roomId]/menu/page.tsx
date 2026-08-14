@@ -104,7 +104,7 @@ export default function ChatRoomMenuPage() {
 
 
   return (
-    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white">
       <header className="shrink-0 border-b border-[rgba(97,97,97,0.08)] bg-white">
         <div className="relative flex h-[46px] items-center justify-center px-4">
           <Link
