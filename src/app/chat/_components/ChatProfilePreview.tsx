@@ -127,7 +127,9 @@ export function ChatProfilePreview({
         </div>
       ) : null}
 
-      {profile && profile.isPublic ? <ProfileBody member={member} profile={profile} /> : null}
+      {profileQuery.isSuccess && profile?.isPublic ? (
+        <ProfileBody member={member} profile={profile} />
+      ) : null}
     </div>
   );
 }
