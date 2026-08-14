@@ -766,6 +766,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         .find((message) => message.messageType === "CONTEST_VOTE_REMINDER_CARD"),
     [serverMessages],
   );
+  const hasContestResultMessage = serverMessages.some(
+    (message) => message.messageType === "CONTEST_RESULT_CARD",
+  );
   const latestContestVoteReminderCandidateIds = useMemo(
     () =>
       latestContestVoteReminderMessage
@@ -883,7 +886,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         title={roomTitle || undefined}
       />
 
-      {hasServerMessages && latestContestVoteReminderMessage ? (
+      {hasServerMessages && latestContestVoteReminderMessage && !hasContestResultMessage && !isContestResultShown ? (
         <ContestVoteNoticeBanner
           body={latestContestVoteReminderMessage.body}
           isVoteSubmitted={isContestVoteSubmitted}
