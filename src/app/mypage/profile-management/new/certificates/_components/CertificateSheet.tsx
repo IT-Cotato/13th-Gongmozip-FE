@@ -66,7 +66,12 @@ export function CertificateSheet({ onClose, onSubmit, initialCertificate }: Cert
 
   const categoryCode = category ? (CERTIFICATE_CATEGORY_CODE[category] ?? null) : null;
   const certificationSearchQuery = useCertificationSearchQuery(debouncedName, categoryCode);
-  const suggestions = certificationSearchQuery.data?.certifications ?? [];
+  // 백엔드 검색은 "포함"으로 매칭해 관계없는 결과까지 섞여 나온다 (예: "a" 입력 시
+  // "MOS Access"뿐 아니라 "MOS Master"까지). 자동완성이므로 입력한 문자열로
+  // 시작하는 것만 남기도록 FE에서 한 번 더 거른다.
+  const suggestions = (certificationSearchQuery.data?.certifications ?? []).filter((item) =>
+    item.certificateName.toLowerCase().startsWith(debouncedName.toLowerCase()),
+  );
   const allowCustomInput = certificationSearchQuery.data?.allowCustomInput ?? true;
   const shouldShowSuggestions =
     isSuggestionListOpen && certificationCode === null && debouncedName.length > 0;
