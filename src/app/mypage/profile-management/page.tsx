@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon, PlusIcon, ProfilePlaceholderIcon } from "./_components/icons";
 import { ProfileCard } from "./_components/ProfileCard";
@@ -10,10 +9,15 @@ import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { useProfilePreviewsQuery } from "@/queries/useProfilePreviewQuery";
 import { useDeleteProfileMutation } from "@/queries/useDeleteProfileMutation";
 import { useUpdateProfileVisibilityMutation } from "@/queries/useUpdateProfileVisibilityMutation";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
+import { getCollaborationCharacterMeta } from "../_lib/collaborationCharacter";
 
 export default function ProfileManagementPage() {
   const router = useRouter();
   const profileListQuery = useProfileListQuery();
+  const memberProfileQuery = useMemberProfileQuery();
+  const summaryQuery = useMypageSummaryQuery();
   const profiles = profileListQuery.data?.profiles ?? [];
   const profileIds = profiles.map((profile) => String(profile.profileId));
   const previewQueries = useProfilePreviewsQuery(profileIds);
@@ -24,6 +28,10 @@ export default function ProfileManagementPage() {
   const isLoading = profileListQuery.isLoading;
   const isError = profileListQuery.isError;
   const hasProfiles = profiles.length > 0;
+  const publicProfileCount = profiles.filter((profile) => profile.isPublic).length;
+  const characterImageSrc = summaryQuery.data?.character
+    ? getCollaborationCharacterMeta(summaryQuery.data.character.characterType).imageSrc
+    : null;
 
   function handleCreateProfile() {
     router.push("/mypage/profile-management/new");
@@ -37,11 +45,11 @@ export default function ProfileManagementPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-      <div className="relative z-10 flex h-[46px] shrink-0 items-center justify-center px-4">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-[#f5f5f5]">
+      <div className="relative z-10 flex h-[46px] shrink-0 items-center justify-center bg-white px-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push("/mypage")}
           aria-label="뒤로가기"
           className="absolute left-4 flex h-6 w-6 items-center justify-center"
         >
@@ -62,81 +70,79 @@ export default function ProfileManagementPage() {
           <button
             type="button"
             onClick={() => profileListQuery.refetch()}
-            className="rounded-full bg-[#F5F5F5] px-4 py-2 text-[13px] font-medium text-[#1F1F1F]"
+            className="rounded-full bg-white px-4 py-2 text-[13px] font-medium text-[#1F1F1F]"
           >
             다시 시도
           </button>
         </div>
       )}
 
-      {!isLoading && !isError && !hasProfiles && (
-        <div className="relative isolate flex flex-1 flex-col items-center gap-5 px-5 py-9">
-          <Image
-            src="/images/mypage/profile-empty-background.svg"
-            alt=""
-            fill
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10 object-cover"
-          />
-
-          <div className="flex w-full flex-col items-center gap-1 text-center">
-            <p className="w-full text-[17px] leading-[1.5] text-[#1f1f1f]">
-              등록된 프로필이 없어요
-            </p>
-            <p className="w-full text-[13px] leading-[1.5] text-[#616161]">
-              프로필을 작성하러 가볼까요?
-            </p>
+      {!isLoading && !isError && (
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <div className="flex items-center gap-2 bg-white px-6 py-5">
+            <div className="size-[67px] shrink-0 overflow-hidden rounded-full bg-white">
+              {characterImageSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={characterImageSrc} alt="" className="size-full object-cover" />
+              ) : (
+                <ProfilePlaceholderIcon />
+              )}
+            </div>
+            <div className="flex flex-1 flex-col items-start">
+              <p className="w-full text-[13px] leading-[1.5] text-[#616161]">
+                {memberProfileQuery.data?.name ? `${memberProfileQuery.data.name}님` : "회원님"}
+              </p>
+              <p className="flex w-full items-center gap-1 text-[20px] leading-[1.35] font-semibold whitespace-nowrap">
+                <span className="text-[#1f1f1f]">프로필</span>
+                <span className="text-[#ac4a35]">{profileListQuery.data?.profileCount ?? 0}</span>
+                <span className="text-[#1f1f1f]">개</span>
+              </p>
+              <p className="flex w-full items-center gap-1 text-[13px] leading-[1.5] whitespace-nowrap text-[#1f1f1f]">
+                <span>프로필</span>
+                <span>{publicProfileCount}개</span>
+                <span>공개 중</span>
+              </p>
+            </div>
           </div>
 
-          <div className="size-[80px] shrink-0">
-            <ProfilePlaceholderIcon />
-          </div>
-
-          <div className="flex w-full flex-col items-start px-5 py-2.5">
+          <div className="flex flex-col gap-4 p-4">
             <button
               type="button"
               onClick={handleCreateProfile}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-[#ff7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#ff7658] text-[15px] leading-[1.25] font-semibold text-white"
             >
               <PlusIcon />
-              프로필 작성하기
+              프로필 추가
             </button>
-          </div>
-        </div>
-      )}
 
-      {!isLoading && !isError && hasProfiles && (
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
-          <button
-            type="button"
-            onClick={handleCreateProfile}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[rgba(97,97,97,0.1)] text-[15px] leading-[1.25] font-semibold text-[#616161]"
-          >
-            <PlusIcon />
-            프로필 추가
-          </button>
+            {hasProfiles ? (
+              <div className="flex flex-col gap-4">
+                {profiles.map((profile, index) => {
+                  const previewQuery = previewQueries[index];
+                  const preview = previewQuery?.data;
+                  if (!preview) return null;
 
-          <div className="flex flex-col gap-3">
-            {profiles.map((profile, index) => {
-              const previewQuery = previewQueries[index];
-              const preview = previewQuery?.data;
-              if (!preview) return null;
-
-              return (
-                <ProfileCard
-                  key={profile.profileId}
-                  preview={preview}
-                  updatedAt={profile.updatedAt}
-                  onToggleVisibility={() =>
-                    visibilityMutation.mutate({
-                      profileId: String(profile.profileId),
-                      isPublic: !preview.isPublic,
-                    })
-                  }
-                  onDelete={() => setProfileIdPendingDelete(String(profile.profileId))}
-                />
-              );
-            })}
+                  return (
+                    <ProfileCard
+                      key={profile.profileId}
+                      preview={preview}
+                      updatedAt={profile.updatedAt}
+                      onToggleVisibility={() =>
+                        visibilityMutation.mutate({
+                          profileId: String(profile.profileId),
+                          isPublic: !preview.isPublic,
+                        })
+                      }
+                      onDelete={() => setProfileIdPendingDelete(String(profile.profileId))}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="px-1 py-8 text-center text-[13px] leading-[1.5] text-[#949494]">
+                등록된 프로필이 없어요. 프로필을 작성하러 가볼까요?
+              </p>
+            )}
           </div>
         </div>
       )}
