@@ -19,17 +19,16 @@ import { ApiError } from "@/lib/http";
 
 const COLLABORATIVE_DISTANCE_STEP = 100;
 
-type MenuItem = { label: string; href?: string; disabled?: boolean; onClick?: () => void };
+type MenuItem = {
+  label: string;
+  href?: string;
+  disabled?: boolean;
+  hint?: string;
+  onClick?: () => void;
+};
 type MenuSection = { title?: string; items: MenuItem[] };
 
 const MENU_SECTIONS: MenuSection[] = [
-  {
-    title: "정보관리",
-    items: [
-      { label: "회원정보 수정", href: "/mypage/edit-profile" },
-      { label: "비밀번호 변경", href: "/mypage/change-password" },
-    ],
-  },
   {
     title: "고객지원",
     items: [{ label: "문의하기", href: "/contact" }],
@@ -104,7 +103,18 @@ export default function MyPage() {
     });
   }
 
+  const isSocialLogin = Boolean(profileQuery.data?.snsLinked);
+  const infoManagementSection: MenuSection = {
+    title: "정보관리",
+    items: [
+      { label: "회원정보 수정", href: "/mypage/edit-profile" },
+      isSocialLogin
+        ? { label: "비밀번호 변경", disabled: true, hint: "카카오톡 로그인 사용중" }
+        : { label: "비밀번호 변경", href: "/mypage/change-password" },
+    ],
+  };
   const menuSections: MenuSection[] = [
+    infoManagementSection,
     ...MENU_SECTIONS,
     { items: [{ label: "로그아웃", onClick: handleLogout }] },
   ];
@@ -186,7 +196,7 @@ export default function MyPage() {
                       <img
                         src={collaborationType.imageSrc}
                         alt={collaborationType.label}
-                        className="absolute inset-[11.67%_11%_11.33%_11%] size-full object-contain"
+                        className="absolute inset-[11.67%_11%_11.33%_11%] object-contain"
                       />
                     </div>
                   )}
@@ -312,7 +322,7 @@ export default function MyPage() {
   );
 }
 
-function MenuRow({ label, href, disabled, onClick }: MenuItem) {
+function MenuRow({ label, href, disabled, hint, onClick }: MenuItem) {
   const className = "w-full text-left text-[15px] leading-[1.25] font-medium text-[#1F1F1F]";
 
   if (href) {
@@ -334,7 +344,9 @@ function MenuRow({ label, href, disabled, onClick }: MenuItem) {
         >
           {label}
         </button>
-        <p className="text-xs text-[#949494]">준비 중인 기능이에요.</p>
+        <p className={`text-xs ${hint ? "text-[#ac4a35]" : "text-[#949494]"}`}>
+          {hint ?? "준비 중인 기능이에요."}
+        </p>
       </div>
     );
   }
