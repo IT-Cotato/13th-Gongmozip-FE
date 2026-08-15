@@ -58,10 +58,12 @@ function LeaderCandidatePreviewProfile({
 export function LeaderNoticeMessage({
   body,
   leader,
+  onOpenProfile,
   sentAt,
 }: {
   body: string;
   leader: LeaderCandidate;
+  onOpenProfile?: () => void;
   sentAt?: string;
 }) {
   return (
@@ -76,7 +78,7 @@ export function LeaderNoticeMessage({
           </p>
           <MessageMeta sentAt={sentAt} />
         </div>
-        <LeaderProfileCard leader={leader} />
+        <LeaderProfileCard leader={leader} onOpenProfile={onOpenProfile} />
       </div>
     </article>
   );
@@ -85,10 +87,12 @@ export function LeaderNoticeMessage({
 export function LeaderElectedMessage({
   body,
   leader,
+  onOpenProfile,
   sentAt,
 }: {
   body?: string;
   leader: LeaderCandidate;
+  onOpenProfile?: () => void;
   sentAt?: string;
 }) {
   const message =
@@ -106,7 +110,7 @@ export function LeaderElectedMessage({
           </p>
           <MessageMeta sentAt={sentAt} />
         </div>
-        <LeaderProfileCard leader={leader} />
+        <LeaderProfileCard leader={leader} onOpenProfile={onOpenProfile} />
       </div>
     </article>
   );
@@ -114,12 +118,14 @@ export function LeaderElectedMessage({
 
 export function LeaderTieMessage({
   onAccept,
+  onOpenProfile,
   onRevote,
   recommendationReason,
   recommendedLeader,
   sentAt,
 }: {
   onAccept: () => void;
+  onOpenProfile?: () => void;
   onRevote: () => void;
   recommendationReason?: string | null;
   recommendedLeader: LeaderCandidate;
@@ -144,6 +150,7 @@ ${reason} 추천을 수락하시겠어요?`}
           </p>
           <MessageMeta sentAt={sentAt} />
         </div>
+        <LeaderProfileCard leader={recommendedLeader} onOpenProfile={onOpenProfile} />
         <div className="mt-1 flex h-9 w-[230px] gap-2">
           <button
             className="flex flex-1 items-center justify-center rounded-[10px] bg-color-gray-650 px-3 text-[13px] leading-[1.25] font-semibold text-white"
@@ -165,10 +172,18 @@ ${reason} 추천을 수락하시겠어요?`}
   );
 }
 
-export function LeaderProfileCard({ leader }: { leader: LeaderCandidate }) {
+export function LeaderProfileCard({
+  leader,
+  onOpenProfile,
+}: {
+  leader: LeaderCandidate;
+  onOpenProfile?: () => void;
+}) {
   return (
     <button
-      className="mt-1 flex h-[68px] w-[220px] items-center gap-4 rounded-[14px] bg-color-orange-50 p-2 text-left"
+      className="mt-1 flex h-[68px] w-[220px] items-center gap-4 rounded-[14px] bg-color-orange-50 p-2 text-left disabled:cursor-default"
+      disabled={!onOpenProfile}
+      onClick={onOpenProfile}
       type="button"
     >
       <span className="relative flex w-[66px] shrink-0 items-start">
