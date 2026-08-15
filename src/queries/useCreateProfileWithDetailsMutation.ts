@@ -11,6 +11,12 @@ import { CERTIFICATE_CATEGORY_CODE } from "@/app/mypage/profile-management/new/c
 const DEFAULT_PROJECT_ROLE = "팀원";
 const DEFAULT_PROJECT_TECH_STACKS = ["기타"];
 
+const PROJECT_CATEGORY_CODE: Record<string, string> = {
+  "공모전 출품": "CONTEST",
+  "대외활동 프로젝트": "EXTERNAL_ACTIVITY",
+  "교내 프로젝트": "CAMPUS_PROJECT",
+};
+
 export type CreateProfileWithDetailsInput = {
   basicInfo: ProfileBasicInfo;
   projects: ProjectExperienceInput[];
@@ -46,6 +52,7 @@ async function createProjectsAwardsAndCertifications(
         method: "POST",
         body: {
           projectName: project.name,
+          category: PROJECT_CATEGORY_CODE[project.category] ?? "CAMPUS_PROJECT",
           description: project.content,
           role: DEFAULT_PROJECT_ROLE,
           techStacks: DEFAULT_PROJECT_TECH_STACKS,
