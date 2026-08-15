@@ -11,13 +11,15 @@ import { useDeleteProfileMutation } from "@/queries/useDeleteProfileMutation";
 import { useUpdateProfileVisibilityMutation } from "@/queries/useUpdateProfileVisibilityMutation";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
-import { getCollaborationCharacterMeta } from "../_lib/collaborationCharacter";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
+import { getCollaborationCharacterMeta, getPaletteStyle } from "../_lib/collaborationCharacter";
 
 export default function ProfileManagementPage() {
   const router = useRouter();
   const profileListQuery = useProfileListQuery();
   const memberProfileQuery = useMemberProfileQuery();
   const summaryQuery = useMypageSummaryQuery();
+  const palettesQuery = useCharacterPalettesQuery();
   const profiles = profileListQuery.data?.profiles ?? [];
   const profileIds = profiles.map((profile) => String(profile.profileId));
   const previewQueries = useProfilePreviewsQuery(profileIds);
@@ -29,9 +31,12 @@ export default function ProfileManagementPage() {
   const isError = profileListQuery.isError;
   const hasProfiles = profiles.length > 0;
   const publicProfileCount = profiles.filter((profile) => profile.isPublic).length;
-  const characterImageSrc = summaryQuery.data?.character
-    ? getCollaborationCharacterMeta(summaryQuery.data.character.characterType).imageSrc
+  const characterMeta = summaryQuery.data?.character
+    ? getCollaborationCharacterMeta(summaryQuery.data.character.characterType)
     : null;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === summaryQuery.data?.character?.paletteCode,
+  );
 
   function handleCreateProfile() {
     router.push("/mypage/profile-management/new");
@@ -80,10 +85,17 @@ export default function ProfileManagementPage() {
       {!isLoading && !isError && (
         <div className="flex flex-1 flex-col overflow-y-auto">
           <div className="flex items-center gap-2 bg-white px-6 py-5">
-            <div className="size-[67px] shrink-0 overflow-hidden rounded-full bg-white">
-              {characterImageSrc ? (
+            <div
+              className="flex size-[67px] shrink-0 items-center justify-center overflow-hidden rounded-full"
+              style={characterMeta ? getPaletteStyle(characterPalette) : { backgroundColor: "#fff" }}
+            >
+              {characterMeta?.imageSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={characterImageSrc} alt="" className="size-full object-cover" />
+                <img
+                  src={characterMeta.imageSrc}
+                  alt=""
+                  className="size-[85%] object-contain"
+                />
               ) : (
                 <ProfilePlaceholderIcon />
               )}
