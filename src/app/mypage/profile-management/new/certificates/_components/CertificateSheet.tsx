@@ -82,17 +82,29 @@ export function CertificateSheet({ onClose, onSubmit, initialCertificate }: Cert
   const isYearInRange =
     isYearComplete && Number(year) >= MIN_CERTIFICATE_YEAR && Number(year) <= currentYear;
   const isYearValid = year.length === 0 || isYearInRange;
-  const requiresListSelection = certificationSearchQuery.isSuccess && !allowCustomInput;
+  // 목록에서 고르지 않은(직접 입력) 이름은, 이 카테고리가 직접 입력을 허용하는지
+  // 서버 검색이 성공적으로 확인해주기 전까지는 제출을 막는다. 검색이 아직
+  // 진행 중이거나 실패한 상태에서 allowCustomInput의 기본값(true)에 기대어
+  // 정책을 확인하지 않은 채로 통과시키지 않기 위함.
+  const isPolicyConfirmed = certificationSearchQuery.isSuccess;
+  const requiresListSelection = isPolicyConfirmed && !allowCustomInput;
+  const isTypedNameSubmittable = certificationCode !== null || isPolicyConfirmed;
   const isFormValid =
     category !== null &&
     name.trim().length > 0 &&
     isYearValid &&
     (!hasGradeField || grade.trim().length > 0) &&
+    isTypedNameSubmittable &&
     (!requiresListSelection || certificationCode !== null);
 
   function handleSelectCategory(next: string) {
     setCategory(next);
     if (next !== "어학") setGrade("");
+    // 이전 카테고리에서 선택했던 항목은 새 카테고리에서는 더 이상 유효하지
+    // 않으므로 선택 상태를 초기화하고, 입력된 이름이 있으면 새 카테고리
+    // 기준으로 추천 목록을 다시 보여준다.
+    setCertificationCode(null);
+    if (name.trim().length > 0) setIsSuggestionListOpen(true);
   }
 
   function handleNameChange(next: string) {
@@ -155,11 +167,15 @@ export function CertificateSheet({ onClose, onSubmit, initialCertificate }: Cert
         </div>
 
         <div ref={nameFieldRef} className="relative mt-4 flex flex-col gap-1">
-          <div className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]">
+          <label
+            htmlFor="certificate-name"
+            className="flex items-center px-1 text-[17px] leading-[1.25] font-medium text-[#1f1f1f]"
+          >
             자격증명
             <span className="text-[#FF7658]">*</span>
-          </div>
+          </label>
           <input
+            id="certificate-name"
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             onFocus={() => setIsSuggestionListOpen(true)}
@@ -191,6 +207,20 @@ export function CertificateSheet({ onClose, onSubmit, initialCertificate }: Cert
                 </li>
               ))}
             </ul>
+          )}
+          {certificationSearchQuery.isError && certificationCode === null && (
+            <div className="flex items-center justify-between gap-2 px-1">
+              <p className="text-xs leading-[1.35] text-[#BB5260]">
+                자격증 목록을 불러오지 못했어요.
+              </p>
+              <button
+                type="button"
+                onClick={() => certificationSearchQuery.refetch()}
+                className="shrink-0 text-xs leading-[1.35] font-semibold text-[#616161] underline"
+              >
+                다시 시도
+              </button>
+            </div>
           )}
           {requiresListSelection && certificationCode === null && (
             <p className="px-1 text-xs leading-[1.35] text-[#949494]">

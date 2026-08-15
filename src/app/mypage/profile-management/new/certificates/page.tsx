@@ -19,6 +19,7 @@ export default function CertificatesPage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const draftProjects = useProfileDraftStore((state) => state.projects);
   const draftCertificates = useProfileDraftStore((state) => state.certificates);
+  const setDraftCertificates = useProfileDraftStore((state) => state.setCertificates);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
@@ -115,7 +116,10 @@ export default function CertificatesPage() {
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
         <button
           type="button"
-          onClick={() => router.replace("/mypage/profile-management/new/experience")}
+          onClick={() => {
+            setDraftCertificates(() => certificates);
+            router.replace("/mypage/profile-management/new/experience");
+          }}
           aria-label="이전"
           className="absolute left-4 flex h-6 w-6 items-center justify-center"
         >
@@ -176,7 +180,10 @@ export default function CertificatesPage() {
         <div className="flex gap-2.5">
           <button
             type="button"
-            onClick={() => router.replace("/mypage/profile-management/new/experience")}
+            onClick={() => {
+              setDraftCertificates(() => certificates);
+              router.replace("/mypage/profile-management/new/experience");
+            }}
             disabled={isSubmitting}
             className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
           >

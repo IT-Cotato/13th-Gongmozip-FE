@@ -104,13 +104,16 @@ export default function MyPage() {
   }
 
   const isSocialLogin = Boolean(profileQuery.data?.snsLinked);
+  // 프로필 조회가 아직 로딩/에러 상태일 때는 소셜로그인 여부를 알 수 없으므로,
+  // 성공 응답을 받아 확실히 아닐 때만 비밀번호 변경 링크를 활성화한다.
+  const canChangePassword = profileQuery.isSuccess && !isSocialLogin;
   const infoManagementSection: MenuSection = {
     title: "정보관리",
     items: [
       { label: "회원정보 수정", href: "/mypage/edit-profile" },
-      isSocialLogin
-        ? { label: "비밀번호 변경", disabled: true, hint: "카카오톡 로그인 사용중" }
-        : { label: "비밀번호 변경", href: "/mypage/change-password" },
+      canChangePassword
+        ? { label: "비밀번호 변경", href: "/mypage/change-password" }
+        : { label: "비밀번호 변경", disabled: true, hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined },
     ],
   };
   const menuSections: MenuSection[] = [
