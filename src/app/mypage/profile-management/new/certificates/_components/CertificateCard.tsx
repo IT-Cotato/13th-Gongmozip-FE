@@ -6,6 +6,9 @@ export type Certificate = {
   category: string;
   grade: string;
   year: string;
+  // 자격증 마스터 목록에서 골랐을 때만 채워짐. 직접 입력한 이름이면 null이며,
+  // 이 값의 유무로 서버에 isCustom(true/false)과 certificationCode 전송 여부를 결정한다.
+  certificationCode: string | null;
 };
 
 type CertificateCardProps = {

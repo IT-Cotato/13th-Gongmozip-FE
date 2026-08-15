@@ -87,6 +87,8 @@ function buildProfileDraftFromDetail(profile: ProfileDetail) {
     category: certification.categoryName,
     grade: "",
     year: certification.acquiredAt ? String(new Date(certification.acquiredAt).getFullYear()) : "",
+    // 프로필 상세 조회 API는 certificationCode를 내려주지 않아 재저장 시 직접 입력으로 취급한다.
+    certificationCode: null,
   }));
 
   return { basicInfo, projects, certificates };

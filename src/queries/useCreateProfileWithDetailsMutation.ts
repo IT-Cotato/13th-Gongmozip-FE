@@ -4,15 +4,7 @@ import { fetchProfileDetail, profileDetailQueryKey } from "./useProfileDetailQue
 import type { ProfileBasicInfo } from "@/stores/profileDraftStore";
 import type { ProjectExperienceInput } from "@/app/mypage/profile-management/new/experience/_components/ProjectExperienceSheet";
 import type { Certificate } from "@/app/mypage/profile-management/new/certificates/_components/CertificateCard";
-
-const CERTIFICATE_CATEGORY_CODE: Record<string, string> = {
-  어학: "LANGUAGE",
-  "컴퓨터/IT": "COMPUTER_IT",
-  "데이터분석/AI": "DATA_AI",
-  디자인: "DESIGN",
-  "경영/사무": "MANAGEMENT_OFFICE",
-  기타: "OTHER",
-};
+import { CERTIFICATE_CATEGORY_CODE } from "@/app/mypage/profile-management/new/certificates/_components/CertificateSheet";
 
 // The backend has no field for "role"/"기술스택" in this wizard (never collected)
 // but requires both, so a fixed placeholder is sent until that UI exists.
@@ -79,20 +71,26 @@ async function createProjectsAwardsAndCertifications(
   );
 
   await Promise.all(
-    certificates.map((certificate) =>
-      apiFetch<void>(`/api/profiles/${profileId}/certifications`, {
+    certificates.map((certificate) => {
+      const certificateName = certificate.grade
+        ? `${certificate.name} (${certificate.grade})`
+        : certificate.name;
+
+      return apiFetch<void>(`/api/profiles/${profileId}/certifications`, {
         method: "POST",
         body: {
-          certificateName: certificate.grade
-            ? `${certificate.name} (${certificate.grade})`
-            : certificate.name,
+          certificateName,
+          // 자동완성 목록에서 고른 경우에만 certificationCode를 함께 보내고
+          // isCustom을 false로 표시한다. 직접 입력한 이름은 isCustom: true.
+          ...(certificate.certificationCode
+            ? { certificationCode: certificate.certificationCode, isCustom: false }
+            : { isCustom: true }),
           categoryCode: CERTIFICATE_CATEGORY_CODE[certificate.category] ?? "OTHER",
           issuer: "",
           acquiredAt: certificate.year ? `${certificate.year}-01-01` : undefined,
-          isCustom: true,
         },
-      }),
-    ),
+      });
+    }),
   );
 }
 
