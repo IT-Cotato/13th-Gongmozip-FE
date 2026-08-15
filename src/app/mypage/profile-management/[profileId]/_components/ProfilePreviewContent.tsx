@@ -145,8 +145,8 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
     router.replace("/login/email");
   }
 
-  const age = member ? calculateAge(member.birthDate) : null;
-  const birthYear = member ? new Date(member.birthDate).getFullYear() : null;
+  const age = member?.birthDate ? calculateAge(member.birthDate) : null;
+  const birthYear = member?.birthDate ? new Date(member.birthDate).getFullYear() : null;
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
