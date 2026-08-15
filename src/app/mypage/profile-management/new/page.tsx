@@ -42,6 +42,8 @@ export default function CreateProfilePage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const nicknameError = useProfileDraftStore((state) => state.nicknameError);
+  const setNicknameError = useProfileDraftStore((state) => state.setNicknameError);
   const accessToken = useAuthStore((state) => state.accessToken);
   const defaultBasicInfo = useProfileDefaultInfoStore((state) => state.defaultBasicInfo);
   const setDefaultBasicInfo = useProfileDefaultInfoStore((state) => state.setDefaultBasicInfo);
@@ -91,13 +93,20 @@ export default function CreateProfilePage() {
     setPreviewImageUrl(objectUrl);
 
     updateProfileImageMutation.mutate(file, {
+      onSuccess: async () => {
+        // invalidateQueries만으로는 refetch가 끝나기 전에 onSettled가 미리보기를
+        // 지워버려서, 갱신된 이미지가 반영되기 전 잠깐 원래(구) 이미지로 되돌아가
+        // 보이는(=마치 업로드가 실패한 것처럼 보이는) 깜빡임이 있었다. 여기서
+        // refetch를 직접 기다려 새 이미지가 준비된 뒤에 미리보기를 지운다.
+        await memberProfileQuery.refetch();
+      },
       onSettled: () => {
         URL.revokeObjectURL(objectUrl);
         if (previewImageUrlRef.current === objectUrl) {
           previewImageUrlRef.current = null;
         }
-        // 성공 시 memberProfileQuery가 무효화되어 갱신된 서버 이미지로,
-        // 실패 시 기존 프로필 이미지로 자연스럽게 되돌아간다.
+        // 성공 시엔 위에서 기다린 갱신된 서버 이미지로, 실패 시엔 기존 프로필
+        // 이미지로 자연스럽게 되돌아간다.
         setPreviewImageUrl(null);
       },
     });
@@ -146,7 +155,7 @@ export default function CreateProfilePage() {
       }
     }
 
-    router.push("/mypage/profile-management/new/experience");
+    router.replace("/mypage/profile-management/new/experience");
   }
 
   return (
@@ -205,10 +214,19 @@ export default function CreateProfilePage() {
                 <input
                   id="nickname"
                   value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
+                  onChange={(e) => {
+                    setNickname(e.target.value);
+                    if (nicknameError) setNicknameError(null);
+                  }}
                   placeholder="김철수"
+                  aria-invalid={nicknameError !== null}
                   className={INPUT_CLASS}
                 />
+                {nicknameError && (
+                  <p role="alert" className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                    {nicknameError}
+                  </p>
+                )}
               </div>
             </div>
             {updateProfileImageMutation.isError && (
@@ -362,7 +380,7 @@ export default function CreateProfilePage() {
             editingProfileId !== null ? `/mypage/profile-management/${editingProfileId}` : null;
           useProfileDraftStore.getState().resetProfileDraft();
           if (exitDestination) {
-            router.push(exitDestination);
+            router.replace(exitDestination);
           } else {
             router.back();
           }
