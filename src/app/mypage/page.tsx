@@ -8,10 +8,11 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
-import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
+import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { useLogoutMutation } from "@/queries/useLogoutMutation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiError } from "@/lib/http";
@@ -48,6 +49,7 @@ export default function MyPage() {
   const summaryQuery = useMypageSummaryQuery();
   const profileQuery = useMemberProfileQuery();
   const profileListQuery = useProfileListQuery();
+  const palettesQuery = useCharacterPalettesQuery();
   const logoutMutation = useLogoutMutation();
   const { data } = summaryQuery;
   const isLoading = summaryQuery.isLoading;
@@ -68,6 +70,9 @@ export default function MyPage() {
         ...getCollaborationCharacterMeta(data.character.characterType),
       }
     : null;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === data?.character?.paletteCode,
+  );
 
   function handleCharacterManageClick() {
     if (collaborationType) {
@@ -174,7 +179,10 @@ export default function MyPage() {
                     <AvatarPlaceholderIcon />
                   </div>
                   {collaborationType?.imageSrc && (
-                    <div className="absolute inset-0 overflow-hidden rounded-full">
+                    <div
+                      className="absolute inset-0 overflow-hidden rounded-full"
+                      style={getPaletteStyle(characterPalette)}
+                    >
                       <img
                         src={collaborationType.imageSrc}
                         alt={collaborationType.label}
