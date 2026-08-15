@@ -370,8 +370,8 @@ export function ContestVoteNoticeBanner({
             isButtonDisabled
               ? "bg-color-gray-200 text-color-gray-350"
               : isVoteSubmitted
-              ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
-              : "bg-color-gray-650 text-white"
+                ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+                : "bg-color-gray-650 text-white"
           }`}
           disabled={isButtonDisabled}
           onClick={onAction}
@@ -429,27 +429,102 @@ export function ProjectSubmissionReminderBanner({
   );
 }
 
+export function ProgressCheckBanner({
+  disabled = false,
+  onSubmit,
+}: {
+  disabled?: boolean;
+  onSubmit: (progressPercent: number) => void | Promise<void>;
+}) {
+  const [progress, setProgress] = useState(0);
+  const [isTouched, setIsTouched] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSaving = disabled || isSubmitting;
+  const canSubmit = isTouched && progress > 0 && !isSaving;
+
+  const submitProgress = async () => {
+    if (!canSubmit) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit(progress);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col items-center gap-4">
+        <p className="text-center text-[15px] leading-[1.35] text-color-gray-750">
+          팀장님, 공모전 제출일까지 벌써 절반 왔어요 !
+          <br />
+          현재까지의 진행률을 체크해주세요.
+        </p>
+        <div className="relative h-[23px] w-full max-w-[230px] overflow-hidden rounded-[40px] bg-color-gray-200">
+          <div
+            className="absolute inset-y-0 left-0 rounded-[40px] bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)]"
+            style={{ width: isTouched ? `${progress}%` : "26px" }}
+          />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[12px] leading-[1.35] font-semibold text-color-gray-500">
+            드래그 해주세요
+          </span>
+          <input
+            aria-label="중간점검 진행률"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            disabled={isSaving}
+            max={100}
+            min={0}
+            onChange={(event) => {
+              setProgress(Number(event.target.value));
+              setIsTouched(true);
+            }}
+            type="range"
+            value={progress}
+          />
+        </div>
+        <button
+          className={`flex h-9 w-full items-center justify-center rounded-[10px] px-3 text-[13px] leading-[1.25] font-semibold ${
+            canSubmit
+              ? "bg-color-gray-650 text-white"
+              : "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+          }`}
+          disabled={!canSubmit}
+          onClick={() => {
+            void submitProgress();
+          }}
+          type="button"
+        >
+          {isSaving ? "저장 중" : "진행률 저장"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function ContestVoteResultMessage({
   contest,
-  onMidtermSubmit,
   onUseChatbot,
   sentAt,
 }: {
   contest: RecommendedContest;
-  onMidtermSubmit: (progressPercent: number) => void;
   onUseChatbot?: () => void;
   sentAt?: string;
 }) {
-  const [midtermProgress, setMidtermProgress] = useState(0);
-
-  const submitMidtermCheck = (value: number) => {
-    setMidtermProgress(value);
-
-    if (value > 0) {
-      onMidtermSubmit(value);
-    }
-  };
-
   return (
     <>
       <article className="flex w-full items-start gap-2">
@@ -485,47 +560,6 @@ export function ContestVoteResultMessage({
       </article>
 
       <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={sentAt} />
-
-      <div className="flex w-full items-center gap-1 text-[9px] leading-[1.35] text-color-gray-650">
-        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
-        <span className="shrink-0">오늘 오후 2:30</span>
-        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
-      </div>
-
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
-
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {`팀원들과 회의를 잘 진행하고 있나요?
-현재 진행률을 체크해주세요 :)
-진행률 체크는 팀장님만 할 수 있습니다.`}
-            </p>
-            <MessageMeta sentAt={sentAt} />
-          </div>
-          <div className="relative mt-1 h-[23px] w-[230px] overflow-hidden rounded-[40px] bg-color-gray-200">
-            <div
-              className="absolute inset-y-0 left-0 rounded-[40px] bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)]"
-              style={{ width: midtermProgress > 0 ? `${midtermProgress}%` : "26px" }}
-            />
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[8px] leading-[1.35] font-semibold text-color-gray-500">
-              드래그 해주세요
-            </span>
-            <input
-              aria-label="중간점검 진행률"
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              max={100}
-              min={0}
-              onChange={(event) => submitMidtermCheck(Number(event.target.value))}
-              type="range"
-              value={midtermProgress}
-            />
-          </div>
-        </div>
-      </article>
-
     </>
   );
 }
@@ -628,7 +662,9 @@ export function ContestVoteResultSheet({
   participantCount?: number;
 }) {
   const participantLabel =
-    participantCount === undefined ? undefined : `${participantCount.toLocaleString("ko-KR")}명 참여`;
+    participantCount === undefined
+      ? undefined
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   if (!hasVotes) {
     return (
@@ -673,7 +709,9 @@ export function ContestVoteDetailSheet({
   const hasSuppliedVoteResults = voteResults !== undefined;
   const voteResultByContestId = createVoteResultMap(voteResults);
   const participantLabel =
-    participantCount === undefined ? "0명 참여" : `${participantCount.toLocaleString("ko-KR")}명 참여`;
+    participantCount === undefined
+      ? "0명 참여"
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <ContestPopup className="items-center justify-center px-4 pt-4 pb-6">

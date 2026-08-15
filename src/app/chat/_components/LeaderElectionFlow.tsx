@@ -57,6 +57,7 @@ import {
   ContestVoteResultSheet,
   ContestVoteResultMessage,
   ContestVoteSheet,
+  ProgressCheckBanner,
   ProjectSubmissionReminderBanner,
 } from "./leader-election/ContestRecommendation";
 import {
@@ -220,7 +221,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       .map((candidateId) => chatMembers.find((member) => member.id === candidateId))
       .filter((member): member is NonNullable<typeof member> => Boolean(member));
   }, [activeLeaderCandidateIds, chatMembers]);
-  const safeCandidates = apiCandidates.length > 0 ? apiCandidates : candidates.length > 0 ? candidates : [fallbackCandidate];
+  const safeCandidates =
+    apiCandidates.length > 0
+      ? apiCandidates
+      : candidates.length > 0
+        ? candidates
+        : [fallbackCandidate];
   const selectedCandidate =
     safeCandidates.find((candidate) => candidate.id === selectedCandidateId) ?? safeCandidates[0];
   const recommendedLeader = safeCandidates[0] ?? fallbackCandidate;
@@ -228,7 +234,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     mockAiRecommendedLeaderIds.includes(member.id),
   );
   const currentMember = chatMembers.find((member) => member.isMe);
-  const isCurrentMemberLeader = currentMember ? selectedCandidate.id === currentMember.id : false;
+  const isCurrentMemberLeader = currentMember
+    ? currentMember.isLeader === true || selectedCandidate.id === currentMember.id
+    : false;
   const recommendedLeaderLabel = formatRecommendedLeaderNames(
     recommendedLeaderNames.map((name) => `${name}님`),
   );
@@ -239,7 +247,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const latestReadMarker = useMemo(() => {
     const latestMessage = serverMessages.at(-1);
 
-    return latestMessage ? `${roomId}:${latestMessage.id}:${latestMessage.sentAt}` : `${roomId}:empty`;
+    return latestMessage
+      ? `${roomId}:${latestMessage.id}:${latestMessage.sentAt}`
+      : `${roomId}:empty`;
   }, [roomId, serverMessages]);
 
   useEffect(() => {
@@ -373,7 +383,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
     setActiveLeaderCandidateIds(nextCandidateIds);
     setSelectedCandidateId(
-      (currentId) => currentId ?? nextCandidateIds?.[0] ?? safeCandidates[0]?.id ?? fallbackCandidate.id,
+      (currentId) =>
+        currentId ?? nextCandidateIds?.[0] ?? safeCandidates[0]?.id ?? fallbackCandidate.id,
     );
     setLeaderActionError(null);
     setSheetState("candidateVote");
@@ -779,6 +790,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         .find((message) => message.messageType === "CONTEST_VOTE_REMINDER_CARD"),
     [serverMessages],
   );
+  const latestProgressCheckMessage = useMemo(
+    () =>
+      [...serverMessages]
+        .reverse()
+        .find((message) => message.messageType === "PROGRESS_CHECK_CARD"),
+    [serverMessages],
+  );
   const hasContestResultMessage = serverMessages.some(
     (message) => message.messageType === "CONTEST_RESULT_CARD",
   );
@@ -821,16 +839,17 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const activeContestCandidates = activeContestCandidateIds?.length
     ? apiContestCandidates.filter((contest) => activeContestCandidateIds.includes(contest.id))
     : apiContestCandidates;
-  const candidateContests =
-    hasServerMessages
-      ? activeContestCandidates
-      : mockRecommendedContests.filter((contest) => candidateContestIds.includes(contest.id));
+  const candidateContests = hasServerMessages
+    ? activeContestCandidates
+    : mockRecommendedContests.filter((contest) => candidateContestIds.includes(contest.id));
   const selectedContests = candidateContests.filter((contest) =>
     selectedContestIds.includes(contest.id),
   );
   const sharedContest = mockRecommendedContests[2] ?? mockRecommendedContests[0];
   const winningContest = selectedContests[0] ?? mockRecommendedContests[0];
-  const addedContestIds = candidateContests.map((contest) => String(contest.contestId ?? contest.id));
+  const addedContestIds = candidateContests.map((contest) =>
+    String(contest.contestId ?? contest.id),
+  );
   const roomTitle = chatMembers
     .filter((member) => !member.isMe && !member.isChatbot)
     .map((member) => member.name)
@@ -900,7 +919,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         title={roomTitle || undefined}
       />
 
-      {hasServerMessages && latestContestVoteReminderMessage && !hasContestResultMessage && !isContestResultShown ? (
+      {hasServerMessages &&
+      latestContestVoteReminderMessage &&
+      !hasContestResultMessage &&
+      !isContestResultShown ? (
         <ContestVoteNoticeBanner
           body={latestContestVoteReminderMessage.body}
           isActionDisabled={isContestVoteClosed}
@@ -918,6 +940,16 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           isVoteSubmitted={isContestVoteSubmitted}
           isActionDisabled={isContestVoteClosed}
           onAction={isContestVoteSubmitted ? showContestVoteResult : startContestVote}
+        />
+      ) : null}
+
+      {hasServerMessages &&
+      latestProgressCheckMessage &&
+      isCurrentMemberLeader &&
+      !isMidtermSubmitted ? (
+        <ProgressCheckBanner
+          disabled={updateTeamProgressMutation.isPending}
+          onSubmit={submitMidtermCheck}
         />
       ) : null}
 
@@ -997,7 +1029,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               setLeaderActionError(null);
               setSheetState("willingness");
             }}
-            onMidtermSubmit={submitMidtermCheck}
             onRequestLeaderRecommendation={requestLeaderRecommendation}
             onRequestRevote={requestRevote}
             onUseChatbot={insertChatbotMention}
@@ -1107,11 +1138,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         ) : null}
 
         {!hasServerMessages && shouldShowContestVote && isContestResultShown ? (
-          <ContestVoteResultMessage
-            contest={winningContest}
-            onMidtermSubmit={submitMidtermCheck}
-            onUseChatbot={insertChatbotMention}
-          />
+          <ContestVoteResultMessage contest={winningContest} onUseChatbot={insertChatbotMention} />
         ) : null}
 
         {!hasServerMessages && shouldShowContestVote && isContestRevoteRequested ? (
@@ -1123,7 +1150,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           />
         ) : null}
 
-        {!hasServerMessages && shouldShowContestVote && isContestResultShown && isMidtermSubmitted ? (
+        {!hasServerMessages &&
+        shouldShowContestVote &&
+        isContestResultShown &&
+        isMidtermSubmitted ? (
           <ContestDeadlineReminderMessage
             onComplete={completeContestSubmission}
             onIncomplete={requestContestSubmissionReminder}
@@ -1157,33 +1187,41 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       sheetState === "candidateVote" ||
       sheetState === "complete" ||
       sheetState === "leaderResult" ? (
-        <div className="absolute inset-0 z-40 flex items-end bg-color-gray-850/60">
-          {sheetState === "willingness" ? (
-            <LeaderWillingnessSheet
-              disabled={updateLeaderCandidacyMutation.isPending}
-              selectedChoice={leaderChoice}
-              onSelect={setLeaderChoice}
-              onSubmit={submitWillingness}
-            />
-          ) : null}
+        <div
+          className="absolute inset-0 z-40 flex items-end bg-color-gray-850/60"
+          onClick={closeActiveSheet}
+        >
+          <div className="w-full" onClick={(event) => event.stopPropagation()}>
+            {sheetState === "willingness" ? (
+              <LeaderWillingnessSheet
+                disabled={updateLeaderCandidacyMutation.isPending}
+                selectedChoice={leaderChoice}
+                onSelect={setLeaderChoice}
+                onSubmit={submitWillingness}
+              />
+            ) : null}
 
-          {sheetState === "candidateVote" ? (
-            <LeaderCandidateVoteSheet
-              candidates={safeCandidates}
-              disabled={voteLeaderMutation.isPending}
-              selectedCandidateId={selectedCandidate.id}
-              onSelect={setSelectedCandidateId}
-              onSubmit={finishLeaderVote}
-            />
-          ) : null}
+            {sheetState === "candidateVote" ? (
+              <LeaderCandidateVoteSheet
+                candidates={safeCandidates}
+                disabled={voteLeaderMutation.isPending}
+                selectedCandidateId={selectedCandidate.id}
+                onSelect={setSelectedCandidateId}
+                onSubmit={finishLeaderVote}
+              />
+            ) : null}
 
-          {sheetState === "complete" ? (
-            <VoteCompleteSheet isResultReady={isLeaderResultReady} onShowResult={showVoteResult} />
-          ) : null}
+            {sheetState === "complete" ? (
+              <VoteCompleteSheet
+                isResultReady={isLeaderResultReady}
+                onShowResult={showVoteResult}
+              />
+            ) : null}
 
-          {sheetState === "leaderResult" ? (
-            <LeaderVoteResultSheet leader={selectedCandidate} onDone={finishLeaderResult} />
-          ) : null}
+            {sheetState === "leaderResult" ? (
+              <LeaderVoteResultSheet leader={selectedCandidate} onDone={finishLeaderResult} />
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -1262,7 +1300,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           roomId={roomId}
         />
       ) : null}
-
     </main>
   );
 }
@@ -1294,7 +1331,6 @@ function ChatMessageRenderer({
   onOpenContestVote,
   onOpenMemberProfile,
   onOpenWillingness,
-  onMidtermSubmit,
   onRequestLeaderRecommendation,
   onRequestRevote,
   onUseChatbot,
@@ -1315,7 +1351,6 @@ function ChatMessageRenderer({
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
   onOpenMemberProfile: (member: ChatMember) => void;
   onOpenWillingness: () => void;
-  onMidtermSubmit: (progressPercent?: number) => void | Promise<void>;
   onRequestLeaderRecommendation: () => void;
   onRequestRevote: () => void;
   onUseChatbot: () => void;
@@ -1326,12 +1361,14 @@ function ChatMessageRenderer({
       chatMembers,
       getMetadataNumberArray(message.metadata, "aiRecommendedTeamMemberIds"),
     );
-    const apiRecommendedLeaders = getMembersByLeaderRecommendation(chatMembers, leaderRecommendation);
+    const apiRecommendedLeaders = getMembersByLeaderRecommendation(
+      chatMembers,
+      leaderRecommendation,
+    );
     const recommendedLeaders =
       apiRecommendedLeaders.length > 0 ? apiRecommendedLeaders : metadataRecommendedLeaders;
     const recommendationStatus = leaderRecommendation?.status;
-    const shouldRequestRecommendation =
-      !leaderRecommendation || recommendationStatus === "FAILED";
+    const shouldRequestRecommendation = !leaderRecommendation || recommendationStatus === "FAILED";
     const buttonLabel = shouldRequestRecommendation
       ? recommendationStatus === "FAILED"
         ? "AI 추천 다시 생성하기"
@@ -1347,7 +1384,9 @@ function ChatMessageRenderer({
           recommendationStatus === "PROCESSING"
         }
         buttonLabel={isLeaderRecommendationPending ? "AI 추천 생성 중" : buttonLabel}
-        onButtonClick={shouldRequestRecommendation ? onRequestLeaderRecommendation : onOpenWillingness}
+        onButtonClick={
+          shouldRequestRecommendation ? onRequestLeaderRecommendation : onOpenWillingness
+        }
         sentAt={message.sentAt}
       >
         {recommendedLeaders.length > 0 ? (
@@ -1358,7 +1397,11 @@ function ChatMessageRenderer({
   }
 
   if (message.messageType === "LEADER_VOTE_CARD") {
-    const candidateIds = getLeaderVoteCandidateIds(message.metadata, chatMembers, leaderRecommendation);
+    const candidateIds = getLeaderVoteCandidateIds(
+      message.metadata,
+      chatMembers,
+      leaderRecommendation,
+    );
     const aiRecommendedTeamMemberId =
       getMetadataNumber(message.metadata, "aiRecommendedTeamMemberId") ??
       leaderRecommendation?.recommendedMemberId ??
@@ -1427,7 +1470,8 @@ function ChatMessageRenderer({
   if (message.messageType === "CONTEST_RECOMMEND_CARD") {
     const contestIds = getMetadataNumberArray(message.metadata, "contestIds");
     const contests = getContestsByIds(contestCandidates, contestIds, "contestId");
-    const displayContests = contests.length > 0 ? contests : contestIds.map(createPlaceholderContest);
+    const displayContests =
+      contests.length > 0 ? contests : contestIds.map(createPlaceholderContest);
     const isContestCandidateClosed = candidateRemainingSeconds <= 0;
 
     return (
@@ -1477,8 +1521,14 @@ function ChatMessageRenderer({
     return null;
   }
 
+  if (message.messageType === "PROGRESS_CHECK_CARD") {
+    return null;
+  }
+
   if (message.messageType === "CONTEST_VOTE_CARD") {
-    const candidateIds = getMetadataNumberArray(message.metadata, "contestCandidateIds").map(String);
+    const candidateIds = getMetadataNumberArray(message.metadata, "contestCandidateIds").map(
+      String,
+    );
     const contests = getContestsByIds(contestCandidates, candidateIds, "contestCandidateId");
 
     return (
@@ -1506,7 +1556,6 @@ function ChatMessageRenderer({
     return contest ? (
       <ContestVoteResultMessage
         contest={contest}
-        onMidtermSubmit={onMidtermSubmit}
         onUseChatbot={onUseChatbot}
         sentAt={message.sentAt}
       />
@@ -1623,7 +1672,9 @@ function isLeaderTieMessage(message: ChatMessage) {
     getMetadataString(message.metadata, "status")
   )?.toUpperCase();
 
-  return metadataStatus === "TIE" || metadataStatus === "TIED" || metadataStatus === "LEADER_VOTE_TIE";
+  return (
+    metadataStatus === "TIE" || metadataStatus === "TIED" || metadataStatus === "LEADER_VOTE_TIE"
+  );
 }
 
 function getChatbotNoticeAction(body: string): "added" | "removed" | null {
@@ -1659,7 +1710,9 @@ function getLeaderVoteCandidateIds(
   members: LeaderCandidate[],
   leaderRecommendation?: LeaderRecommendation,
 ) {
-  const metadataCandidateIds = getMetadataNumberArray(metadata, "candidateTeamMemberIds").map(String);
+  const metadataCandidateIds = getMetadataNumberArray(metadata, "candidateTeamMemberIds").map(
+    String,
+  );
 
   if (metadataCandidateIds.length > 0) {
     return metadataCandidateIds;
@@ -1672,7 +1725,8 @@ function getMembersByLeaderRecommendation(
   members: LeaderCandidate[],
   leaderRecommendation?: LeaderRecommendation,
 ) {
-  const candidateIds = leaderRecommendation?.candidates.map((candidate) => candidate.memberId) ?? [];
+  const candidateIds =
+    leaderRecommendation?.candidates.map((candidate) => candidate.memberId) ?? [];
 
   if (candidateIds.length > 0) {
     const matchedMembers = getMembersByMetadataIds(members, candidateIds);
@@ -1682,14 +1736,17 @@ function getMembersByLeaderRecommendation(
     }
   }
 
-  const candidateNicknames = leaderRecommendation?.candidates.map((candidate) => candidate.nickname) ?? [];
+  const candidateNicknames =
+    leaderRecommendation?.candidates.map((candidate) => candidate.nickname) ?? [];
 
   if (candidateNicknames.length > 0) {
     return members.filter((member) => candidateNicknames.includes(member.name));
   }
 
   if (leaderRecommendation?.recommendedMemberId) {
-    const matchedMembers = getMembersByMetadataIds(members, [leaderRecommendation.recommendedMemberId]);
+    const matchedMembers = getMembersByMetadataIds(members, [
+      leaderRecommendation.recommendedMemberId,
+    ]);
 
     if (matchedMembers.length > 0) {
       return matchedMembers;

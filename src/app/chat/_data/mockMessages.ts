@@ -29,7 +29,10 @@ export type ChatMessageType =
   | "CONTEST_RESULT_CARD"
   | (string & {});
 
-export type ChatMessageMetadata = Record<string, string | number | boolean | null | string[] | number[]>;
+export type ChatMessageMetadata = Record<
+  string,
+  string | number | boolean | null | string[] | number[]
+>;
 
 export type ChatRoom = {
   id: string;
@@ -48,6 +51,7 @@ export type ChatMember = {
   name: string;
   isMe?: boolean;
   isChatbot?: boolean;
+  isLeader?: boolean;
   avatarTone: NonNullable<ChatMessage["avatarTone"]>;
   avatarSrc?: string;
   school?: string;

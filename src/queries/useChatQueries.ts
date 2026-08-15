@@ -32,7 +32,12 @@ export type ChatMessageResponse = UnknownRecord;
 export type ContestCandidateResponse = UnknownRecord;
 export type ContestVoteStatusResponse = UnknownRecord;
 export type ReviewTargetResponse = UnknownRecord;
-export type LeaderRecommendationStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | (string & {});
+export type LeaderRecommendationStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+  | (string & {});
 export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
 
 export type TeamMembersResponse = {
@@ -91,8 +96,10 @@ export type LeaderRecommendation = {
 };
 
 export const chatTeamsQueryKey = ["chat", "teams"] as const;
-export const chatTeamMembersQueryKey = (teamId: string) => ["chat", "teams", teamId, "members"] as const;
-export const chatTeamMessagesQueryKey = (teamId: string) => ["chat", "teams", teamId, "messages"] as const;
+export const chatTeamMembersQueryKey = (teamId: string) =>
+  ["chat", "teams", teamId, "members"] as const;
+export const chatTeamMessagesQueryKey = (teamId: string) =>
+  ["chat", "teams", teamId, "messages"] as const;
 export const contestCandidatesQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "contest-candidates"] as const;
 export const contestVotesQueryKey = (teamId: string) =>
@@ -104,7 +111,8 @@ export const leaderRecommendationQueryKey = (teamId: string) =>
 
 export function fetchChatTeams() {
   return apiFetch<
-    ChatTeamResponse[] | { rooms?: ChatTeamResponse[]; teams?: ChatTeamResponse[]; content?: ChatTeamResponse[] }
+    | ChatTeamResponse[]
+    | { rooms?: ChatTeamResponse[]; teams?: ChatTeamResponse[]; content?: ChatTeamResponse[] }
   >("/api/teams");
 }
 
@@ -319,10 +327,7 @@ export function reportUser(payload: ReportUserPayload) {
   });
 }
 
-export function useChatRealtime(
-  teamId: string,
-  options: { enabled?: boolean } = {},
-) {
+export function useChatRealtime(teamId: string, options: { enabled?: boolean } = {}) {
   const queryClient = useQueryClient();
   const accessToken = useAuthStore((state) => state.accessToken);
   const normalizedAccessToken = useMemo(() => normalizeAccessToken(accessToken), [accessToken]);
@@ -382,7 +387,9 @@ export function useChatRealtime(
         setErrorMessage("채팅 서버에 연결하지 못했습니다.");
       },
       onWebSocketClose: () => {
-        setStatus((currentStatus) => (currentStatus === "connected" ? "connecting" : currentStatus));
+        setStatus((currentStatus) =>
+          currentStatus === "connected" ? "connecting" : currentStatus,
+        );
       },
     });
 
@@ -466,12 +473,11 @@ export function fetchLeaderRecommendation(teamId: string) {
 }
 
 export function createLeaderRecommendation(teamId: string) {
-  return apiFetch<Pick<LeaderRecommendation, "recommendationId" | "teamId" | "status" | "createdAt">>(
-    `/api/ai/teams/${encodeURIComponent(teamId)}/leader-recommendation`,
-    {
-      method: "POST",
-    },
-  );
+  return apiFetch<
+    Pick<LeaderRecommendation, "recommendationId" | "teamId" | "status" | "createdAt">
+  >(`/api/ai/teams/${encodeURIComponent(teamId)}/leader-recommendation`, {
+    method: "POST",
+  });
 }
 
 export function shareContestToChat(teamId: string, contestId: number | string) {
@@ -658,7 +664,8 @@ export function useVoteContestCandidatesMutation(teamId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (contestCandidateIds: number[]) => voteContestCandidates(teamId, contestCandidateIds),
+    mutationFn: (contestCandidateIds: number[]) =>
+      voteContestCandidates(teamId, contestCandidateIds),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contestVotesQueryKey(teamId) });
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
@@ -859,7 +866,9 @@ function appendChatMessagePages(
   if (
     messageId !== undefined &&
     pages.some((page) =>
-      page.messages.some((currentMessage) => getValue(currentMessage, ["messageId", "id"]) === messageId),
+      page.messages.some(
+        (currentMessage) => getValue(currentMessage, ["messageId", "id"]) === messageId,
+      ),
     )
   ) {
     return current;
@@ -891,10 +900,7 @@ function getRealtimeErrorMessage(value: unknown) {
     return "메시지 처리 중 오류가 발생했습니다.";
   }
 
-  return (
-    getString(value, ["message", "error", "reason"]) ??
-    "메시지 처리 중 오류가 발생했습니다."
-  );
+  return getString(value, ["message", "error", "reason"]) ?? "메시지 처리 중 오류가 발생했습니다.";
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -936,7 +942,9 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
     title,
     memberCount,
     lastMessage,
-    lastMessageAt: formatRelativeTime(getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"])),
+    lastMessageAt: formatRelativeTime(
+      getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"]),
+    ),
     unreadCount: getNumber(team, ["unreadCount", "unreadMessageCount"]) ?? 0,
     avatarSrcs: getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
     projectEndedAt:
@@ -967,7 +975,11 @@ function updateChatTeamUnreadCount(current: unknown, teamId: string, unreadCount
   };
 }
 
-function updateChatTeamUnreadCountItem(item: unknown, teamId: string, unreadCount: number): unknown {
+function updateChatTeamUnreadCountItem(
+  item: unknown,
+  teamId: string,
+  unreadCount: number,
+): unknown {
   if (!isRecord(item)) {
     return item;
   }
@@ -993,15 +1005,20 @@ function mapChatMember(
   const id = String(getValue(member, ["teamMemberId", "id", "memberId", "profileId"]) ?? index);
   const name = getString(member, ["nickname", "name", "memberName", "profileName"]) ?? "팀원";
   const avatarTones: ChatMember["avatarTone"][] = ["green", "blue", "coral"];
-  const me = getBoolean(member, ["me", "isMe"]) ?? (myTeamMemberId !== null && id === String(myTeamMemberId));
+  const me =
+    getBoolean(member, ["me", "isMe"]) ??
+    (myTeamMemberId !== null && id === String(myTeamMemberId));
+  const role = getString(member, ["role", "teamRole"]);
 
   return {
     id,
     profileId: getNumber(member, ["profileId"]),
     name,
     isMe: me,
+    isLeader: role === "LEADER" || getBoolean(member, ["leader", "isLeader"]) === true,
     avatarTone: avatarTones[index % avatarTones.length] ?? "green",
-    avatarSrc: getString(member, ["profileImageUrl", "avatarUrl", "characterImageUrl"]) ?? undefined,
+    avatarSrc:
+      getString(member, ["profileImageUrl", "avatarUrl", "characterImageUrl"]) ?? undefined,
     school: getString(member, ["school", "schoolName"]) ?? undefined,
     major: getString(member, ["major", "majorName"]) ?? undefined,
     grade: getString(member, ["grade"]) ?? undefined,
@@ -1010,8 +1027,14 @@ function mapChatMember(
 }
 
 function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): ChatMessage {
-  const senderId = getValue(message, ["senderTeamMemberId", "teamMemberId", "senderId", "memberId"]);
-  const sender = senderId === undefined ? undefined : members.find((member) => member.id === String(senderId));
+  const senderId = getValue(message, [
+    "senderTeamMemberId",
+    "teamMemberId",
+    "senderId",
+    "memberId",
+  ]);
+  const sender =
+    senderId === undefined ? undefined : members.find((member) => member.id === String(senderId));
   const messageType = getMessageType(message);
   const senderType = getSenderType(message);
   const isChatbotMessage = senderType === "CHATBOT";
@@ -1023,7 +1046,9 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     (isChatbotMessage ? "\uCC57\uBD07" : isSystemMessage ? "\uC2DC\uC2A4\uD15C" : "\uD300\uC6D0");
 
   return {
-    id: String(getValue(message, ["messageId", "id"]) ?? `${senderName}-${getMessageTime(message)}`),
+    id: String(
+      getValue(message, ["messageId", "id"]) ?? `${senderName}-${getMessageTime(message)}`,
+    ),
     senderId: senderId === undefined ? undefined : String(senderId),
     senderName,
     body: getString(message, ["content", "body", "message"]) ?? "",
@@ -1033,9 +1058,12 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     messageType,
     metadata: getMessageMetadata(message),
     avatarTone: isChatbotMessage || isSystemMessage ? "robot" : (sender?.avatarTone ?? "green"),
-    avatarSrc: isChatbotMessage || isSystemMessage
-      ? "/icons/chat/chat_bot.svg"
-      : (sender?.avatarSrc ?? getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ?? undefined),
+    avatarSrc:
+      isChatbotMessage || isSystemMessage
+        ? "/icons/chat/chat_bot.svg"
+        : (sender?.avatarSrc ??
+          getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ??
+          undefined),
   };
 }
 
@@ -1093,7 +1121,12 @@ function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedCo
 }
 
 function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteStatus {
-  const resultsValue = getValue(status, ["results", "voteResults", "contestCandidates", "candidates"]);
+  const resultsValue = getValue(status, [
+    "results",
+    "voteResults",
+    "contestCandidates",
+    "candidates",
+  ]);
   const results = Array.isArray(resultsValue)
     ? resultsValue.filter(isRecord).map(mapContestVoteResultItem)
     : [];
@@ -1101,7 +1134,7 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     getNumber(status, ["participantCount", "voterCount", "totalVoteCount", "totalVotes"]) ??
     results.reduce((sum, result) => sum + result.voteCount, 0);
   const explicitStatus = getString(status, ["result", "status", "voteStatus"])?.toUpperCase();
-  const isTie = getBoolean(status, ["tie", "isTie"]) ?? (explicitStatus === "TIE");
+  const isTie = getBoolean(status, ["tie", "isTie"]) ?? explicitStatus === "TIE";
   const hasVotes =
     getBoolean(status, ["hasVotes"]) ??
     (explicitStatus === "NO_VOTES" || explicitStatus === "NO_VOTE"
@@ -1118,8 +1151,7 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
 }
 
 function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem {
-  const candidate =
-    getRecord(result, "candidate") ?? getRecord(result, "contestCandidate");
+  const candidate = getRecord(result, "candidate") ?? getRecord(result, "contestCandidate");
   const contest =
     (candidate ? getRecord(candidate, "contest") : undefined) ?? getRecord(result, "contest");
 
@@ -1137,7 +1169,9 @@ function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem 
 }
 
 function mapReviewTarget(target: ReviewTargetResponse): ReviewMember {
-  const id = String(getValue(target, ["teamMemberId", "revieweeTeamMemberId", "id", "memberId"]) ?? "");
+  const id = String(
+    getValue(target, ["teamMemberId", "revieweeTeamMemberId", "id", "memberId"]) ?? "",
+  );
   const role = getString(target, ["role", "teamRole"]);
 
   return {
