@@ -15,6 +15,7 @@ import type {
   ChatSenderType,
   ChatMessageType,
   ChatRoom,
+  ChatRoomAvatarItem,
 } from "@/app/chat/_data/mockMessages";
 import type { RecommendedContest } from "@/app/chat/_components/leader-election/types";
 import type { ReviewMember } from "@/app/chat/_components/member-review/types";
@@ -34,6 +35,13 @@ export type ContestVoteStatusResponse = UnknownRecord;
 export type ReviewTargetResponse = UnknownRecord;
 export type LeaderRecommendationStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | (string & {});
 export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
+
+type ChatCharacterType =
+  | "LEAD_RUNNER"
+  | "TRACK_RUNNER"
+  | "BOOST_RUNNER"
+  | "BOOSTER_RUNNER"
+  | "FREE_RUNNER";
 
 export type TeamMembersResponse = {
   chatbotEnabled: boolean;
@@ -101,6 +109,29 @@ export const reviewTargetsQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "reviews", "targets"] as const;
 export const leaderRecommendationQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "leader-recommendation"] as const;
+
+const CHARACTER_AVATAR_META: Record<ChatCharacterType, Required<ChatRoomAvatarItem>> = {
+  LEAD_RUNNER: {
+    bgColor: "#FFF1EE",
+    src: "/images/test/lead.png",
+  },
+  FREE_RUNNER: {
+    bgColor: "#EBF7FE",
+    src: "/images/test/free.png",
+  },
+  BOOST_RUNNER: {
+    bgColor: "#FEFDEA",
+    src: "/images/test/boost.png",
+  },
+  BOOSTER_RUNNER: {
+    bgColor: "#FEFDEA",
+    src: "/images/test/boost.png",
+  },
+  TRACK_RUNNER: {
+    bgColor: "#EEFBF0",
+    src: "/images/test/track.png",
+  },
+};
 
 export function fetchChatTeams() {
   return apiFetch<
@@ -931,6 +962,8 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
     getString(team, ["lastMessage", "lastMessageContent", "lastMessagePreview", "recentMessage"]) ??
     "아직 메시지가 없습니다.";
 
+  const avatarItems = getChatRoomAvatarItems(team);
+
   return {
     id,
     title,
@@ -938,10 +971,68 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
     lastMessage,
     lastMessageAt: formatRelativeTime(getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"])),
     unreadCount: getNumber(team, ["unreadCount", "unreadMessageCount"]) ?? 0,
-    avatarSrcs: getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
+    avatarItems,
+    avatarSrcs:
+      avatarItems.length > 0
+        ? avatarItems.map((item) => item.src).filter((src): src is string => Boolean(src))
+        : getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
     projectEndedAt:
       getString(team, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
   };
+}
+
+function getChatRoomAvatarItems(team: ChatTeamResponse): ChatRoomAvatarItem[] {
+  const memberItems = getChatRoomMembers(team)
+    .map(getChatRoomMemberAvatarItem)
+    .filter((item): item is ChatRoomAvatarItem => item !== null);
+
+  if (memberItems.length > 0) {
+    return memberItems;
+  }
+
+  const characterTypes = getStringArray(team, [
+    "characterTypes",
+    "memberCharacterTypes",
+    "collaborationCharacterTypes",
+  ]);
+
+  if (characterTypes.length > 0) {
+    return characterTypes
+      .map((characterType) => getCharacterAvatarMeta(characterType))
+      .filter((item): item is Required<ChatRoomAvatarItem> => item !== null);
+  }
+
+  return getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]).map(
+    (src) => ({ src }),
+  );
+}
+
+function getChatRoomMembers(team: ChatTeamResponse): UnknownRecord[] {
+  const value = getValue(team, ["members", "teamMembers", "participants", "teamMemberResponses"]);
+
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function getChatRoomMemberAvatarItem(member: UnknownRecord): ChatRoomAvatarItem | null {
+  const characterMeta = getCharacterAvatarMeta(
+    getString(member, ["characterType", "collaborationCharacterType"]),
+  );
+
+  if (characterMeta) {
+    return characterMeta;
+  }
+
+  const src = getString(member, ["characterImageUrl", "profileImageUrl", "avatarUrl"]);
+
+  return src ? { src } : null;
+}
+
+function getCharacterAvatarMeta(characterType: string | undefined): Required<ChatRoomAvatarItem> | null {
+  if (!characterType || !(characterType in CHARACTER_AVATAR_META)) {
+    return null;
+  }
+
+  return CHARACTER_AVATAR_META[characterType as ChatCharacterType];
 }
 
 function updateChatTeamUnreadCount(current: unknown, teamId: string, unreadCount: number): unknown {
