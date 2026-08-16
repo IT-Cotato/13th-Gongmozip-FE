@@ -29,7 +29,10 @@ export type ChatMessageType =
   | "CONTEST_RESULT_CARD"
   | (string & {});
 
-export type ChatMessageMetadata = Record<string, string | number | boolean | null | string[] | number[]>;
+export type ChatMessageMetadata = Record<
+  string,
+  string | number | boolean | null | string[] | number[]
+>;
 
 export type ChatRoom = {
   id: string;
@@ -54,6 +57,7 @@ export type ChatMember = {
   name: string;
   isMe?: boolean;
   isChatbot?: boolean;
+  isLeader?: boolean;
   avatarTone: NonNullable<ChatMessage["avatarTone"]>;
   avatarSrc?: string;
   school?: string;
@@ -166,41 +170,3 @@ export const MOCK_CHATBOT_MEMBER: ChatMember = {
   introduction: "팀 대화 정리, 역할 제안, 일정 리마인드를 도와줘요.",
   strengths: ["대화 요약", "역할 추천", "일정 리마인드"],
 };
-
-export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
-  {
-    id: "bot-intro",
-    senderName: "챗봇",
-    body: "안녕하세요. 저는 팀 운영을 도와주는 AI 챗봇이에요. 팀 매칭이 완료되었어요. 각자 간단한 자기소개와 인사를 나눠볼까요?",
-    sentAt: "오후 8:28",
-    direction: "incoming",
-    avatarTone: "robot",
-    avatarSrc: "/icons/chat/chat_bot.svg",
-  },
-  {
-    id: "minjeong-intro",
-    senderName: "김민정",
-    body: "안녕하세요. 서울대학교 4학년 경영학과 김민정입니다.",
-    sentAt: "오후 8:28",
-    direction: "incoming",
-    avatarTone: "green",
-    avatarSrc: "/icons/chat/character3.svg",
-  },
-  {
-    id: "haeeun-intro",
-    senderName: "이해은",
-    body: "안녕하세요. 서울대학교 4학년 경영학과 이해은입니다.",
-    sentAt: "오후 8:28",
-    direction: "incoming",
-    avatarTone: "blue",
-    avatarSrc: "/icons/chat/character2.svg",
-  },
-  {
-    id: "me-intro",
-    senderName: "박준수",
-    body: "안녕하세요. 서울대학교 4학년 경영학과 박준수 입니다.",
-    sentAt: "오후 8:28",
-    direction: "outgoing",
-    unreadLabel: "N",
-  },
-];

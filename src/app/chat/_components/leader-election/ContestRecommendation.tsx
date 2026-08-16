@@ -4,11 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 
 import type { ContestVoteResultItem } from "@/queries/useChatQueries";
+import type { ContestSummary } from "@/app/contests/_types";
 
 import { ChatbotAvatar, ChatbotUsageGuideMessage, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
 
-const voteTimerText = "01 : 24 : 30";
+const fallbackVoteRemainingSeconds = 2 * 60 * 60;
 const popoverShadow =
   "shadow-[0_53px_15px_rgba(0,0,0,0),0_34px_14px_rgba(0,0,0,0.01),0_19px_12px_rgba(0,0,0,0.05),0_9px_9px_rgba(0,0,0,0.09),0_2px_5px_rgba(0,0,0,0.10)]";
 
@@ -24,18 +25,22 @@ function formatCandidateTimer(seconds: number) {
 
 export function ContestRecommendationMessage({
   contests,
+  isActionDisabled = false,
   isCandidateClosed,
   onRemove,
   onShowAll,
   onStartVote,
   remainingSeconds,
+  sentAt,
 }: {
   contests: RecommendedContest[];
+  isActionDisabled?: boolean;
   isCandidateClosed: boolean;
   onRemove?: (contest: RecommendedContest) => void;
   onShowAll: () => void;
   onStartVote: () => void;
   remainingSeconds: number;
+  sentAt?: string;
 }) {
   return (
     <article className="flex w-full items-start gap-2">
@@ -50,11 +55,12 @@ export function ContestRecommendationMessage({
               : `팀장 선출까지 마쳤으면, 팀원들과 함께 나갈 공모전을 선택해보아요. 현재 팀의 카테고리가 기획/아이디어이기 때문에 저는 이러한 공모전을 추천드려요.
 더 원하는 공모전이 있으면 오늘 오후 11시 내로 리스트에 추가해주세요.`}
           </p>
-          <MessageMeta />
+          <MessageMeta sentAt={sentAt} />
         </div>
         <ContestListCard
-          actionLabel={isCandidateClosed ? "원하는 공모전 투표하기" : "다른 공모전 보러가기"}
+          actionLabel={isCandidateClosed ? "공모전 투표하기" : "다른 공모전 보러가기"}
           contests={contests}
+          disabled={isActionDisabled}
           isCandidateClosed={isCandidateClosed}
           onAction={onStartVote}
           onRemove={onRemove}
@@ -70,13 +76,17 @@ export function ContestRecommendationMessage({
 export function ContestCandidateListPage({
   contests,
   deletingContestId,
+  isAddDisabled = false,
   onBack,
+  onOpenAdd,
   onRemove,
   remainingSeconds,
 }: {
   contests: RecommendedContest[];
   deletingContestId?: string;
+  isAddDisabled?: boolean;
   onBack: () => void;
+  onOpenAdd: () => void;
   onRemove?: (contest: RecommendedContest) => void;
   remainingSeconds: number;
 }) {
@@ -96,7 +106,9 @@ export function ContestCandidateListPage({
         </h1>
         <button
           aria-label="후보 공모전 추가"
-          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850 disabled:text-color-gray-350"
+          disabled={isAddDisabled}
+          onClick={onOpenAdd}
           type="button"
         >
           +
@@ -115,9 +127,9 @@ export function ContestCandidateListPage({
           contests.map((contest) => (
             <FullContestListItem
               contest={contest}
-              disabled={deletingContestId === contest.id}
+              disabled={deletingContestId === contest.id || contest.isRecommended}
               key={contest.id}
-              onRemove={onRemove}
+              onRemove={contest.isRecommended ? undefined : onRemove}
             />
           ))
         ) : (
@@ -132,21 +144,127 @@ export function ContestCandidateListPage({
   );
 }
 
+export function ContestCandidateAddListPage({
+  addedContestIds,
+  contests,
+  isAdding = false,
+  isLoading = false,
+  onAdd,
+  onBack,
+}: {
+  addedContestIds: string[];
+  contests: ContestSummary[];
+  isAdding?: boolean;
+  isLoading?: boolean;
+  onAdd: (contest: ContestSummary) => void;
+  onBack: () => void;
+}) {
+  const addedContestIdSet = new Set(addedContestIds);
+
+  return (
+    <main className="flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] text-color-gray-850">
+      <header className="flex h-[47px] shrink-0 items-center justify-between px-4">
+        <button
+          aria-label="뒤로가기"
+          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          onClick={onBack}
+          type="button"
+        >
+          ‹
+        </button>
+        <h1 className="text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
+          후보 공모전 추가
+        </h1>
+        <span className="size-[38px]" />
+      </header>
+
+      <section className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center px-6 text-center">
+            <p className="text-[13px] leading-[1.5] text-color-gray-650">
+              공모전 목록을 불러오는 중입니다.
+            </p>
+          </div>
+        ) : contests.length > 0 ? (
+          contests.map((contest) => {
+            const isAdded = addedContestIdSet.has(contest.id);
+
+            return (
+              <article
+                className="flex w-full border-b border-color-gray-250 bg-white py-2 pr-2 pl-4"
+                key={contest.id}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-[14px]">
+                  <div className="relative h-[113px] w-[85px] shrink-0 overflow-hidden bg-color-gray-250">
+                    {contest.posterImageUrl ? (
+                      <Image
+                        src={contest.posterImageUrl}
+                        alt=""
+                        fill
+                        sizes="85px"
+                        className="object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
+                      {contest.category}
+                    </span>
+                    <strong className="mt-1 block text-[17px] leading-[1.35] font-bold text-color-gray-850 [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">
+                      {contest.title}
+                    </strong>
+                    <span className="mt-1 block truncate text-[13px] leading-[1.25] font-medium text-color-gray-650">
+                      {contest.organizer}
+                    </span>
+                    <div className="mt-2 flex items-center gap-2 text-[12px] leading-[1.35] font-semibold text-color-gray-350">
+                      <span className="rounded-[85px] bg-color-coral-500 px-2 py-1 text-white">
+                        {contest.dDay}
+                      </span>
+                      <ViewCount value={contest.viewCount.toLocaleString("ko-KR")} />
+                    </div>
+                  </div>
+                </div>
+                <button
+                  aria-label={`${contest.title} 후보 추가`}
+                  className="flex size-[38px] shrink-0 items-center justify-center rounded-[14px] text-[24px] leading-none text-color-gray-650 disabled:text-color-gray-350"
+                  disabled={isAdded || isAdding}
+                  onClick={() => onAdd(contest)}
+                  type="button"
+                >
+                  {isAdded ? "✓" : "+"}
+                </button>
+              </article>
+            );
+          })
+        ) : (
+          <div className="flex h-full items-center justify-center px-6 text-center">
+            <p className="text-[13px] leading-[1.5] text-color-gray-650">
+              추가할 수 있는 공모전이 없습니다.
+            </p>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
 export function ContestSharedMessage({
   contest,
   isAdded,
   onAdd,
+  sentAt,
 }: {
   contest: RecommendedContest;
   isAdded: boolean;
   onAdd: () => void;
+  sentAt?: string;
 }) {
   return (
     <article className="flex w-full justify-end">
       <div className="flex max-w-[304px] flex-col items-end gap-1">
         <ContestSharedCard contest={contest} isAdded={isAdded} onAdd={onAdd} />
         <div className="flex items-end gap-2 text-[12px] leading-[1.35]">
-          <span className="text-color-gray-650">오후 8:28</span>
+          <span className="text-color-gray-650">{sentAt ?? "오후 8:28"}</span>
           <span className="text-color-coral-500">1</span>
         </div>
         <p className="rounded-[16px] rounded-tr-none bg-color-coral-50 px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
@@ -217,13 +335,17 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 
 export function ContestVoteNoticeBanner({
   body,
+  isActionDisabled = false,
   isVoteSubmitted,
   onAction,
 }: {
   body?: string;
+  isActionDisabled?: boolean;
   isVoteSubmitted: boolean;
   onAction: () => void;
 }) {
+  const isButtonDisabled = !isVoteSubmitted && isActionDisabled;
+
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
       <div className="relative shrink-0">
@@ -245,10 +367,13 @@ export function ContestVoteNoticeBanner({
         </p>
         <button
           className={`mt-2 flex h-9 w-full items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
-            isVoteSubmitted
-              ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
-              : "bg-color-gray-650 text-white"
+            isButtonDisabled
+              ? "bg-color-gray-200 text-color-gray-350"
+              : isVoteSubmitted
+                ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+                : "bg-color-gray-650 text-white"
           }`}
+          disabled={isButtonDisabled}
           onClick={onAction}
           type="button"
         >
@@ -304,23 +429,102 @@ export function ProjectSubmissionReminderBanner({
   );
 }
 
-export function ContestVoteResultMessage({
-  contest,
-  onMidtermSubmit,
+export function ProgressCheckBanner({
+  disabled = false,
+  onSubmit,
 }: {
-  contest: RecommendedContest;
-  onMidtermSubmit: (progressPercent: number) => void;
+  disabled?: boolean;
+  onSubmit: (progressPercent: number) => void | Promise<void>;
 }) {
-  const [midtermProgress, setMidtermProgress] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [isTouched, setIsTouched] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSaving = disabled || isSubmitting;
+  const canSubmit = isTouched && progress > 0 && !isSaving;
 
-  const submitMidtermCheck = (value: number) => {
-    setMidtermProgress(value);
+  const submitProgress = async () => {
+    if (!canSubmit) {
+      return;
+    }
 
-    if (value > 0) {
-      onMidtermSubmit(value);
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit(progress);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  return (
+    <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col items-center gap-4">
+        <p className="text-center text-[15px] leading-[1.35] text-color-gray-750">
+          팀장님, 공모전 제출일까지 벌써 절반 왔어요 !
+          <br />
+          현재까지의 진행률을 체크해주세요.
+        </p>
+        <div className="relative h-[23px] w-full max-w-[230px] overflow-hidden rounded-[40px] bg-color-gray-200">
+          <div
+            className="absolute inset-y-0 left-0 rounded-[40px] bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)]"
+            style={{ width: isTouched ? `${progress}%` : "26px" }}
+          />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[12px] leading-[1.35] font-semibold text-color-gray-500">
+            드래그 해주세요
+          </span>
+          <input
+            aria-label="중간점검 진행률"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            disabled={isSaving}
+            max={100}
+            min={0}
+            onChange={(event) => {
+              setProgress(Number(event.target.value));
+              setIsTouched(true);
+            }}
+            type="range"
+            value={progress}
+          />
+        </div>
+        <button
+          className={`flex h-9 w-full items-center justify-center rounded-[10px] px-3 text-[13px] leading-[1.25] font-semibold ${
+            canSubmit
+              ? "bg-color-gray-650 text-white"
+              : "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+          }`}
+          disabled={!canSubmit}
+          onClick={() => {
+            void submitProgress();
+          }}
+          type="button"
+        >
+          {isSaving ? "저장 중" : "진행률 저장"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function ContestVoteResultMessage({
+  contest,
+  onUseChatbot,
+  sentAt,
+}: {
+  contest: RecommendedContest;
+  onUseChatbot?: () => void;
+  sentAt?: string;
+}) {
   return (
     <>
       <article className="flex w-full items-start gap-2">
@@ -332,7 +536,7 @@ export function ContestVoteResultMessage({
             <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
               {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
             </p>
-            <MessageMeta />
+            <MessageMeta sentAt={sentAt} />
           </div>
           <div className="mt-1 w-[290px] rounded-[10px] bg-color-orange-50">
             <CompactContestListItem contest={contest} />
@@ -350,53 +554,12 @@ export function ContestVoteResultMessage({
               {`언제든 저의 도움이 필요하면
 태그해주세요.`}
             </p>
-            <MessageMeta />
+            <MessageMeta sentAt={sentAt} />
           </div>
         </div>
       </article>
 
-      <ChatbotUsageGuideMessage />
-
-      <div className="flex w-full items-center gap-1 text-[9px] leading-[1.35] text-color-gray-650">
-        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
-        <span className="shrink-0">오늘 오후 2:30</span>
-        <span className="h-px min-w-0 flex-1 bg-color-gray-200" />
-      </div>
-
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
-
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {`팀원들과 회의를 잘 진행하고 있나요?
-현재 진행률을 체크해주세요 :)
-진행률 체크는 팀장님만 할 수 있습니다.`}
-            </p>
-            <MessageMeta />
-          </div>
-          <div className="relative mt-1 h-[23px] w-[230px] overflow-hidden rounded-[40px] bg-color-gray-200">
-            <div
-              className="absolute inset-y-0 left-0 rounded-[40px] bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)]"
-              style={{ width: midtermProgress > 0 ? `${midtermProgress}%` : "26px" }}
-            />
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[8px] leading-[1.35] font-semibold text-color-gray-500">
-              드래그 해주세요
-            </span>
-            <input
-              aria-label="중간점검 진행률"
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              max={100}
-              min={0}
-              onChange={(event) => submitMidtermCheck(Number(event.target.value))}
-              type="range"
-              value={midtermProgress}
-            />
-          </div>
-        </div>
-      </article>
-
+      <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={sentAt} />
     </>
   );
 }
@@ -406,12 +569,14 @@ export function ContestVoteSheet({
   disabled = false,
   onSubmit,
   onToggle,
+  remainingSeconds = fallbackVoteRemainingSeconds,
   selectedContestIds,
 }: {
   contests: RecommendedContest[];
   disabled?: boolean;
   onSubmit: () => void;
   onToggle: (contestId: string) => void;
+  remainingSeconds?: number;
   selectedContestIds: string[];
 }) {
   return (
@@ -427,7 +592,7 @@ export function ContestVoteSheet({
               2명 참여중..
             </span>
           </div>
-          <SmallTimer label="투표 마감까지" />
+          <SmallTimer label="투표 마감까지" remainingSeconds={remainingSeconds} />
         </div>
 
         {contests.length > 0 ? (
@@ -467,9 +632,11 @@ export function ContestVoteSheet({
 export function ContestVoteCompleteSheet({
   isResultReady,
   onShowResult,
+  remainingSeconds = fallbackVoteRemainingSeconds,
 }: {
   isResultReady: boolean;
   onShowResult: () => void;
+  remainingSeconds?: number;
 }) {
   return (
     <ContestStatePopup
@@ -478,6 +645,7 @@ export function ContestVoteCompleteSheet({
       description="투표 결과를 확인하고 있습니다."
       iconSrc="/icons/chat/vote_1.svg"
       onButtonClick={onShowResult}
+      remainingSeconds={remainingSeconds}
       timer
       title="투표 완료"
     />
@@ -494,7 +662,9 @@ export function ContestVoteResultSheet({
   participantCount?: number;
 }) {
   const participantLabel =
-    participantCount === undefined ? undefined : `${participantCount.toLocaleString("ko-KR")}명 참여`;
+    participantCount === undefined
+      ? undefined
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   if (!hasVotes) {
     return (
@@ -539,7 +709,9 @@ export function ContestVoteDetailSheet({
   const hasSuppliedVoteResults = voteResults !== undefined;
   const voteResultByContestId = createVoteResultMap(voteResults);
   const participantLabel =
-    participantCount === undefined ? "0명 참여" : `${participantCount.toLocaleString("ko-KR")}명 참여`;
+    participantCount === undefined
+      ? "0명 참여"
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <ContestPopup className="items-center justify-center px-4 pt-4 pb-6">
@@ -585,6 +757,7 @@ export function ContestVoteDetailSheet({
 function ContestListCard({
   actionLabel,
   contests,
+  disabled = false,
   isCandidateClosed,
   onAction,
   onRemove,
@@ -594,6 +767,7 @@ function ContestListCard({
 }: {
   actionLabel: string;
   contests: RecommendedContest[];
+  disabled?: boolean;
   isCandidateClosed: boolean;
   onAction: () => void;
   onRemove?: (contest: RecommendedContest) => void;
@@ -611,7 +785,7 @@ function ContestListCard({
             contest={contest}
             key={contest.id}
             onRemove={onRemove}
-            removable={index > 0}
+            removable={index > 0 && !contest.isRecommended}
           />
         ))}
       </div>
@@ -624,7 +798,10 @@ function ContestListCard({
         전체보기
       </button>
       <button
-        className="mt-4 flex h-9 w-full items-center justify-center gap-1 rounded-[10px] bg-color-coral-500 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+        className={`mt-4 flex h-9 w-full items-center justify-center gap-1 rounded-[10px] px-3 text-[13px] leading-[1.25] font-semibold ${
+          disabled ? "bg-color-gray-200 text-color-gray-350" : "bg-color-coral-500 text-white"
+        }`}
+        disabled={disabled}
         onClick={onAction}
         type="button"
       >
@@ -890,18 +1067,26 @@ function ViewCount({ value }: { value: string }) {
   );
 }
 
-function SmallTimer({ compact = false, label }: { compact?: boolean; label: string }) {
+function SmallTimer({
+  compact = false,
+  label,
+  remainingSeconds = fallbackVoteRemainingSeconds,
+}: {
+  compact?: boolean;
+  label: string;
+  remainingSeconds?: number;
+}) {
   if (compact) {
     return (
       <span className="flex w-[125px] shrink-0 items-center justify-center rounded-[16px] bg-color-mauve-brown-10 px-2 py-1 text-[8px] leading-[1.35] font-semibold text-color-coral-700">
-        {label} 01 : 24 : 30
+        {label} {formatCandidateTimer(remainingSeconds)}
       </span>
     );
   }
 
   return (
     <span className="flex shrink-0 items-center rounded-[16px] bg-color-coral-50 px-2 py-1 text-[12px] leading-[1.35] font-semibold text-color-coral-700">
-      {label} {voteTimerText}
+      {label} {formatCandidateTimer(remainingSeconds)}
     </span>
   );
 }
@@ -1008,6 +1193,7 @@ function ContestStatePopup({
   iconSrc,
   onButtonClick,
   participantLabel,
+  remainingSeconds = fallbackVoteRemainingSeconds,
   timer = false,
   title,
 }: {
@@ -1017,6 +1203,7 @@ function ContestStatePopup({
   iconSrc: string;
   onButtonClick: () => void;
   participantLabel?: string;
+  remainingSeconds?: number;
   timer?: boolean;
   title: string;
 }) {
@@ -1038,7 +1225,7 @@ function ContestStatePopup({
           ) : null}
           {timer ? (
             <span className="rounded-[16px] bg-color-gray-150 px-3 py-2 text-[15px] leading-[1.25] font-semibold text-color-gray-650">
-              투표 마감까지 {voteTimerText}
+              투표 마감까지 {formatCandidateTimer(remainingSeconds)}
             </span>
           ) : null}
         </div>
