@@ -16,7 +16,8 @@ import {
 
 import { ChatProfilePreview } from "../../_components/ChatProfilePreview";
 import { ChevronLeftIcon } from "../../_components/icons";
-import { MOCK_CHATBOT_MEMBER, type ChatMember } from "../../_data/mockMessages";
+import { MOCK_CHATBOT_MEMBER } from "../../_data/mockMessages";
+import type { ChatMember } from "../../_data/chatTypes";
 
 const memberNameClass = "text-[15px] leading-[1.25] font-semibold text-color-gray-850";
 const reportReasons = [

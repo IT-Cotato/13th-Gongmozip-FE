@@ -8,7 +8,7 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { ApiError } from "@/lib/http";
 import { useChatTeamsQuery } from "@/queries/useChatQueries";
 
-import type { ChatRoom } from "../_data/mockMessages";
+import type { ChatRoom } from "../_data/chatTypes";
 import { SettingsIcon } from "./icons";
 
 type SortMode = "latest" | "unread";

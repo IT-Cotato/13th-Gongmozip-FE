@@ -1,4 +1,4 @@
-import type { ChatMember } from "../../_data/mockMessages";
+import type { ChatMember } from "../../_data/chatTypes";
 
 export type SheetState =
   | "closed"

@@ -16,7 +16,7 @@ import type {
   ChatMessageType,
   ChatRoom,
   ChatRoomAvatarItem,
-} from "@/app/chat/_data/mockMessages";
+} from "@/app/chat/_data/chatTypes";
 import type { RecommendedContest } from "@/app/chat/_components/leader-election/types";
 import type { ReviewMember } from "@/app/chat/_components/member-review/types";
 import { API_BASE_URL, apiFetch, isBaseResponse } from "@/lib/http";

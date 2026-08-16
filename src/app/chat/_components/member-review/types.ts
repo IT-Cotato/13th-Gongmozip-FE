@@ -1,4 +1,4 @@
-import type { ChatMember } from "../../_data/mockMessages";
+import type { ChatMember } from "../../_data/chatTypes";
 
 export type ReviewScore = "bad" | "okay" | "good";
 export type ReviewQuestion = {

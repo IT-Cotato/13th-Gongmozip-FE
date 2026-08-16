@@ -27,7 +27,7 @@ import {
 } from "@/queries/useChatQueries";
 import { useContestsQuery } from "@/queries/useContestsQuery";
 
-import { type ChatMember, type ChatMessage, type ChatMessageMetadata } from "../_data/mockMessages";
+import { type ChatMember, type ChatMessage, type ChatMessageMetadata } from "../_data/chatTypes";
 import { ChatInputBar } from "./ChatInputBar";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatProfilePreview } from "./ChatProfilePreview";
