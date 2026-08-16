@@ -77,6 +77,7 @@ export type ContestVoteStatus = {
   hasVotes: boolean;
   isTie: boolean;
   participantCount: number;
+  myVoted: boolean;
   results: ContestVoteResultItem[];
 };
 
@@ -1224,6 +1225,7 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
   const participantCount =
     getNumber(status, ["participantCount", "voterCount", "totalVoteCount", "totalVotes"]) ??
     results.reduce((sum, result) => sum + result.voteCount, 0);
+  const myVoted = getBoolean(status, ["myVoted", "hasVoted", "isVoted"]) ?? false;
   const explicitStatus = getString(status, ["result", "status", "voteStatus"])?.toUpperCase();
   const isTie = getBoolean(status, ["tie", "isTie"]) ?? explicitStatus === "TIE";
   const hasVotes =
@@ -1237,6 +1239,7 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     hasVotes,
     isTie,
     participantCount,
+    myVoted,
     results,
   };
 }
