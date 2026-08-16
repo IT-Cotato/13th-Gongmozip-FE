@@ -31,7 +31,8 @@ export function ContestRecommendationMessage({
   onShowAll,
   onStartVote,
   remainingSeconds,
-  sentAt,
+  timerLabel,
+  title,
 }: {
   contests: RecommendedContest[];
   isActionDisabled?: boolean;
@@ -40,7 +41,8 @@ export function ContestRecommendationMessage({
   onShowAll: () => void;
   onStartVote: () => void;
   remainingSeconds: number;
-  sentAt?: string;
+  timerLabel: string;
+  title: string;
 }) {
   return (
     <article className="flex w-full items-start gap-2">
@@ -48,15 +50,6 @@ export function ContestRecommendationMessage({
 
       <div className="flex w-[304px] min-w-0 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-        <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-            {isCandidateClosed
-              ? "이제 함께 나갈 공모전을 투표해볼게요.\n원하는 공모전 2개를 선택해주세요."
-              : `팀장 선출까지 마쳤으면, 팀원들과 함께 나갈 공모전을 선택해보아요. 현재 팀의 카테고리가 기획/아이디어이기 때문에 저는 이러한 공모전을 추천드려요.
-더 원하는 공모전이 있으면 오늘 오후 11시 내로 리스트에 추가해주세요.`}
-          </p>
-          <MessageMeta sentAt={sentAt} />
-        </div>
         <ContestListCard
           actionLabel={isCandidateClosed ? "원하는 공모전 투표하러 가기" : "다른 공모전 보러가기"}
           contests={contests}
@@ -66,7 +59,8 @@ export function ContestRecommendationMessage({
           onRemove={onRemove}
           onShowAll={onShowAll}
           remainingSeconds={remainingSeconds}
-          title={isCandidateClosed ? "공모전 후보 리스트" : "추천 공모전 리스트"}
+          timerLabel={timerLabel}
+          title={title}
         />
       </div>
     </article>
@@ -344,7 +338,7 @@ export function ContestVoteNoticeBanner({
   isVoteSubmitted: boolean;
   onAction: () => void;
 }) {
-  const isButtonDisabled = !isVoteSubmitted && isActionDisabled;
+  const isButtonDisabled = isActionDisabled;
 
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
@@ -368,7 +362,7 @@ export function ContestVoteNoticeBanner({
         <button
           className={`mt-2 flex h-9 w-full items-center justify-center rounded-[10px] text-[13px] leading-[1.25] font-semibold ${
             isButtonDisabled
-              ? "bg-color-gray-200 text-color-gray-350"
+              ? "border border-[rgba(97,97,97,0.10)] bg-[rgba(97,97,97,0.06)] text-color-gray-350 shadow-none"
               : isVoteSubmitted
                 ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
                 : "bg-color-gray-650 text-white"
@@ -871,6 +865,7 @@ function ContestListCard({
   onRemove,
   onShowAll,
   remainingSeconds,
+  timerLabel,
   title,
 }: {
   actionLabel: string;
@@ -881,11 +876,17 @@ function ContestListCard({
   onRemove?: (contest: RecommendedContest) => void;
   onShowAll: () => void;
   remainingSeconds: number;
+  timerLabel: string;
   title: string;
 }) {
   return (
     <div className="mt-1 w-[304px] rounded-[16px] bg-color-gray-200 px-3 py-4">
-      <ContestCardHeader remainingSeconds={remainingSeconds} title={title} />
+      <ContestCardHeader
+        isEnded={disabled}
+        remainingSeconds={remainingSeconds}
+        timerLabel={timerLabel}
+        title={title}
+      />
 
       <div className="mt-4 flex flex-col gap-3">
         {contests.slice(0, 3).map((contest, index) => (
@@ -907,29 +908,39 @@ function ContestListCard({
       </button>
       <button
         className={`mt-4 flex h-9 w-full items-center justify-center gap-1 rounded-[10px] px-3 text-[13px] leading-[1.25] font-semibold ${
-          disabled ? "bg-color-gray-200 text-color-gray-350" : "bg-color-coral-500 text-white"
+          disabled ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650" : "bg-color-coral-500 text-white"
         }`}
         disabled={disabled}
         onClick={onAction}
         type="button"
       >
-        <Image
-          src={isCandidateClosed ? "/icons/chat/vote_2_1.svg" : "/icons/chat/vote_1_1.svg"}
-          alt=""
-          width={18}
-          height={18}
-        />
-        {actionLabel}
+        {disabled ? (
+          "투표 종료"
+        ) : (
+          <>
+            <Image
+              src={isCandidateClosed ? "/icons/chat/vote_2_1.svg" : "/icons/chat/vote_1_1.svg"}
+              alt=""
+              width={18}
+              height={18}
+            />
+            {actionLabel}
+          </>
+        )}
       </button>
     </div>
   );
 }
 
 function ContestCardHeader({
+  isEnded,
   remainingSeconds,
+  timerLabel,
   title,
 }: {
+  isEnded: boolean;
   remainingSeconds: number;
+  timerLabel: string;
   title: string;
 }) {
   return (
@@ -938,8 +949,12 @@ function ContestCardHeader({
         <Image src="/icons/chat/tabler_list.svg" alt="" width={24} height={24} />
         <span className="whitespace-nowrap">{title}</span>
       </div>
-      <span className="flex shrink-0 items-center rounded-[16px] bg-color-coral-50 px-2 py-1 text-[12px] leading-[1.35] font-semibold text-color-coral-700">
-        후보 마감까지 {formatCandidateTimer(remainingSeconds)}
+      <span
+        className={`flex shrink-0 items-center rounded-[16px] px-2 py-1 text-[12px] leading-[1.35] font-semibold ${
+          isEnded ? "bg-white/80 text-color-gray-650" : "bg-color-coral-50 text-color-coral-700"
+        }`}
+      >
+        {timerLabel} {formatCandidateTimer(remainingSeconds)}
       </span>
     </div>
   );
