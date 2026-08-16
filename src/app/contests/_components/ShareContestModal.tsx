@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import type { ChatRoomAvatarItem } from "@/app/chat/_data/mockMessages";
 import Dialog from "@/components/Dialog";
 import { ApiError } from "@/lib/http";
 import { useChatTeamsQuery, useShareContestToChatsMutation } from "@/queries/useChatQueries";
@@ -180,7 +181,10 @@ export function ShareContestModal({
                       disabled={isPending}
                       onClick={() => toggleRoom(room.id)}
                     >
-                      <CharacterAvatarStack avatarSrcs={room.avatarSrcs} />
+                      <CharacterAvatarStack
+                        avatarItems={room.avatarItems}
+                        avatarSrcs={room.avatarSrcs}
+                      />
                       <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
                         <span className="h-[19px] self-stretch truncate font-[Pretendard] text-[15px] leading-[125%] font-semibold text-semantic-label-normal">
                           {room.title}
@@ -293,7 +297,16 @@ function ShareContestStateMessage({
   );
 }
 
-function CharacterAvatarStack({ avatarSrcs }: { avatarSrcs: string[] }) {
+function CharacterAvatarStack({
+  avatarItems,
+  avatarSrcs,
+}: {
+  avatarItems?: ChatRoomAvatarItem[];
+  avatarSrcs: string[];
+}) {
+  const items: ChatRoomAvatarItem[] =
+    avatarItems && avatarItems.length > 0 ? avatarItems : avatarSrcs.map((src) => ({ src }));
+
   return (
     <span className="flex w-[68px] shrink-0 items-center">
       {[0, 1, 2].map((item) => (
@@ -302,9 +315,10 @@ function CharacterAvatarStack({ avatarSrcs }: { avatarSrcs: string[] }) {
           className={`relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-color-green-100 p-0.5 aspect-square ${
             item > 0 ? "-ml-8" : ""
           }`}
+          style={items[item]?.bgColor ? { backgroundColor: items[item]?.bgColor } : undefined}
         >
-          {avatarSrcs[item] ? (
-            <Image src={avatarSrcs[item]} alt="" fill sizes="44px" className="object-cover" />
+          {items[item]?.src ? (
+            <Image src={items[item].src} alt="" fill sizes="44px" className="object-cover" />
           ) : (
             <Image
               src={CHARACTER_IMAGE_SRC}

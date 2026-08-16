@@ -38,8 +38,14 @@ export type ChatRoom = {
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
+  avatarItems?: ChatRoomAvatarItem[];
   avatarSrcs: string[];
   projectEndedAt?: string | null;
+};
+
+export type ChatRoomAvatarItem = {
+  bgColor?: string;
+  src?: string;
 };
 
 export type ChatMember = {
