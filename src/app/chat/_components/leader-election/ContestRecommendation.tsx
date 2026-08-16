@@ -58,7 +58,7 @@ export function ContestRecommendationMessage({
           <MessageMeta sentAt={sentAt} />
         </div>
         <ContestListCard
-          actionLabel={isCandidateClosed ? "공모전 투표하기" : "다른 공모전 보러가기"}
+          actionLabel={isCandidateClosed ? "원하는 공모전 투표하러 가기" : "다른 공모전 보러가기"}
           contests={contests}
           disabled={isActionDisabled}
           isCandidateClosed={isCandidateClosed}
@@ -377,7 +377,7 @@ export function ContestVoteNoticeBanner({
           onClick={onAction}
           type="button"
         >
-          {isVoteSubmitted ? "결과 확인하기" : "투표하기"}
+          {isVoteSubmitted ? "다시 투표하기" : "투표하기"}
         </button>
       </div>
     </section>
@@ -567,6 +567,8 @@ export function ContestVoteResultMessage({
 export function ContestVoteSheet({
   contests,
   disabled = false,
+  onBack,
+  onOpenAdd,
   onSubmit,
   onToggle,
   remainingSeconds = fallbackVoteRemainingSeconds,
@@ -574,81 +576,187 @@ export function ContestVoteSheet({
 }: {
   contests: RecommendedContest[];
   disabled?: boolean;
+  onBack: () => void;
+  onOpenAdd: () => void;
   onSubmit: () => void;
   onToggle: (contestId: string) => void;
   remainingSeconds?: number;
   selectedContestIds: string[];
 }) {
   return (
-    <ContestPopup className="min-h-[488px] flex-col items-end gap-4 p-4">
-      <div className="flex w-full flex-1 flex-col gap-2 overflow-hidden">
-        <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-0.5 text-[17px] leading-[1.35] font-semibold text-color-coral-500">
-              <Image src="/icons/chat/vote_1.svg" alt="" width={24} height={24} />
-              <h2>공모전 투표</h2>
-            </div>
-            <span className="px-1 text-[13px] leading-[1.25] font-medium text-color-gray-500">
-              2명 참여중..
-            </span>
-          </div>
-          <SmallTimer label="투표 마감까지" remainingSeconds={remainingSeconds} />
-        </div>
+    <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
+      <header className="flex h-[47px] shrink-0 items-center justify-between px-4">
+        <button
+          aria-label="뒤로가기"
+          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          onClick={onBack}
+          type="button"
+        >
+          ‹
+        </button>
+        <h1 className="text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
+          투표하기
+        </h1>
+        <button
+          aria-label="후보 공모전 추가"
+          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          onClick={onOpenAdd}
+          type="button"
+        >
+          +
+        </button>
+      </header>
 
-        {contests.length > 0 ? (
-          <div className="flex flex-col gap-4">
-            {contests.slice(0, 3).map((contest) => (
-              <VoteContestRow
+      <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
+        <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
+          투표 마감까지
+        </span>
+        <LargeCountdown remainingSeconds={remainingSeconds} />
+      </section>
+
+      <section className="mt-6 shrink-0 px-4 text-center">
+        <h2 className="text-[17px] leading-[1.35] font-semibold text-color-gray-850">
+          참여하고 싶은 공모전에 투표해주세요!
+        </h2>
+        <p className="mt-1 text-[13px] leading-[1.35] font-medium text-color-coral-500">
+          투표는 최대 2개까지 가능합니다.
+        </p>
+      </section>
+
+      <section className="mx-4 mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-color-gray-250 bg-white px-5 py-5">
+        <p className="text-center text-[13px] leading-[1.25] font-semibold text-color-gray-500">
+          2명 참여중..
+        </p>
+
+        <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+          {contests.length > 0 ? (
+            contests.map((contest) => (
+              <VotePageContestRow
                 contest={contest}
                 isSelected={selectedContestIds.includes(contest.id)}
                 key={contest.id}
                 onClick={() => onToggle(contest.id)}
               />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-1 items-center justify-center px-6 text-center">
-            <p className="text-[13px] leading-[1.5] text-color-gray-650">
-              투표할 후보 공모전이 없습니다.
-            </p>
-          </div>
-        )}
-      </div>
+            ))
+          ) : (
+            <div className="flex flex-1 items-center justify-center px-6 text-center">
+              <p className="text-[13px] leading-[1.5] text-color-gray-650">
+                투표할 후보 공모전이 없습니다.
+              </p>
+            </div>
+          )}
+        </div>
 
-      <div className="flex h-[60px] w-full shrink-0 px-2 py-1">
         <button
-          className="flex flex-1 items-center justify-center rounded-[12px] bg-color-coral-500 text-[15px] leading-[1.25] font-semibold text-white disabled:bg-color-gray-200 disabled:text-color-gray-350"
+          className="mx-auto mt-5 flex h-8 items-center justify-center gap-1 px-2 text-[15px] leading-[1.25] font-medium text-color-gray-650"
+          onClick={onOpenAdd}
+          type="button"
+        >
+          <Image src="/icons/chat/leader-plus.svg" alt="" width={20} height={20} />
+          후보 추가
+        </button>
+      </section>
+
+      <div className="shrink-0 bg-white px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
+        <button
+          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white outline-none disabled:bg-color-gray-200 disabled:text-color-gray-350 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
           disabled={disabled || contests.length === 0 || selectedContestIds.length === 0}
           onClick={onSubmit}
           type="button"
         >
-          완료
+          투표하기
         </button>
       </div>
-    </ContestPopup>
+    </main>
   );
 }
 
 export function ContestVoteCompleteSheet({
-  isResultReady,
-  onShowResult,
+  contests,
+  onBack,
+  onRevote,
   remainingSeconds = fallbackVoteRemainingSeconds,
+  selectedContestIds,
 }: {
-  isResultReady: boolean;
-  onShowResult: () => void;
+  contests: RecommendedContest[];
+  onBack: () => void;
+  onRevote: () => void;
   remainingSeconds?: number;
+  selectedContestIds: string[];
 }) {
+  const selectedContestIdSet = new Set(selectedContestIds);
+
   return (
-    <ContestStatePopup
-      buttonDisabled={!isResultReady}
-      buttonLabel="결과 확인하기"
-      description="투표 결과를 확인하고 있습니다."
-      iconSrc="/icons/chat/vote_1.svg"
-      onButtonClick={onShowResult}
-      remainingSeconds={remainingSeconds}
-      timer
-      title="투표 완료"
-    />
+    <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
+      <header className="flex h-[47px] shrink-0 items-center justify-between px-4">
+        <button
+          aria-label="뒤로가기"
+          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          onClick={onBack}
+          type="button"
+        >
+          ‹
+        </button>
+        <h1 className="text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
+          투표하기
+        </h1>
+        <button
+          aria-label="후보 공모전 추가"
+          className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          type="button"
+        >
+          +
+        </button>
+      </header>
+
+      <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
+        <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
+          투표 마감까지
+        </span>
+        <LargeCountdown remainingSeconds={remainingSeconds} />
+      </section>
+
+      <section className="mt-6 shrink-0 px-4 text-center">
+        <h2 className="text-[17px] leading-[1.35] font-semibold text-color-gray-850">
+          참여하고 싶은 공모전에 투표해주세요!
+        </h2>
+        <p className="mt-1 text-[13px] leading-[1.35] font-medium text-color-coral-500">
+          투표는 최대 2개까지 가능합니다.
+        </p>
+      </section>
+
+      <section className="mx-4 mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-color-gray-250 bg-white px-5 py-5">
+        <p className="text-center text-[13px] leading-[1.25] font-semibold text-color-gray-500">
+          2명 참여
+        </p>
+
+        <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+          {contests.map((contest) => {
+            const isSelected = selectedContestIdSet.has(contest.id);
+
+            return (
+              <CompleteVoteContestRow
+                contest={contest}
+                countLabel={isSelected ? "1명" : "0명"}
+                isSelected={isSelected}
+                key={contest.id}
+                percent={isSelected ? 28 : 0}
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="shrink-0 bg-white px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
+        <button
+          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[rgba(97,97,97,0.10)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-color-gray-650 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          onClick={onRevote}
+          type="button"
+        >
+          다시 투표하기
+        </button>
+      </div>
+    </main>
   );
 }
 
@@ -856,7 +964,7 @@ function CompactContestListItem({
         muted
           ? "bg-color-gray-350 opacity-70"
           : highlight
-            ? "border-[3px] border-color-coral-500 bg-color-orange-50"
+            ? "bg-color-orange-50"
             : "bg-white"
       }`}
     >
@@ -881,7 +989,7 @@ function CompactContestListItem({
   );
 }
 
-function VoteContestRow({
+function VotePageContestRow({
   contest,
   isSelected,
   onClick,
@@ -891,20 +999,64 @@ function VoteContestRow({
   onClick: () => void;
 }) {
   return (
-    <button className="flex w-full items-center justify-between" onClick={onClick} type="button">
+    <button
+      className="flex w-full items-center justify-between outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+      onClick={onClick}
+      type="button"
+    >
       <span
-        className={`flex size-5 shrink-0 items-center justify-center rounded-full border-[1.5px] ${
+        className={`flex size-6 shrink-0 items-center justify-center rounded-full border-[1.5px] ${
           isSelected
             ? "border-color-coral-500 bg-color-coral-500"
             : "border-[rgba(97,97,97,0.22)] bg-white"
         }`}
       >
-        {isSelected ? <span className="size-1.5 rounded-full bg-white" /> : null}
+        {isSelected ? <span className="size-2 rounded-full bg-white" /> : null}
       </span>
       <div className="w-[290px]">
         <CompactContestListItem contest={contest} highlight={isSelected} />
       </div>
     </button>
+  );
+}
+
+function CompleteVoteContestRow({
+  contest,
+  countLabel,
+  isSelected,
+  percent,
+}: {
+  contest: RecommendedContest;
+  countLabel: string;
+  isSelected: boolean;
+  percent: number;
+}) {
+  return (
+    <div className="flex min-w-0 w-full flex-col gap-4">
+      <div className="flex w-full items-center justify-between">
+        <span
+          className={`flex size-6 shrink-0 items-center justify-center text-[24px] leading-none text-color-coral-500 ${
+            isSelected ? "" : "invisible"
+          }`}
+        >
+          ✓
+        </span>
+        <div className="w-[290px]">
+          <CompactContestListItem contest={contest} highlight={isSelected} />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="w-6 text-center text-[12px] leading-[1.35] font-semibold text-color-gray-650">
+          {countLabel}
+        </span>
+        <div className="h-1.5 min-w-0 flex-1 rounded-[90px] bg-[#d9d9d9]">
+          <div
+            className="h-full rounded-[90px] bg-color-orange-500"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

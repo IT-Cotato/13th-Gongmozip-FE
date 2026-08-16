@@ -45,6 +45,7 @@ import {
   ContestRecommendationMessage,
   ContestSharedMessage,
   ContestVoteDetailSheet,
+  ContestVoteCompleteSheet,
   ContestVoteNoticeBanner,
   ContestVoteResultSheet,
   ContestVoteResultMessage,
@@ -57,7 +58,11 @@ import {
   LeaderElectedMessage,
   LeaderTieMessage,
 } from "./leader-election/LeaderCards";
-import { LeaderCandidateVoteSheet, LeaderWillingnessSheet } from "./leader-election/LeaderSheets";
+import {
+  LeaderCandidateVoteSheet,
+  LeaderVoteResultSheet,
+  LeaderWillingnessSheet,
+} from "./leader-election/LeaderSheets";
 import type {
   LeaderCandidate,
   LeaderChoice,
@@ -262,7 +267,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     try {
       await voteLeaderMutation.mutateAsync({ candidateTeamMemberId });
       setIsLeaderVoteSubmitted(true);
-      setSheetState("closed");
+      setSheetState("leaderComplete");
     } catch (error) {
       setLeaderActionError(getApiErrorMessage(error, "팀장 투표에 실패했습니다."));
     }
@@ -310,13 +315,20 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     setChatFocusToken((token) => token + 1);
   }, []);
 
-  const startContestVote = useCallback((contestCandidateIds?: string[]) => {
-    setIsContestVoteSubmitted(false);
-    setActiveContestCandidateIds(contestCandidateIds?.length ? contestCandidateIds : null);
-    setSelectedContestIds([]);
-    setContestActionError(null);
-    setSheetState("contestVote");
-  }, []);
+  const startContestVote = useCallback(
+    (contestCandidateIds?: string[], options?: { keepSelection?: boolean }) => {
+      setIsContestVoteSubmitted(false);
+      setActiveContestCandidateIds(contestCandidateIds?.length ? contestCandidateIds : null);
+
+      if (!options?.keepSelection) {
+        setSelectedContestIds([]);
+      }
+
+      setContestActionError(null);
+      setSheetState("contestVote");
+    },
+    [],
+  );
 
   const openContestList = () => {
     setSheetState("contestList");
@@ -398,11 +410,11 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     }
 
     setContestActionError(null);
+    setIsContestVoteSubmitted(true);
+    setSheetState("contestComplete");
 
     try {
       await voteContestCandidatesMutation.mutateAsync(contestCandidateIds);
-      setIsContestVoteSubmitted(true);
-      setSheetState("closed");
     } catch (error) {
       setContestActionError(getApiErrorMessage(error, "공모전 투표에 실패했습니다."));
     }
@@ -523,7 +535,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   };
 
   const isContestOverlay =
-    sheetState === "contestVote" ||
     sheetState === "contestResult" ||
     sheetState === "contestDetail";
   const apiContestCandidates = contestCandidatesQuery.data ?? [];
@@ -650,6 +661,39 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         onRemove={(contest) => {
           void removeContestCandidate(contest);
         }}
+      />
+    );
+  }
+
+  if (sheetState === "contestComplete") {
+    return (
+      <ContestVoteCompleteSheet
+        contests={candidateContests}
+        onBack={() => setSheetState("contestList")}
+        onRevote={() =>
+          startContestVote(activeContestCandidateIds ?? undefined, { keepSelection: true })
+        }
+        remainingSeconds={voteCountdownSeconds}
+        selectedContestIds={selectedContestIds}
+      />
+    );
+  }
+
+  if (sheetState === "leaderComplete" && selectedCandidate) {
+    return <LeaderVoteResultSheet leader={selectedCandidate} onDone={() => setSheetState("closed")} />;
+  }
+
+  if (sheetState === "contestVote") {
+    return (
+      <ContestVoteSheet
+        contests={candidateContests}
+        disabled={voteContestCandidatesMutation.isPending || isContestVoteClosed}
+        onBack={() => setSheetState("closed")}
+        onOpenAdd={openContestAddList}
+        onSubmit={submitContestVote}
+        onToggle={toggleContestVote}
+        remainingSeconds={voteCountdownSeconds}
+        selectedContestIds={selectedContestIds}
       />
     );
   }
@@ -825,17 +869,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           onClick={closeActiveSheet}
         >
           <div onClick={(event) => event.stopPropagation()}>
-            {sheetState === "contestVote" ? (
-              <ContestVoteSheet
-                contests={candidateContests}
-                disabled={voteContestCandidatesMutation.isPending || isContestVoteClosed}
-                onSubmit={submitContestVote}
-                onToggle={toggleContestVote}
-                remainingSeconds={voteCountdownSeconds}
-                selectedContestIds={selectedContestIds}
-              />
-            ) : null}
-
             {sheetState === "contestResult" ? (
               <ContestVoteResultSheet
                 hasVotes={contestVoteResult !== "noVotes"}

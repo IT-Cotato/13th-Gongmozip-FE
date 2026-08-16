@@ -64,7 +64,7 @@ export function LeaderCandidateVoteSheet({
           <MedalIcon size="small" />
           <h2 className="text-[20px] leading-[1.35] font-bold text-color-gray-850">팀장 투표</h2>
         </div>
-        <CountdownPill label="투표 마감까지" time="01 : 24 : 30" />
+        <CountdownPill label="후보 등록 마감까지" time="01 : 24 : 30" />
       </div>
 
       <p className="mt-2 px-6 text-[13px] leading-[1.35] text-color-gray-650">
@@ -169,7 +169,7 @@ function CandidateProfileCard({
   return (
     <button
       aria-checked={isSelected}
-      className={`flex size-[100px] shrink-0 flex-col items-center justify-center gap-2.5 rounded-[16px] px-[22px] pb-1.5 pt-3 ${
+      className={`flex size-[100px] shrink-0 flex-col items-center justify-center gap-2.5 rounded-[16px] px-[22px] pb-1.5 pt-3 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
         isSelected
           ? "bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)] text-white"
           : "border border-[rgba(97,97,97,0.16)] bg-white text-color-gray-650"

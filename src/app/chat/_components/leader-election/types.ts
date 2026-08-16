@@ -4,9 +4,11 @@ export type SheetState =
   | "closed"
   | "willingness"
   | "candidateVote"
+  | "leaderComplete"
   | "contestAddList"
   | "contestList"
   | "contestVote"
+  | "contestComplete"
   | "contestResult"
   | "contestDetail";
 export type LeaderChoice = "yes" | "no";
