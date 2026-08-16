@@ -7,7 +7,10 @@ import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { PassIllustration } from "@/components/team-matching/TeamMatchingPassView";
 import { ApiError } from "@/lib/http";
 import { useWithdrawMatchingApplicationMutation } from "@/queries/useWithdrawMatchingApplicationMutation";
-import { useTeamMatchingProposalStore } from "@/stores/teamMatchingProposalStore";
+import {
+  TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
+  useTeamMatchingProposalStore,
+} from "@/stores/teamMatchingProposalStore";
 
 function PassLeaveNoticeCard() {
   return (
@@ -82,7 +85,10 @@ export default function TeamMatchingPassLeaveConfirmView() {
         <PassIllustration className="mt-[-26px]" />
 
         <section className="relative z-30 mx-auto mt-[38px] w-[300px] text-center font-[Pretendard] text-[13px] font-normal not-italic leading-[150%] text-[#616161]">
-          <p>매칭을 패스하는 경우 협업 거리가 3m씩 줄어들어요.</p>
+          <p>
+            매칭을 패스하는 경우 협업 거리가 {TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS}m씩
+            줄어들어요.
+          </p>
           <p className="mt-1">다시 한번 생각해보시겠어요?</p>
         </section>
 
