@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import TeamMatchingAcceptWaitingView from "@/components/team-matching/TeamMatchingAcceptWaitingView";
 import TeamMatchingCompleteView from "@/components/team-matching/TeamMatchingCompleteView";
@@ -14,6 +15,7 @@ import {
   type TodayMatchingResult,
   useTodayMatchingResultQuery,
 } from "@/queries/useTodayMatchingResultQuery";
+import { useTeamMatchingCompletionStore } from "@/stores/teamMatchingCompletionStore";
 
 function StatusFeedbackView({
   actionHref,
@@ -50,14 +52,98 @@ function StatusFeedbackView({
   );
 }
 
+function getMatchingCompletionId(todayMatchingResult: TodayMatchingResult) {
+  if (typeof todayMatchingResult.matchingGroupId === "number") {
+    return `group-${todayMatchingResult.matchingGroupId}`;
+  }
+
+  if (typeof todayMatchingResult.teamId === "number") {
+    return `team-${todayMatchingResult.teamId}`;
+  }
+
+  if (typeof todayMatchingResult.applicationId === "number") {
+    return `application-${todayMatchingResult.applicationId}`;
+  }
+
+  return null;
+}
+
+function isConfirmedMatching(todayMatchingResult: TodayMatchingResult) {
+  return (
+    todayMatchingResult.resultStatus === "MATCHED" &&
+    (Boolean(todayMatchingResult.teamId) || todayMatchingResult.groupStatus === "CONFIRMED")
+  );
+}
+
+function useHasTeamMatchingCompletionHydrated() {
+  const [hasHydrated, setHasHydrated] = useState(
+    () => useTeamMatchingCompletionStore.persist?.hasHydrated() ?? false,
+  );
+
+  useEffect(() => {
+    if (useTeamMatchingCompletionStore.persist?.hasHydrated()) {
+      setHasHydrated(true);
+    }
+
+    return useTeamMatchingCompletionStore.persist?.onFinishHydration(() =>
+      setHasHydrated(true),
+    );
+  }, []);
+
+  return hasHydrated;
+}
+
+function ConfirmedMatchingStatusView({
+  todayMatchingResult,
+}: {
+  todayMatchingResult: TodayMatchingResult;
+}) {
+  const hasHydrated = useHasTeamMatchingCompletionHydrated();
+  const hasSeenCompletion = useTeamMatchingCompletionStore((state) => state.hasSeenCompletion);
+  const markCompletionAsSeen = useTeamMatchingCompletionStore(
+    (state) => state.markCompletionAsSeen,
+  );
+  const [visibleCompletionId, setVisibleCompletionId] = useState<string | null>(null);
+  const completionId = getMatchingCompletionId(todayMatchingResult);
+  const hasSeenCurrentCompletion = completionId ? hasSeenCompletion(completionId) : false;
+  const shouldShowCompletion =
+    Boolean(completionId) &&
+    hasHydrated &&
+    (!hasSeenCurrentCompletion || visibleCompletionId === completionId);
+
+  useEffect(() => {
+    if (!completionId || !hasHydrated || hasSeenCompletion(completionId)) {
+      return;
+    }
+
+    setVisibleCompletionId(completionId);
+    markCompletionAsSeen(completionId);
+  }, [completionId, hasHydrated, hasSeenCompletion, markCompletionAsSeen]);
+
+  if (!hasHydrated) {
+    return (
+      <StatusFeedbackView
+        message="완료된 매칭 상태를 확인하고 있어요."
+        title="잠시만 기다려주세요"
+      />
+    );
+  }
+
+  if (shouldShowCompletion) {
+    return <TeamMatchingCompleteView />;
+  }
+
+  return <TeamMatchingStatusEmptyView />;
+}
+
 function getStatusView(todayMatchingResult: TodayMatchingResult) {
   if (todayMatchingResult.resultStatus === "NOT_APPLIED") {
     return <TeamMatchingStatusEmptyView />;
   }
 
   if (todayMatchingResult.resultStatus === "MATCHED") {
-    if (todayMatchingResult.teamId || todayMatchingResult.groupStatus === "CONFIRMED") {
-      return <TeamMatchingCompleteView />;
+    if (isConfirmedMatching(todayMatchingResult)) {
+      return <ConfirmedMatchingStatusView todayMatchingResult={todayMatchingResult} />;
     }
 
     if (todayMatchingResult.myResponseStatus === "ACCEPTED") {

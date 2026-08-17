@@ -28,7 +28,7 @@ export default function TeamMatchingCompleteView() {
             팀원 매칭 완료!
           </h1>
           <p className="mt-[17px] font-[Pretendard] text-[12px] font-normal leading-[135%] text-[#616161]">
-            첫 팀 매칭을 축하해요.
+            팀 매칭을 축하해요.
           </p>
         </section>
 
