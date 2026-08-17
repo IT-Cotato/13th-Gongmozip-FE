@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import TeamMatchingAcceptWaitingView from "@/components/team-matching/TeamMatchingAcceptWaitingView";
 import TeamMatchingCompleteView from "@/components/team-matching/TeamMatchingCompleteView";
@@ -76,21 +76,21 @@ function isConfirmedMatching(todayMatchingResult: TodayMatchingResult) {
 }
 
 function useHasTeamMatchingCompletionHydrated() {
-  const [hasHydrated, setHasHydrated] = useState(
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const unsubscribeHydrate =
+        useTeamMatchingCompletionStore.persist?.onHydrate(onStoreChange);
+      const unsubscribeFinishHydration =
+        useTeamMatchingCompletionStore.persist?.onFinishHydration(onStoreChange);
+
+      return () => {
+        unsubscribeHydrate?.();
+        unsubscribeFinishHydration?.();
+      };
+    },
     () => useTeamMatchingCompletionStore.persist?.hasHydrated() ?? false,
+    () => false,
   );
-
-  useEffect(() => {
-    if (useTeamMatchingCompletionStore.persist?.hasHydrated()) {
-      setHasHydrated(true);
-    }
-
-    return useTeamMatchingCompletionStore.persist?.onFinishHydration(() =>
-      setHasHydrated(true),
-    );
-  }, []);
-
-  return hasHydrated;
 }
 
 function ConfirmedMatchingStatusView({
@@ -103,20 +103,20 @@ function ConfirmedMatchingStatusView({
   const markCompletionAsSeen = useTeamMatchingCompletionStore(
     (state) => state.markCompletionAsSeen,
   );
-  const [visibleCompletionId, setVisibleCompletionId] = useState<string | null>(null);
+  const visibleCompletionIdRef = useRef<string | null>(null);
   const completionId = getMatchingCompletionId(todayMatchingResult);
   const hasSeenCurrentCompletion = completionId ? hasSeenCompletion(completionId) : false;
   const shouldShowCompletion =
     Boolean(completionId) &&
     hasHydrated &&
-    (!hasSeenCurrentCompletion || visibleCompletionId === completionId);
+    (!hasSeenCurrentCompletion || visibleCompletionIdRef.current === completionId);
 
   useEffect(() => {
     if (!completionId || !hasHydrated || hasSeenCompletion(completionId)) {
       return;
     }
 
-    setVisibleCompletionId(completionId);
+    visibleCompletionIdRef.current = completionId;
     markCompletionAsSeen(completionId);
   }, [completionId, hasHydrated, hasSeenCompletion, markCompletionAsSeen]);
 
