@@ -378,7 +378,7 @@ export default function TeamMatchingPage() {
   const applyLabel = isLoading
     ? "확인 중..."
     : alreadyAppliedToday
-      ? "신청 조건 확인하기"
+      ? "매칭 신청하기"
       : primaryReason && !eligibility?.eligible
         ? "신청 조건 확인하기"
         : "매칭 신청하기";
