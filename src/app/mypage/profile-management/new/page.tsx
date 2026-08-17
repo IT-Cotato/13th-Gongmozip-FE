@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
-import { EditIcon } from "../../_components/icons";
+import { CharacterAvatar } from "../../_components/CharacterAvatar";
+import { getCollaborationCharacterMeta } from "../../_lib/collaborationCharacter";
 import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
 import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
-import { useUpdateProfileImageMutation } from "@/queries/useUpdateProfileImageMutation";
+import { useCurrentCharacterQuery } from "@/queries/useCurrentCharacterQuery";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -60,56 +61,17 @@ export default function CreateProfilePage() {
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
-  const memberProfileQuery = useMemberProfileQuery();
-  const updateProfileImageMutation = useUpdateProfileImageMutation();
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const previewImageUrlRef = useRef<string | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const displayedImageUrl = previewImageUrl ?? memberProfileQuery.data?.profileImageUrl ?? null;
+  const characterQuery = useCurrentCharacterQuery();
+  const palettesQuery = useCharacterPalettesQuery();
+  const characterMeta = characterQuery.data
+    ? getCollaborationCharacterMeta(characterQuery.data.characterType)
+    : null;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === characterQuery.data?.paletteCode,
+  );
 
-  useEffect(() => {
-    return () => {
-      if (previewImageUrlRef.current) {
-        URL.revokeObjectURL(previewImageUrlRef.current);
-      }
-    };
-  }, []);
-
-  function handlePhotoButtonClick() {
-    photoInputRef.current?.click();
-  }
-
-  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    if (previewImageUrlRef.current) {
-      URL.revokeObjectURL(previewImageUrlRef.current);
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    previewImageUrlRef.current = objectUrl;
-    setPreviewImageUrl(objectUrl);
-
-    updateProfileImageMutation.mutate(file, {
-      onSuccess: async () => {
-        // invalidateQueries만으로는 refetch가 끝나기 전에 onSettled가 미리보기를
-        // 지워버려서, 갱신된 이미지가 반영되기 전 잠깐 원래(구) 이미지로 되돌아가
-        // 보이는(=마치 업로드가 실패한 것처럼 보이는) 깜빡임이 있었다. 여기서
-        // refetch를 직접 기다려 새 이미지가 준비된 뒤에 미리보기를 지운다.
-        await memberProfileQuery.refetch();
-      },
-      onSettled: () => {
-        URL.revokeObjectURL(objectUrl);
-        if (previewImageUrlRef.current === objectUrl) {
-          previewImageUrlRef.current = null;
-        }
-        // 성공 시엔 위에서 기다린 갱신된 서버 이미지로, 실패 시엔 기존 프로필
-        // 이미지로 자연스럽게 되돌아간다.
-        setPreviewImageUrl(null);
-      },
-    });
+  function handleCharacterEditClick() {
+    router.push("/mypage/character-management");
   }
 
   // 새 프로필을 처음 작성하는 시점(수정 아님 + 아직 아무것도 안 입력함)에만
@@ -181,34 +143,12 @@ export default function CreateProfilePage() {
           <section className="flex flex-col gap-4">
             <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">기본 정보</h2>
             <div className="flex items-center gap-4 px-6">
-              <div className="relative shrink-0">
-                {displayedImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={displayedImageUrl}
-                    alt=""
-                    className="size-[70px] rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="size-[70px] rounded-full bg-[#efefef]" />
-                )}
-                <button
-                  type="button"
-                  onClick={handlePhotoButtonClick}
-                  disabled={updateProfileImageMutation.isPending}
-                  aria-label="프로필 사진 변경"
-                  className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border border-[rgba(97,97,97,0.22)] bg-white disabled:opacity-50"
-                >
-                  <EditIcon />
-                </button>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
-              </div>
+              <CharacterAvatar
+                imageSrc={characterMeta?.imageSrc ?? null}
+                label={characterMeta?.label}
+                palette={characterPalette}
+                onEditClick={handleCharacterEditClick}
+              />
               <div className="flex flex-1 flex-col gap-1">
                 <FieldLabel label="닉네임" htmlFor="nickname" required />
                 <input
@@ -229,15 +169,6 @@ export default function CreateProfilePage() {
                 )}
               </div>
             </div>
-            {updateProfileImageMutation.isError && (
-              <p
-                role="alert"
-                aria-live="assertive"
-                className="px-6 text-xs leading-[1.35] text-[#BB5260]"
-              >
-                프로필 사진 업로드에 실패했어요. 다시 시도해주세요.
-              </p>
-            )}
           </section>
 
           <section className="flex flex-col gap-4">
