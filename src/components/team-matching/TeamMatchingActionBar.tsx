@@ -19,15 +19,17 @@ export default function TeamMatchingActionBar({
   previousHref,
   previousLabel = "이전",
 }: TeamMatchingActionBarProps) {
+  const buttonBaseClassName =
+    "flex h-[50px] items-center justify-center rounded-[14px] px-8 py-[9px] text-center font-[Roboto] text-[17px] font-semibold leading-[125%]";
   const className = disabled
-    ? "flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#DFDFDF] px-8 py-[9px] text-[18px] font-bold leading-none text-white"
-    : "flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-[18px] font-bold leading-none text-white";
+    ? `${buttonBaseClassName} w-full bg-[#DFDFDF] text-white`
+    : `${buttonBaseClassName} w-full bg-[#FF7658] text-white`;
 
   return (
-    <div className="flex shrink-0 gap-2 bg-white px-4 pb-3 pt-2">
+    <div className="flex shrink-0 gap-2.5 bg-white px-4 pb-3 pt-2">
       {previousHref && (
         <Link
-          className="flex h-[51px] flex-1 items-center justify-center rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-8 py-[9px] text-[18px] font-bold leading-none text-[#616161]"
+          className={`${buttonBaseClassName} flex-1 border border-[rgba(97,97,97,0.50)] bg-white text-[#616161]`}
           href={previousHref}
         >
           {previousLabel}

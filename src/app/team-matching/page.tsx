@@ -260,8 +260,8 @@ function CountdownCard({
 
   return (
     <section className="mx-auto mt-4 flex h-[143px] w-[358px] max-w-[calc(100%-32px)] flex-col items-center gap-2 rounded-2xl bg-[#F9F8F4] p-4 text-center">
-      <div className="flex items-start justify-center gap-[10px] rounded-[10px] bg-[#1F1F1F] px-2 py-[5px] text-[14px] font-bold leading-none text-white">
-        {label}
+      <div className="flex items-start justify-center gap-[10px] rounded-[10px] bg-[#1F1F1F] px-2 py-[5px] text-center font-[Pretendard] text-[13px] font-semibold not-italic leading-[125%] text-[var(--Semantic-Label-Inverse,var(--Primitive-Static-Static-White,#FFF))]">
+        <span className="translate-y-px">{label}</span>
       </div>
 
       <div className="flex h-[49px] items-center justify-center gap-1 self-stretch">
@@ -378,7 +378,7 @@ export default function TeamMatchingPage() {
   const applyLabel = isLoading
     ? "확인 중..."
     : alreadyAppliedToday
-      ? "신청 조건 확인하기"
+      ? "매칭 신청하기"
       : primaryReason && !eligibility?.eligible
         ? "신청 조건 확인하기"
         : "매칭 신청하기";
@@ -434,7 +434,7 @@ export default function TeamMatchingPage() {
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
         <header className="z-10 flex h-[46px] shrink-0 items-center justify-between self-stretch bg-white px-4 py-1">
           <span className="h-6 w-6" aria-hidden="true" />
-          <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center font-[Roboto] text-[17px] font-semibold not-italic leading-[135%] text-[#111111]">
+          <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center font-[Pretendard] text-[17px] font-semibold not-italic leading-[135%] text-[var(--Semantic-Fill-Strong,var(--Primitive-Gray-Gray-900,#111))]">
             팀원 매칭
           </h1>
           <span className="h-6 w-6" aria-hidden="true" />
