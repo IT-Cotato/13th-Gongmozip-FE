@@ -19,6 +19,7 @@ export default function CertificatesPage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const draftProjects = useProfileDraftStore((state) => state.projects);
   const draftCertificates = useProfileDraftStore((state) => state.certificates);
+  const setDraftCertificates = useProfileDraftStore((state) => state.setCertificates);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
@@ -64,11 +65,19 @@ export default function CertificatesPage() {
     setSubmitError(null);
 
     const onError = (error: unknown) => {
-      setSubmitError(
-        error instanceof ApiError
-          ? error.message
-          : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
-      );
+      const message =
+        error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.";
+
+      // 닉네임은 1단계 입력 항목이지만 실제 중복 검증은 이 화면(3단계) 제출 시점에야
+      // 일어난다. 그대로 여기 띄우면 자격증 문제로 오해하기 쉬우므로 1단계로 돌려보내
+      // 닉네임 입력창 옆에 에러를 보여준다.
+      if (message.includes("닉네임")) {
+        useProfileDraftStore.getState().setNicknameError(message);
+        router.replace("/mypage/profile-management/new");
+        return;
+      }
+
+      setSubmitError(message);
     };
 
     if (editingProfileId !== null) {
@@ -82,7 +91,7 @@ export default function CertificatesPage() {
         {
           onSuccess: () => {
             resetProfileDraft();
-            router.push(`/mypage/profile-management/${editingProfileId}`);
+            router.replace(`/mypage/profile-management/${editingProfileId}`);
           },
           onError,
         },
@@ -95,7 +104,7 @@ export default function CertificatesPage() {
       {
         onSuccess: () => {
           resetProfileDraft();
-          router.push("/mypage/profile-management/new/complete");
+          router.replace("/mypage/profile-management/new/complete");
         },
         onError,
       },
@@ -107,7 +116,10 @@ export default function CertificatesPage() {
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            setDraftCertificates(() => certificates);
+            router.replace("/mypage/profile-management/new/experience");
+          }}
           aria-label="이전"
           className="absolute left-4 flex h-6 w-6 items-center justify-center"
         >
@@ -168,7 +180,10 @@ export default function CertificatesPage() {
         <div className="flex gap-2.5">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => {
+              setDraftCertificates(() => certificates);
+              router.replace("/mypage/profile-management/new/experience");
+            }}
             disabled={isSubmitting}
             className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
           >
@@ -206,7 +221,10 @@ export default function CertificatesPage() {
               ? `/mypage/profile-management/${editingProfileId}`
               : "/mypage/profile-management";
           resetProfileDraft();
-          router.push(exitDestination);
+          // 1~3단계는 서로 push가 아닌 replace로만 이동하므로 스택에는 마법사 진입
+          // 시점에 쌓인 엔트리 하나뿐이다. replace로 나가야 그 자리를 그대로
+          // 대체해서, 이후 뒤로가기를 눌러도 마법사 화면으로 되돌아가지 않는다.
+          router.replace(exitDestination);
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

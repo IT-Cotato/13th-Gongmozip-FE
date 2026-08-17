@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { getCollaborationResultByCharacterType } from "@/app/collaboration-type/_data/collaborationTest";
+import { getPaletteStyle } from "@/app/mypage/_lib/collaborationCharacter";
 import { ApiError } from "@/lib/http";
 import { usePublicProfileQuery, type PublicProfile } from "@/queries/usePublicProfileQuery";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 
 type ChatProfilePreviewProps = {
   member: ProfilePreviewMember;
@@ -164,9 +166,13 @@ function isBeforeProjectEnd(projectEndedAt: string | null | undefined) {
 }
 
 function ProfileBody({ member, profile }: { member: ProfilePreviewMember; profile: PublicProfile }) {
+  const palettesQuery = useCharacterPalettesQuery();
   const character = profile.character
     ? getCollaborationResultByCharacterType(profile.character.characterType)
     : undefined;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === profile.character?.paletteCode,
+  );
   const profileImageSrc = member.avatarSrc ?? character?.imageSrc;
   const schoolTitle = profile.schoolRegion?.trim() || PRIVATE_SCHOOL_LABEL;
   const age = profile.age ?? calculateAge(profile.birthDate);
@@ -177,7 +183,10 @@ function ProfileBody({ member, profile }: { member: ProfilePreviewMember; profil
   return (
     <div className="flex-1 overflow-y-auto pb-10">
       <section className="flex h-[78px] items-center gap-4 px-6">
-        <div className="relative flex size-[73px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#ebf7fe]">
+        <div
+          className="relative flex size-[73px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white"
+          style={getPaletteStyle(characterPalette)}
+        >
           {profileImageSrc ? (
             <Image src={profileImageSrc} alt="" fill sizes="73px" className="object-cover" />
           ) : (

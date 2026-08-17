@@ -73,9 +73,10 @@ export function useWithdrawMatchingApplicationMutation() {
                   collaborationDistance: {
                     ...current.collaborationDistance,
                     current: currentCollaborationDistance,
+                    // progress는 0~1 비율이 아니라 0~100 백분율(서버 응답 기준)이다.
                     progress:
                       current.collaborationDistance.max > 0
-                        ? currentCollaborationDistance / current.collaborationDistance.max
+                        ? (currentCollaborationDistance / current.collaborationDistance.max) * 100
                         : 0,
                   },
                 }

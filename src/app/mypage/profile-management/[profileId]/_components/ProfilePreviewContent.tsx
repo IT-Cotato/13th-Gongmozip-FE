@@ -5,6 +5,8 @@ import { ChevronLeftIcon } from "../../_components/icons";
 import { EditIcon } from "@/app/mypage/_components/icons";
 import { useProfileDetailQuery, type ProfileDetail } from "@/queries/useProfileDetailQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
+import { getCollaborationCharacterMeta, getPaletteStyle } from "@/app/mypage/_lib/collaborationCharacter";
 import { ApiError } from "@/lib/http";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
 import type { ProjectExperienceInput } from "../../new/experience/_components/ProjectExperienceSheet";
@@ -87,6 +89,8 @@ function buildProfileDraftFromDetail(profile: ProfileDetail) {
     category: certification.categoryName,
     grade: "",
     year: certification.acquiredAt ? String(new Date(certification.acquiredAt).getFullYear()) : "",
+    // 프로필 상세 조회 API는 certificationCode를 내려주지 않아 재저장 시 직접 입력으로 취급한다.
+    certificationCode: null,
   }));
 
   return { basicInfo, projects, certificates };
@@ -108,8 +112,15 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
   const router = useRouter();
   const profileQuery = useProfileDetailQuery(profileId);
   const memberQuery = useMemberProfileQuery();
+  const palettesQuery = useCharacterPalettesQuery();
   const profile = profileQuery.data;
   const member = memberQuery.data;
+  const characterMeta = profile?.character
+    ? getCollaborationCharacterMeta(profile.character.characterType)
+    : null;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === profile?.character?.paletteCode,
+  );
   const setBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const setProjects = useProfileDraftStore((state) => state.setProjects);
   const setCertificates = useProfileDraftStore((state) => state.setCertificates);
@@ -134,8 +145,8 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
     router.replace("/login/email");
   }
 
-  const age = member ? calculateAge(member.birthDate) : null;
-  const birthYear = member ? new Date(member.birthDate).getFullYear() : null;
+  const age = member?.birthDate ? calculateAge(member.birthDate) : null;
+  const birthYear = member?.birthDate ? new Date(member.birthDate).getFullYear() : null;
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
@@ -187,7 +198,19 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
           </p>
 
           <div className="flex items-center gap-4 px-6 py-4">
-            <div className="size-[70px] shrink-0 rounded-full bg-[#efefef]" />
+            <div
+              className="flex size-[70px] shrink-0 items-center justify-center overflow-hidden rounded-full"
+              style={getPaletteStyle(characterPalette)}
+            >
+              {characterMeta?.imageSrc && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={characterMeta.imageSrc}
+                  alt={characterMeta.label}
+                  className="size-[85%] object-contain"
+                />
+              )}
+            </div>
             <div className="flex flex-col items-start gap-2">
               <p className="text-[17px] leading-[1.35] font-medium text-black">
                 {profile.nickname}
