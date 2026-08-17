@@ -1039,7 +1039,9 @@ function getChatRoomMemberAvatarItem(member: UnknownRecord): ChatRoomAvatarItem 
   return src ? { src } : null;
 }
 
-function getCharacterAvatarMeta(characterType: string | undefined): Required<ChatRoomAvatarItem> | null {
+function getCharacterAvatarMeta(
+  characterType: string | undefined,
+): Required<ChatRoomAvatarItem> | null {
   if (!characterType || !(characterType in CHARACTER_AVATAR_META)) {
     return null;
   }
