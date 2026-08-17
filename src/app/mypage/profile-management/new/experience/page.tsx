@@ -198,12 +198,13 @@ export default function ProjectExperiencePage() {
 
       <ExitProfileWriteModal
         onExit={() => {
-          const exitDestination =
-            editingProfileId !== null
-              ? `/mypage/profile-management/${editingProfileId}`
-              : "/mypage/profile-management";
+          // 마법사는 이 화면까지 오는 동안 진입 시 한 번만 push되고 이후 단계
+          // 전환은 전부 replace라, 스택에는 진입 직전 화면(목록/미리보기) 위에
+          // 엔트리 하나만 쌓여 있다. replace로 나가면 그 위에 엔트리가 하나 더
+          // 쌓여 뒤로가기 시 마법사로 되돌아오므로, 대신 back()으로 정확히
+          // 그 진입 화면으로 되돌아간다.
           useProfileDraftStore.getState().resetProfileDraft();
-          router.replace(exitDestination);
+          router.back();
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}
