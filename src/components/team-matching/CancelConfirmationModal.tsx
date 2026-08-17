@@ -66,7 +66,7 @@ export default function CancelConfirmationModal() {
     >
       <section className="flex max-h-[400px] w-[350px] max-w-full shrink-0 flex-col items-center rounded-2xl bg-white px-4 pb-4 pt-2 shadow-[0_53px_15px_0_rgba(0,0,0,0),0_34px_14px_0_rgba(0,0,0,0.01),0_19px_12px_0_rgba(0,0,0,0.05),0_9px_9px_0_rgba(0,0,0,0.09),0_2px_5px_0_rgba(0,0,0,0.10)]">
         <h2
-          className="mt-4 w-full text-center font-[Pretendard] text-[20px] font-medium leading-[135%] text-[#1F1F1F]"
+          className="mt-4 w-full translate-y-0.5 text-center font-[Pretendard] text-[20px] font-medium leading-[135%] text-[#1F1F1F]"
           id="matching-cancel-title"
         >
           팀원 매칭을 취소할까요?
