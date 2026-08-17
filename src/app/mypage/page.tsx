@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomNavigation from "@/components/layout/BottomNavigation";
-import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
+import { SettingsIcon } from "./_components/icons";
+import { CharacterAvatar } from "./_components/CharacterAvatar";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
 import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
-import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
+import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
-import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useMemberProfileQuery, getSnsLoginHint } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { useLogoutMutation } from "@/queries/useLogoutMutation";
@@ -115,7 +116,11 @@ export default function MyPage() {
       { label: "회원정보 수정", href: "/mypage/edit-profile" },
       canChangePassword
         ? { label: "비밀번호 변경", href: "/mypage/change-password" }
-        : { label: "비밀번호 변경", disabled: true, hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined },
+        : {
+            label: "비밀번호 변경",
+            disabled: true,
+            hint: isSocialLogin ? getSnsLoginHint(profileQuery.data?.snsType ?? null) : undefined,
+          },
     ],
   };
   const menuSections: MenuSection[] = [
@@ -189,31 +194,12 @@ export default function MyPage() {
           <>
             <section className="flex flex-col items-center">
               <div className="flex w-full items-start gap-4 px-6 py-4">
-                <div className="relative size-[92px] shrink-0">
-                  <div className="absolute inset-[3%_5%]">
-                    <AvatarPlaceholderIcon />
-                  </div>
-                  {collaborationType?.imageSrc && (
-                    <div
-                      className="absolute inset-0 overflow-hidden rounded-full"
-                      style={getPaletteStyle(characterPalette)}
-                    >
-                      <img
-                        src={collaborationType.imageSrc}
-                        alt={collaborationType.label}
-                        className="absolute inset-[11.67%_11%_11.33%_11%] object-contain"
-                      />
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleCharacterManageClick}
-                    aria-label="캐릭터 관리"
-                    className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#EFEFEF] text-black"
-                  >
-                    <EditIcon />
-                  </button>
-                </div>
+                <CharacterAvatar
+                  imageSrc={collaborationType?.imageSrc ?? null}
+                  label={collaborationType?.label}
+                  palette={characterPalette}
+                  onEditClick={handleCharacterManageClick}
+                />
                 <div className="flex flex-1 flex-col items-start gap-2">
                   <div className="flex w-full items-center justify-between">
                     <span
@@ -222,13 +208,19 @@ export default function MyPage() {
                     >
                       {collaborationType?.label ?? "검사 전"}
                     </span>
-                    <Link
-                      href="/collaboration-type?returnTo=/mypage"
-                      className="flex items-center text-[13px] font-semibold text-[#616161] underline"
-                    >
-                      협업 유형 검사
-                      <img src="/icons/common/tabler_chevron-right.svg" alt="" className="size-5" />
-                    </Link>
+                    {!collaborationType && (
+                      <Link
+                        href="/collaboration-type?returnTo=/mypage"
+                        className="flex items-center text-[13px] font-semibold text-[#616161] underline"
+                      >
+                        협업 유형 검사
+                        <img
+                          src="/icons/common/tabler_chevron-right.svg"
+                          alt=""
+                          className="size-5"
+                        />
+                      </Link>
+                    )}
                   </div>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
                     {profileQuery.data?.name ? `${profileQuery.data.name}님,` : "반가워요,"}
