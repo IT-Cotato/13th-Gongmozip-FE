@@ -170,8 +170,16 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const selectedCandidate =
     safeCandidates.find((candidate) => candidate.id === selectedCandidateId) ?? safeCandidates[0];
   const currentMember = chatMembers.find((member) => member.isMe);
+  const latestLeaderResultMessage = useMemo(
+    () =>
+      [...serverMessages].reverse().find((message) => message.messageType === "LEADER_RESULT_CARD"),
+    [serverMessages],
+  );
+  const electedLeaderId = latestLeaderResultMessage
+    ? String(getMetadataNumber(latestLeaderResultMessage.metadata, "leaderTeamMemberId"))
+    : null;
   const isCurrentMemberLeader = currentMember
-    ? currentMember.isLeader === true || selectedCandidate?.id === currentMember.id
+    ? currentMember.isLeader === true || electedLeaderId === currentMember.id
     : false;
 
   const latestReadMarker = useMemo(() => {
@@ -570,8 +578,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
       ["candidateDeadlineAt", "candidateEndsAt", "candidateClosedAt"],
-      ["candidateRemainingSeconds", "remainingSeconds"],
+      ["candidateRemainingSeconds"],
       now,
+      latestContestVoteReminderMessage?.sentAt,
     ) ??
     getRemainingSecondsFromContests(apiContestCandidates, "candidateDeadlineAt", now) ??
     0;
@@ -579,8 +588,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
       ["voteDeadlineAt", "voteEndsAt", "voteClosedAt", "deadlineAt", "expiresAt"],
-      ["voteRemainingSeconds", "remainingSeconds"],
+      ["voteRemainingSeconds"],
       now,
+      latestContestVoteReminderMessage?.sentAt,
     ) ??
     getRemainingSecondsFromContests(apiContestCandidates, "voteDeadlineAt", now) ??
     DEFAULT_CONTEST_VOTE_SECONDS;
@@ -1530,11 +1540,21 @@ function getRemainingSecondsFromMetadata(
   deadlineKeys: string[],
   remainingKeys: string[],
   now: number,
+  baseTime?: string,
 ) {
   for (const key of remainingKeys) {
     const remainingSeconds = getMetadataNumber(metadata, key);
 
     if (remainingSeconds !== undefined) {
+      const baseTimestamp = baseTime ? new Date(baseTime).getTime() : undefined;
+
+      // remainingKeys 값은 메시지를 보낸 시점 기준 "남은 초"라, 그 이후 흐른 시간만큼
+      // 빼줘야 실시간 카운트다운이 된다. baseTime이 없으면(과거 호출 호환) 고정값으로 둔다.
+      if (baseTimestamp !== undefined && Number.isFinite(baseTimestamp)) {
+        const elapsedSeconds = Math.max(0, (now - baseTimestamp) / 1000);
+        return Math.max(0, remainingSeconds - elapsedSeconds);
+      }
+
       return Math.max(0, remainingSeconds);
     }
   }
