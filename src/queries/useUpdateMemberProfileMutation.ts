@@ -14,7 +14,7 @@ export type UpdateMemberProfileRequest = {
 };
 
 function updateMemberProfile(payload: UpdateMemberProfileRequest) {
-  return apiFetch<MemberProfile>("/api/members/me", {
+  return apiFetch<void>("/api/members/me", {
     method: "PATCH",
     body: payload,
   });
@@ -26,8 +26,12 @@ export function useUpdateMemberProfileMutation() {
 
   return useMutation({
     mutationFn: updateMemberProfile,
-    onSuccess: (data) => {
-      queryClient.setQueryData(memberProfileQueryKey(accessToken), data);
+    onSuccess: (_data, payload) => {
+      // 백엔드는 성공해도 응답 바디가 비어있는(BaseResponseVoid) 엔드포인트라,
+      // 응답으로 캐시를 덮어쓰면 프로필이 통째로 사라진다. 보낸 값을 그대로 병합한다.
+      queryClient.setQueryData<MemberProfile>(memberProfileQueryKey(accessToken), (current) =>
+        current ? { ...current, ...payload } : current,
+      );
     },
   });
 }

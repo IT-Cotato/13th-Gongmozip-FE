@@ -19,6 +19,7 @@ import type {
 import type { RecommendedContest } from "@/app/chat/_components/leader-election/types";
 import type { ReviewMember } from "@/app/chat/_components/member-review/types";
 import { API_BASE_URL, apiFetch, isBaseResponse } from "@/lib/http";
+import { MYPAGE_SUMMARY_QUERY_KEY_PREFIX } from "@/queries/useMypageSummaryQuery";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 type UnknownRecord = Record<string, unknown>;
@@ -569,6 +570,9 @@ export function useLeaveChatTeamMutation(teamId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
       void queryClient.invalidateQueries({ queryKey: chatTeamMembersQueryKey(teamId) });
+      // 중도 퇴장은 협업거리를 깎는다 - 마이페이지 요약(협업거리 게이지)도 함께
+      // 갱신해야 마이페이지에서 감소분이 바로 보인다.
+      void queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
     },
   });
 }

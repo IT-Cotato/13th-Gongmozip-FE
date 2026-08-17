@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
 import { matchingEligibilityQueryKey } from "./useMatchingEligibilityQuery";
+import { MYPAGE_SUMMARY_QUERY_KEY_PREFIX } from "./useMypageSummaryQuery";
 import { todayMatchingResultQueryKey } from "./useTodayMatchingResultQuery";
 import {
   todayMatchingApplicationQueryKey,
@@ -57,6 +58,9 @@ export function useWithdrawMatchingApplicationMutation() {
       void queryClient.invalidateQueries({ queryKey: matchingEligibilityQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayMatchingApplicationQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayMatchingResultQueryKey });
+      // 취소/패스는 협업거리를 깎는다 - 마이페이지 요약(협업거리 게이지)도 함께
+      // 갱신해야 마이페이지에서 감소분이 바로 보인다.
+      void queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
     },
   });
 }

@@ -314,7 +314,9 @@ export default function MyPage() {
       </div>
 
       <BottomNavigation />
-      {data && <OnboardingCoachmark />}
+      {data && profileQuery.data?.email && (
+        <OnboardingCoachmark accountKey={profileQuery.data.email} />
+      )}
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
