@@ -1,13 +1,20 @@
-export const WITHDRAW_REASONS = [
-  "팀원 매칭 결과가 마음에 들지 않아요.",
-  "비매너 사용자를 만났어요.",
-  "더이상 필요하지 않아요.",
-  "새 계정을 만들고 싶어요.",
-  "기타",
+import type { WithdrawMemberReason } from "@/queries/useWithdrawMemberMutation";
+
+export type WithdrawReasonOption = {
+  code: WithdrawMemberReason;
+  label: string;
+};
+
+export const WITHDRAW_REASONS: WithdrawReasonOption[] = [
+  { code: "MATCHING_DISSATISFIED", label: "팀원 매칭 결과가 마음에 들지 않아요." },
+  { code: "BAD_MANNER_USER", label: "비매너 사용자를 만났어요." },
+  { code: "NO_LONGER_NEEDED", label: "더이상 필요하지 않아요." },
+  { code: "NEW_ACCOUNT", label: "새 계정을 만들고 싶어요." },
+  { code: "ETC", label: "기타" },
 ];
 
 type WithdrawReasonSheetProps = {
-  onSelect: (reason: string) => void;
+  onSelect: (reason: WithdrawReasonOption) => void;
   onClose: () => void;
 };
 
@@ -27,12 +34,12 @@ export function WithdrawReasonSheet({ onSelect, onClose }: WithdrawReasonSheetPr
         <div className="flex w-full flex-col items-start pb-2">
           {WITHDRAW_REASONS.map((reason) => (
             <button
-              key={reason}
+              key={reason.code}
               type="button"
               onClick={() => onSelect(reason)}
               className="w-full py-3 text-left text-[17px] leading-[1.5] font-medium text-[#616161]"
             >
-              {reason}
+              {reason.label}
             </button>
           ))}
         </div>

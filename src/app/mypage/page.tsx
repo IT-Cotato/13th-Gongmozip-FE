@@ -8,27 +8,28 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
-import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
+import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
+import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { useLogoutMutation } from "@/queries/useLogoutMutation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiError } from "@/lib/http";
 
 const COLLABORATIVE_DISTANCE_STEP = 100;
 
-type MenuItem = { label: string; href?: string; disabled?: boolean; onClick?: () => void };
+type MenuItem = {
+  label: string;
+  href?: string;
+  disabled?: boolean;
+  hint?: string;
+  onClick?: () => void;
+};
 type MenuSection = { title?: string; items: MenuItem[] };
 
 const MENU_SECTIONS: MenuSection[] = [
-  {
-    title: "정보관리",
-    items: [
-      { label: "회원정보 수정", href: "/mypage/edit-profile" },
-      { label: "비밀번호 변경", href: "/mypage/change-password" },
-    ],
-  },
   {
     title: "고객지원",
     items: [{ label: "문의하기", href: "/contact" }],
@@ -48,11 +49,13 @@ export default function MyPage() {
   const summaryQuery = useMypageSummaryQuery();
   const profileQuery = useMemberProfileQuery();
   const profileListQuery = useProfileListQuery();
+  const palettesQuery = useCharacterPalettesQuery();
   const logoutMutation = useLogoutMutation();
   const { data } = summaryQuery;
   const isLoading = summaryQuery.isLoading;
   const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const isUnauthorized =
     summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
@@ -68,6 +71,9 @@ export default function MyPage() {
         ...getCollaborationCharacterMeta(data.character.characterType),
       }
     : null;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === data?.character?.paletteCode,
+  );
 
   function handleCharacterManageClick() {
     if (collaborationType) {
@@ -83,7 +89,7 @@ export default function MyPage() {
     profileListQuery.refetch();
   }
 
-  function handleLogout() {
+  function handleConfirmLogout() {
     if (logoutMutation.isPending) return;
 
     logoutMutation.mutate(undefined, {
@@ -99,9 +105,23 @@ export default function MyPage() {
     });
   }
 
+  const isSocialLogin = Boolean(profileQuery.data?.snsLinked);
+  // 프로필 조회가 아직 로딩/에러 상태일 때는 소셜로그인 여부를 알 수 없으므로,
+  // 성공 응답을 받아 확실히 아닐 때만 비밀번호 변경 링크를 활성화한다.
+  const canChangePassword = profileQuery.isSuccess && !isSocialLogin;
+  const infoManagementSection: MenuSection = {
+    title: "정보관리",
+    items: [
+      { label: "회원정보 수정", href: "/mypage/edit-profile" },
+      canChangePassword
+        ? { label: "비밀번호 변경", href: "/mypage/change-password" }
+        : { label: "비밀번호 변경", disabled: true, hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined },
+    ],
+  };
   const menuSections: MenuSection[] = [
+    infoManagementSection,
     ...MENU_SECTIONS,
-    { items: [{ label: "로그아웃", onClick: handleLogout }] },
+    { items: [{ label: "로그아웃", onClick: () => setIsLogoutConfirmOpen(true) }] },
   ];
 
   const isProfileListUnavailable = profileListQuery.isLoading || profileListQuery.isError;
@@ -174,11 +194,14 @@ export default function MyPage() {
                     <AvatarPlaceholderIcon />
                   </div>
                   {collaborationType?.imageSrc && (
-                    <div className="absolute inset-0 overflow-hidden rounded-full">
+                    <div
+                      className="absolute inset-0 overflow-hidden rounded-full"
+                      style={getPaletteStyle(characterPalette)}
+                    >
                       <img
                         src={collaborationType.imageSrc}
                         alt={collaborationType.label}
-                        className="absolute inset-[11.67%_11%_11.33%_11%] size-full object-contain"
+                        className="absolute inset-[11.67%_11%_11.33%_11%] object-contain"
                       />
                     </div>
                   )}
@@ -293,18 +316,27 @@ export default function MyPage() {
       </div>
 
       <BottomNavigation />
-      {data && <OnboardingCoachmark />}
+      {data && profileQuery.data?.email && (
+        <OnboardingCoachmark accountKey={profileQuery.data.email} />
+      )}
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
           onStartTest={() => router.push("/collaboration-type?returnTo=/mypage")}
         />
       )}
+      {isLogoutConfirmOpen && (
+        <LogoutConfirmModal
+          onCancel={() => setIsLogoutConfirmOpen(false)}
+          onConfirm={handleConfirmLogout}
+          isLoggingOut={logoutMutation.isPending}
+        />
+      )}
     </div>
   );
 }
 
-function MenuRow({ label, href, disabled, onClick }: MenuItem) {
+function MenuRow({ label, href, disabled, hint, onClick }: MenuItem) {
   const className = "w-full text-left text-[15px] leading-[1.25] font-medium text-[#1F1F1F]";
 
   if (href) {
@@ -326,7 +358,9 @@ function MenuRow({ label, href, disabled, onClick }: MenuItem) {
         >
           {label}
         </button>
-        <p className="text-xs text-[#949494]">준비 중인 기능이에요.</p>
+        <p className={`text-xs ${hint ? "text-[#ac4a35]" : "text-[#949494]"}`}>
+          {hint ?? "준비 중인 기능이에요."}
+        </p>
       </div>
     );
   }

@@ -9,7 +9,9 @@ export type MemberProfile = {
   // 이름을 아직 입력하지 않은 회원(주로 SNS 간편가입 직후)은 null로 내려옴
   name: string | null;
   gender: MemberGender;
-  birthDate: string;
+  // SNS 간편가입 직후에는 아직 입력받지 않아 null로 내려올 수 있음
+  // (이름을 아직 입력하지 않은 경우와 동일한 케이스).
+  birthDate: string | null;
   snsType: "KAKAO" | null;
   snsLinked: boolean;
   marketingConsentEmail: boolean;

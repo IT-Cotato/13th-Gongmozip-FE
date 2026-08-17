@@ -57,7 +57,7 @@ export default function ProjectExperiencePage() {
 
   function handleNext() {
     setDraftProjects(() => projects);
-    router.push("/mypage/profile-management/new/certificates");
+    router.replace("/mypage/profile-management/new/certificates");
   }
 
   return (
@@ -65,7 +65,10 @@ export default function ProjectExperiencePage() {
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            setDraftProjects(() => projects);
+            router.replace("/mypage/profile-management/new");
+          }}
           aria-label="이전"
           className="absolute left-4 flex h-6 w-6 items-center justify-center"
         >
@@ -136,7 +139,8 @@ export default function ProjectExperiencePage() {
                 type="button"
                 onClick={() => {
                   setHasNoExperience(true);
-                  router.push("/mypage/profile-management/new/certificates");
+                  setDraftProjects(() => []);
+                  router.replace("/mypage/profile-management/new/certificates");
                 }}
                 aria-pressed={hasNoExperience}
                 className={`flex h-full flex-1 items-center justify-center rounded-[14px] border px-2.5 py-[9px] text-center text-[17px] leading-[1.25] font-semibold ${
@@ -166,7 +170,10 @@ export default function ProjectExperiencePage() {
         <div className="sticky bottom-0 flex gap-2.5 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => {
+              setDraftProjects(() => projects);
+              router.replace("/mypage/profile-management/new");
+            }}
             className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161]"
           >
             이전
@@ -191,12 +198,13 @@ export default function ProjectExperiencePage() {
 
       <ExitProfileWriteModal
         onExit={() => {
-          const exitDestination =
-            editingProfileId !== null
-              ? `/mypage/profile-management/${editingProfileId}`
-              : "/mypage/profile-management";
+          // 마법사는 이 화면까지 오는 동안 진입 시 한 번만 push되고 이후 단계
+          // 전환은 전부 replace라, 스택에는 진입 직전 화면(목록/미리보기) 위에
+          // 엔트리 하나만 쌓여 있다. replace로 나가면 그 위에 엔트리가 하나 더
+          // 쌓여 뒤로가기 시 마법사로 되돌아오므로, 대신 back()으로 정확히
+          // 그 진입 화면으로 되돌아간다.
           useProfileDraftStore.getState().resetProfileDraft();
-          router.push(exitDestination);
+          router.back();
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-const ONBOARDING_SEEN_KEY = "gongmozip:mypage-onboarding-seen";
+const ONBOARDING_SEEN_KEY_PREFIX = "gongmozip:mypage-onboarding-seen";
 const HIGHLIGHT_PADDING = 8;
 const ARROW_CLEARANCE = 14;
 const AUTO_ADVANCE_MS = 10000;
@@ -101,8 +101,15 @@ function noopSubscribe() {
   return () => {};
 }
 
-function getOnboardingSeenSnapshot() {
-  return localStorage.getItem(ONBOARDING_SEEN_KEY) === "true";
+// 계정마다 별도의 키를 써야 한다: 이 값을 계정 구분 없이 하나의 키로 저장하면,
+// 같은 기기에서 다른 계정으로 로그인했을 때도 "이미 봤다"고 판단해 코치마크가
+// 뜨지 않는다 (신규 계정인데 온보딩이 보이지 않던 문제의 원인).
+function getOnboardingSeenKey(accountKey: string) {
+  return `${ONBOARDING_SEEN_KEY_PREFIX}:${accountKey}`;
+}
+
+function getOnboardingSeenSnapshot(accountKey: string) {
+  return localStorage.getItem(getOnboardingSeenKey(accountKey)) === "true";
 }
 
 function getOnboardingSeenServerSnapshot() {
@@ -163,10 +170,10 @@ function useTargetRect(selector: string, enabled: boolean): TargetRect | null {
   return useSyncExternalStore(subscribe, getSnapshot, () => null);
 }
 
-export function OnboardingCoachmark() {
+export function OnboardingCoachmark({ accountKey }: { accountKey: string }) {
   const hasSeenOnboarding = useSyncExternalStore(
     noopSubscribe,
-    getOnboardingSeenSnapshot,
+    useCallback(() => getOnboardingSeenSnapshot(accountKey), [accountKey]),
     getOnboardingSeenServerSnapshot,
   );
   const [isDismissed, setIsDismissed] = useState(false);
@@ -186,7 +193,7 @@ export function OnboardingCoachmark() {
   const handleNext = useCallback(() => {
     if (stepIndex === STEPS.length - 1) {
       try {
-        localStorage.setItem(ONBOARDING_SEEN_KEY, "true");
+        localStorage.setItem(getOnboardingSeenKey(accountKey), "true");
       } catch {
         // Persisting the "seen" flag failed (e.g. storage disabled/full); the
         // onboarding will simply reappear on a later visit.
@@ -195,7 +202,7 @@ export function OnboardingCoachmark() {
       return;
     }
     setStepIndex((current) => current + 1);
-  }, [stepIndex]);
+  }, [stepIndex, accountKey]);
 
   const hasMeasuredRect = rect !== null;
 

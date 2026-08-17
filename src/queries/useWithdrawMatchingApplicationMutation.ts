@@ -2,7 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
 
+import { COLLABORATION_DISTANCE_QUERY_KEY } from "./useCollaborationDistanceQuery";
 import { matchingEligibilityQueryKey } from "./useMatchingEligibilityQuery";
+import {
+  MYPAGE_SUMMARY_QUERY_KEY_PREFIX,
+  type MypageSummary,
+} from "./useMypageSummaryQuery";
 import { todayMatchingResultQueryKey } from "./useTodayMatchingResultQuery";
 import {
   todayMatchingApplicationQueryKey,
@@ -34,6 +39,10 @@ export function useWithdrawMatchingApplicationMutation() {
   return useMutation({
     mutationFn: withdrawMatchingApplication,
     onSuccess: (data) => {
+      const currentCollaborationDistance = data.currentCollaborationDistance;
+      const shouldUpdateCollaborationDistance =
+        data.withdrawalType === "PENALIZED_PASS" && data.collaborationPenalty > 0;
+
       queryClient.setQueryData<TodayMatchingApplication>(
         todayMatchingApplicationQueryKey,
         (current) =>
@@ -43,7 +52,7 @@ export function useWithdrawMatchingApplicationMutation() {
                 appliedToday: true,
                 applicationId: data.applicationId,
                 status: data.status,
-                collaborationDistance: data.currentCollaborationDistance,
+                collaborationDistance: currentCollaborationDistance,
                 withdrawal: {
                   withdrawable: false,
                   type: data.withdrawalType,
@@ -53,6 +62,29 @@ export function useWithdrawMatchingApplicationMutation() {
               }
             : current,
       );
+
+      if (shouldUpdateCollaborationDistance) {
+        queryClient.setQueriesData<MypageSummary>(
+          { queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX },
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  collaborationDistance: {
+                    ...current.collaborationDistance,
+                    current: currentCollaborationDistance,
+                    // progress는 0~1 비율이 아니라 0~100 백분율(서버 응답 기준)이다.
+                    progress:
+                      current.collaborationDistance.max > 0
+                        ? (currentCollaborationDistance / current.collaborationDistance.max) * 100
+                        : 0,
+                  },
+                }
+              : current,
+        );
+        void queryClient.invalidateQueries({ queryKey: COLLABORATION_DISTANCE_QUERY_KEY });
+        void queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
+      }
 
       void queryClient.invalidateQueries({ queryKey: matchingEligibilityQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayMatchingApplicationQueryKey });

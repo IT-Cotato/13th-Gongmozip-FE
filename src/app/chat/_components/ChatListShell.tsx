@@ -31,7 +31,7 @@ export function ChatListShell() {
   }, [chatRooms, sortMode]);
 
   return (
-    <main className="relative flex h-full w-full flex-col bg-white pt-[env(safe-area-inset-top)]">
+    <main className="relative flex h-full w-full flex-col bg-white">
       <header className="relative flex h-[46px] shrink-0 items-center justify-center border-b border-[rgba(97,97,97,0.08)] px-4">
         <h1 className="text-[17px] leading-[1.35] font-semibold text-color-gray-900">채팅방</h1>
         <button
@@ -112,7 +112,7 @@ function ChatListStateMessage({
 
 function ChatSettingsDropdown({ onSort }: { onSort: (sortMode: SortMode) => void }) {
   return (
-    <div className="absolute top-[calc(env(safe-area-inset-top)+42px)] right-[35px] z-20 inline-flex max-h-[400px] min-w-[140px] items-center gap-2.5 py-2 drop-shadow-[0_16px_2px_rgba(0,0,0,0),0_10px_2px_rgba(0,0,0,0.01),0_6px_1.5px_rgba(0,0,0,0.05),0_3px_1.5px_rgba(0,0,0,0.09),0_1px_0.5px_rgba(0,0,0,0.1)]">
+    <div className="absolute top-[42px] right-[35px] z-20 inline-flex max-h-[400px] min-w-[140px] items-center gap-2.5 py-2 drop-shadow-[0_16px_2px_rgba(0,0,0,0),0_10px_2px_rgba(0,0,0,0.01),0_6px_1.5px_rgba(0,0,0,0.05),0_3px_1.5px_rgba(0,0,0,0.09),0_1px_0.5px_rgba(0,0,0,0.1)]">
       <div className="rounded-[12px] bg-white px-5 py-2">
         <div className="flex w-[181px] flex-col items-start gap-2">
           <p className="flex h-4 items-center text-[13px] leading-[1.25] font-medium text-color-gray-650">
@@ -144,7 +144,7 @@ function ChatRoomRow({ room }: { room: ChatRoom }) {
       href={`/chat/${room.id}`}
       className="flex h-[72px] w-full shrink-0 items-center gap-2 overflow-hidden bg-white p-2"
     >
-      <AvatarStack avatarSrcs={room.avatarSrcs} />
+      <AvatarStack avatarItems={room.avatarItems} avatarSrcs={room.avatarSrcs} />
       <ChatRoomRowText room={room} showTime />
     </Link>
   );
@@ -170,8 +170,16 @@ function ChatRoomRowText({ room, showTime = false }: { room: ChatRoom; showTime?
   );
 }
 
-function AvatarStack({ avatarSrcs }: { avatarSrcs: string[] }) {
+function AvatarStack({
+  avatarItems,
+  avatarSrcs,
+}: {
+  avatarItems?: ChatRoom["avatarItems"];
+  avatarSrcs: string[];
+}) {
   const fallbackTones = ["bg-color-green-100", "bg-color-coral-100", "bg-color-blue-50"];
+  const items: NonNullable<ChatRoom["avatarItems"]> =
+    avatarItems && avatarItems.length > 0 ? avatarItems : avatarSrcs.map((src) => ({ src }));
 
   return (
     <div className="flex w-[68px] shrink-0 items-center">
@@ -181,9 +189,10 @@ function AvatarStack({ avatarSrcs }: { avatarSrcs: string[] }) {
           className={`relative flex size-11 items-center justify-center overflow-hidden rounded-full border-2 border-white ${toneClass} ${
             index > 0 ? "-ml-8" : ""
           }`}
+          style={items[index]?.bgColor ? { backgroundColor: items[index]?.bgColor } : undefined}
         >
-          {avatarSrcs[index] ? (
-            <Image src={avatarSrcs[index]} alt="" fill sizes="44px" className="object-cover" />
+          {items[index]?.src ? (
+            <Image src={items[index].src} alt="" fill sizes="44px" className="object-cover" />
           ) : (
             <span className="size-6 rounded-full bg-white/60" />
           )}
