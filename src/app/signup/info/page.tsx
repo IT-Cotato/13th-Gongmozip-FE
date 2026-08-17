@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeftIcon } from "../_components/icons";
 import { InfoStep, type Gender } from "../_components/InfoStep";
 import {
   formatBirthdate,
@@ -26,20 +25,13 @@ function toUiGender(gender: string): Gender {
 }
 
 export default function SignupInfoPage() {
-  const router = useRouter();
   const { data: profile, isLoading, isError, refetch } = useMemberProfileQuery();
 
   return (
     <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
+      {/* 소셜 로그인 신규가입자 전용 화면이라 가입이 이미 완료된 상태다. 뒤로가기를
+          누르면 홈으로 이동해버려 혼란을 주므로 버튼 자체를 두지 않는다. */}
       <div className="relative flex items-center justify-center px-4 py-4">
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          aria-label="뒤로가기"
-          className="absolute left-4 flex h-6 w-6 items-center justify-center"
-        >
-          <ChevronLeftIcon />
-        </button>
         <h2 className="text-base font-semibold text-gray-900">회원가입</h2>
       </div>
 
