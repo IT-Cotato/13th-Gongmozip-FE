@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon, CheckIcon } from "./_components/icons";
 import { ApiError } from "@/lib/http";
 import { useChangePasswordMutation } from "@/queries/useChangePasswordMutation";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494] border";
@@ -19,6 +20,16 @@ const PASSWORD_CHECKS = [
 export default function ChangePasswordPage() {
   const router = useRouter();
   const changePasswordMutation = useChangePasswordMutation();
+  const profileQuery = useMemberProfileQuery();
+  // 소셜 로그인 계정은 비밀번호가 없어 변경할 수 없다. 마이페이지에서는 진입 링크를
+  // 아예 숨기지만, URL로 직접 들어오는 경우까지 막기 위해 라우트 자체도 보호한다.
+  const isSocialLogin = Boolean(profileQuery.data?.snsLinked);
+
+  useEffect(() => {
+    if (isSocialLogin) {
+      router.replace("/mypage");
+    }
+  }, [isSocialLogin, router]);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");

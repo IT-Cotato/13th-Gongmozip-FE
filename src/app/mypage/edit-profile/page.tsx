@@ -6,6 +6,7 @@ import { ChevronLeftIcon } from "./_components/icons";
 import { ApiError } from "@/lib/http";
 import {
   useMemberProfileQuery,
+  getSnsLoginHint,
   type MemberGender,
   type MemberProfile,
 } from "@/queries/useMemberProfileQuery";
@@ -160,8 +161,10 @@ function EditProfileForm({ profile }: { profile: MemberProfile }) {
           >
             {profile.email}
           </div>
-          {profile.snsType === "KAKAO" && (
-            <p className="px-1 text-xs leading-[1.35] text-[#949494]">카카오톡 로그인 사용중</p>
+          {profile.snsType && (
+            <p className="px-1 text-xs leading-[1.35] text-[#949494]">
+              {getSnsLoginHint(profile.snsType)}
+            </p>
           )}
         </div>
 
