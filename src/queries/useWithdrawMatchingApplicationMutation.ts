@@ -2,8 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
 
+import { COLLABORATION_DISTANCE_QUERY_KEY } from "./useCollaborationDistanceQuery";
 import { matchingEligibilityQueryKey } from "./useMatchingEligibilityQuery";
-import { MYPAGE_SUMMARY_QUERY_KEY_PREFIX } from "./useMypageSummaryQuery";
+import {
+  MYPAGE_SUMMARY_QUERY_KEY_PREFIX,
+  type MypageSummary,
+} from "./useMypageSummaryQuery";
 import { todayMatchingResultQueryKey } from "./useTodayMatchingResultQuery";
 import {
   todayMatchingApplicationQueryKey,
@@ -35,6 +39,10 @@ export function useWithdrawMatchingApplicationMutation() {
   return useMutation({
     mutationFn: withdrawMatchingApplication,
     onSuccess: (data) => {
+      const currentCollaborationDistance = data.currentCollaborationDistance;
+      const shouldUpdateCollaborationDistance =
+        data.withdrawalType === "PENALIZED_PASS" && data.collaborationPenalty > 0;
+
       queryClient.setQueryData<TodayMatchingApplication>(
         todayMatchingApplicationQueryKey,
         (current) =>
@@ -44,7 +52,7 @@ export function useWithdrawMatchingApplicationMutation() {
                 appliedToday: true,
                 applicationId: data.applicationId,
                 status: data.status,
-                collaborationDistance: data.currentCollaborationDistance,
+                collaborationDistance: currentCollaborationDistance,
                 withdrawal: {
                   withdrawable: false,
                   type: data.withdrawalType,
@@ -55,12 +63,31 @@ export function useWithdrawMatchingApplicationMutation() {
             : current,
       );
 
+      if (shouldUpdateCollaborationDistance) {
+        queryClient.setQueriesData<MypageSummary>(
+          { queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX },
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  collaborationDistance: {
+                    ...current.collaborationDistance,
+                    current: currentCollaborationDistance,
+                    progress:
+                      current.collaborationDistance.max > 0
+                        ? currentCollaborationDistance / current.collaborationDistance.max
+                        : 0,
+                  },
+                }
+              : current,
+        );
+        void queryClient.invalidateQueries({ queryKey: COLLABORATION_DISTANCE_QUERY_KEY });
+        void queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
+      }
+
       void queryClient.invalidateQueries({ queryKey: matchingEligibilityQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayMatchingApplicationQueryKey });
       void queryClient.invalidateQueries({ queryKey: todayMatchingResultQueryKey });
-      // 취소/패스는 협업거리를 깎는다 - 마이페이지 요약(협업거리 게이지)도 함께
-      // 갱신해야 마이페이지에서 감소분이 바로 보인다.
-      void queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
     },
   });
 }

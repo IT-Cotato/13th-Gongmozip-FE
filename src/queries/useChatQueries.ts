@@ -15,6 +15,7 @@ import type {
   ChatSenderType,
   ChatMessageType,
   ChatRoom,
+  ChatRoomAvatarItem,
 } from "@/app/chat/_data/mockMessages";
 import type { RecommendedContest } from "@/app/chat/_components/leader-election/types";
 import type { ReviewMember } from "@/app/chat/_components/member-review/types";
@@ -33,8 +34,20 @@ export type ChatMessageResponse = UnknownRecord;
 export type ContestCandidateResponse = UnknownRecord;
 export type ContestVoteStatusResponse = UnknownRecord;
 export type ReviewTargetResponse = UnknownRecord;
-export type LeaderRecommendationStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | (string & {});
+export type LeaderRecommendationStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+  | (string & {});
 export type ChatRealtimeStatus = "idle" | "connecting" | "connected" | "error";
+
+type ChatCharacterType =
+  | "LEAD_RUNNER"
+  | "TRACK_RUNNER"
+  | "BOOST_RUNNER"
+  | "BOOSTER_RUNNER"
+  | "FREE_RUNNER";
 
 export type TeamMembersResponse = {
   chatbotEnabled: boolean;
@@ -92,8 +105,10 @@ export type LeaderRecommendation = {
 };
 
 export const chatTeamsQueryKey = ["chat", "teams"] as const;
-export const chatTeamMembersQueryKey = (teamId: string) => ["chat", "teams", teamId, "members"] as const;
-export const chatTeamMessagesQueryKey = (teamId: string) => ["chat", "teams", teamId, "messages"] as const;
+export const chatTeamMembersQueryKey = (teamId: string) =>
+  ["chat", "teams", teamId, "members"] as const;
+export const chatTeamMessagesQueryKey = (teamId: string) =>
+  ["chat", "teams", teamId, "messages"] as const;
 export const contestCandidatesQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "contest-candidates"] as const;
 export const contestVotesQueryKey = (teamId: string) =>
@@ -103,9 +118,33 @@ export const reviewTargetsQueryKey = (teamId: string) =>
 export const leaderRecommendationQueryKey = (teamId: string) =>
   ["chat", "teams", teamId, "leader-recommendation"] as const;
 
+const CHARACTER_AVATAR_META: Record<ChatCharacterType, Required<ChatRoomAvatarItem>> = {
+  LEAD_RUNNER: {
+    bgColor: "#FFF1EE",
+    src: "/images/test/lead.png",
+  },
+  FREE_RUNNER: {
+    bgColor: "#EBF7FE",
+    src: "/images/test/free.png",
+  },
+  BOOST_RUNNER: {
+    bgColor: "#FEFDEA",
+    src: "/images/test/boost.png",
+  },
+  BOOSTER_RUNNER: {
+    bgColor: "#FEFDEA",
+    src: "/images/test/boost.png",
+  },
+  TRACK_RUNNER: {
+    bgColor: "#EEFBF0",
+    src: "/images/test/track.png",
+  },
+};
+
 export function fetchChatTeams() {
   return apiFetch<
-    ChatTeamResponse[] | { rooms?: ChatTeamResponse[]; teams?: ChatTeamResponse[]; content?: ChatTeamResponse[] }
+    | ChatTeamResponse[]
+    | { rooms?: ChatTeamResponse[]; teams?: ChatTeamResponse[]; content?: ChatTeamResponse[] }
   >("/api/teams");
 }
 
@@ -320,10 +359,7 @@ export function reportUser(payload: ReportUserPayload) {
   });
 }
 
-export function useChatRealtime(
-  teamId: string,
-  options: { enabled?: boolean } = {},
-) {
+export function useChatRealtime(teamId: string, options: { enabled?: boolean } = {}) {
   const queryClient = useQueryClient();
   const accessToken = useAuthStore((state) => state.accessToken);
   const normalizedAccessToken = useMemo(() => normalizeAccessToken(accessToken), [accessToken]);
@@ -383,7 +419,9 @@ export function useChatRealtime(
         setErrorMessage("채팅 서버에 연결하지 못했습니다.");
       },
       onWebSocketClose: () => {
-        setStatus((currentStatus) => (currentStatus === "connected" ? "connecting" : currentStatus));
+        setStatus((currentStatus) =>
+          currentStatus === "connected" ? "connecting" : currentStatus,
+        );
       },
     });
 
@@ -467,12 +505,11 @@ export function fetchLeaderRecommendation(teamId: string) {
 }
 
 export function createLeaderRecommendation(teamId: string) {
-  return apiFetch<Pick<LeaderRecommendation, "recommendationId" | "teamId" | "status" | "createdAt">>(
-    `/api/ai/teams/${encodeURIComponent(teamId)}/leader-recommendation`,
-    {
-      method: "POST",
-    },
-  );
+  return apiFetch<
+    Pick<LeaderRecommendation, "recommendationId" | "teamId" | "status" | "createdAt">
+  >(`/api/ai/teams/${encodeURIComponent(teamId)}/leader-recommendation`, {
+    method: "POST",
+  });
 }
 
 export function shareContestToChat(teamId: string, contestId: number | string) {
@@ -662,7 +699,8 @@ export function useVoteContestCandidatesMutation(teamId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (contestCandidateIds: number[]) => voteContestCandidates(teamId, contestCandidateIds),
+    mutationFn: (contestCandidateIds: number[]) =>
+      voteContestCandidates(teamId, contestCandidateIds),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contestVotesQueryKey(teamId) });
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
@@ -863,7 +901,9 @@ function appendChatMessagePages(
   if (
     messageId !== undefined &&
     pages.some((page) =>
-      page.messages.some((currentMessage) => getValue(currentMessage, ["messageId", "id"]) === messageId),
+      page.messages.some(
+        (currentMessage) => getValue(currentMessage, ["messageId", "id"]) === messageId,
+      ),
     )
   ) {
     return current;
@@ -895,10 +935,7 @@ function getRealtimeErrorMessage(value: unknown) {
     return "메시지 처리 중 오류가 발생했습니다.";
   }
 
-  return (
-    getString(value, ["message", "error", "reason"]) ??
-    "메시지 처리 중 오류가 발생했습니다."
-  );
+  return getString(value, ["message", "error", "reason"]) ?? "메시지 처리 중 오류가 발생했습니다.";
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -935,17 +972,79 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
     getString(team, ["lastMessage", "lastMessageContent", "lastMessagePreview", "recentMessage"]) ??
     "아직 메시지가 없습니다.";
 
+  const avatarItems = getChatRoomAvatarItems(team);
+
   return {
     id,
     title,
     memberCount,
     lastMessage,
-    lastMessageAt: formatRelativeTime(getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"])),
+    lastMessageAt: formatRelativeTime(
+      getString(team, ["lastMessageAt", "lastMessageCreatedAt", "updatedAt"]),
+    ),
     unreadCount: getNumber(team, ["unreadCount", "unreadMessageCount"]) ?? 0,
-    avatarSrcs: getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
+    avatarItems,
+    avatarSrcs:
+      avatarItems.length > 0
+        ? avatarItems.map((item) => item.src).filter((src): src is string => Boolean(src))
+        : getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
     projectEndedAt:
       getString(team, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
   };
+}
+
+function getChatRoomAvatarItems(team: ChatTeamResponse): ChatRoomAvatarItem[] {
+  const memberItems = getChatRoomMembers(team)
+    .map(getChatRoomMemberAvatarItem)
+    .filter((item): item is ChatRoomAvatarItem => item !== null);
+
+  if (memberItems.length > 0) {
+    return memberItems;
+  }
+
+  const characterTypes = getStringArray(team, [
+    "characterTypes",
+    "memberCharacterTypes",
+    "collaborationCharacterTypes",
+  ]);
+
+  if (characterTypes.length > 0) {
+    return characterTypes
+      .map((characterType) => getCharacterAvatarMeta(characterType))
+      .filter((item): item is Required<ChatRoomAvatarItem> => item !== null);
+  }
+
+  return getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]).map(
+    (src) => ({ src }),
+  );
+}
+
+function getChatRoomMembers(team: ChatTeamResponse): UnknownRecord[] {
+  const value = getValue(team, ["members", "teamMembers", "participants", "teamMemberResponses"]);
+
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function getChatRoomMemberAvatarItem(member: UnknownRecord): ChatRoomAvatarItem | null {
+  const characterMeta = getCharacterAvatarMeta(
+    getString(member, ["characterType", "collaborationCharacterType"]),
+  );
+
+  if (characterMeta) {
+    return characterMeta;
+  }
+
+  const src = getString(member, ["characterImageUrl", "profileImageUrl", "avatarUrl"]);
+
+  return src ? { src } : null;
+}
+
+function getCharacterAvatarMeta(characterType: string | undefined): Required<ChatRoomAvatarItem> | null {
+  if (!characterType || !(characterType in CHARACTER_AVATAR_META)) {
+    return null;
+  }
+
+  return CHARACTER_AVATAR_META[characterType as ChatCharacterType];
 }
 
 function updateChatTeamUnreadCount(current: unknown, teamId: string, unreadCount: number): unknown {
@@ -971,7 +1070,11 @@ function updateChatTeamUnreadCount(current: unknown, teamId: string, unreadCount
   };
 }
 
-function updateChatTeamUnreadCountItem(item: unknown, teamId: string, unreadCount: number): unknown {
+function updateChatTeamUnreadCountItem(
+  item: unknown,
+  teamId: string,
+  unreadCount: number,
+): unknown {
   if (!isRecord(item)) {
     return item;
   }
@@ -997,15 +1100,20 @@ function mapChatMember(
   const id = String(getValue(member, ["teamMemberId", "id", "memberId", "profileId"]) ?? index);
   const name = getString(member, ["nickname", "name", "memberName", "profileName"]) ?? "팀원";
   const avatarTones: ChatMember["avatarTone"][] = ["green", "blue", "coral"];
-  const me = getBoolean(member, ["me", "isMe"]) ?? (myTeamMemberId !== null && id === String(myTeamMemberId));
+  const me =
+    getBoolean(member, ["me", "isMe"]) ??
+    (myTeamMemberId !== null && id === String(myTeamMemberId));
+  const role = getString(member, ["role", "teamRole"]);
 
   return {
     id,
     profileId: getNumber(member, ["profileId"]),
     name,
     isMe: me,
+    isLeader: role === "LEADER" || getBoolean(member, ["leader", "isLeader"]) === true,
     avatarTone: avatarTones[index % avatarTones.length] ?? "green",
-    avatarSrc: getString(member, ["profileImageUrl", "avatarUrl", "characterImageUrl"]) ?? undefined,
+    avatarSrc:
+      getString(member, ["profileImageUrl", "avatarUrl", "characterImageUrl"]) ?? undefined,
     school: getString(member, ["school", "schoolName"]) ?? undefined,
     major: getString(member, ["major", "majorName"]) ?? undefined,
     grade: getString(member, ["grade"]) ?? undefined,
@@ -1014,8 +1122,14 @@ function mapChatMember(
 }
 
 function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): ChatMessage {
-  const senderId = getValue(message, ["senderTeamMemberId", "teamMemberId", "senderId", "memberId"]);
-  const sender = senderId === undefined ? undefined : members.find((member) => member.id === String(senderId));
+  const senderId = getValue(message, [
+    "senderTeamMemberId",
+    "teamMemberId",
+    "senderId",
+    "memberId",
+  ]);
+  const sender =
+    senderId === undefined ? undefined : members.find((member) => member.id === String(senderId));
   const messageType = getMessageType(message);
   const senderType = getSenderType(message);
   const isChatbotMessage = senderType === "CHATBOT";
@@ -1027,7 +1141,9 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     (isChatbotMessage ? "\uCC57\uBD07" : isSystemMessage ? "\uC2DC\uC2A4\uD15C" : "\uD300\uC6D0");
 
   return {
-    id: String(getValue(message, ["messageId", "id"]) ?? `${senderName}-${getMessageTime(message)}`),
+    id: String(
+      getValue(message, ["messageId", "id"]) ?? `${senderName}-${getMessageTime(message)}`,
+    ),
     senderId: senderId === undefined ? undefined : String(senderId),
     senderName,
     body: getString(message, ["content", "body", "message"]) ?? "",
@@ -1037,37 +1153,75 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     messageType,
     metadata: getMessageMetadata(message),
     avatarTone: isChatbotMessage || isSystemMessage ? "robot" : (sender?.avatarTone ?? "green"),
-    avatarSrc: isChatbotMessage || isSystemMessage
-      ? "/icons/chat/chat_bot.svg"
-      : (sender?.avatarSrc ?? getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ?? undefined),
+    avatarSrc:
+      isChatbotMessage || isSystemMessage
+        ? "/icons/chat/chat_bot.svg"
+        : (sender?.avatarSrc ??
+          getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ??
+          undefined),
   };
 }
 
 function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedContest {
-  const contestId = getNumber(candidate, ["contestId", "id"]);
+  const contest = getRecord(candidate, "contest");
+  const contestId =
+    (contest ? getNumber(contest, ["contestId", "id"]) : undefined) ??
+    getNumber(candidate, ["contestId"]);
   const contestCandidateId =
-    getNumber(candidate, ["contestCandidateId", "candidateId"]) ?? contestId ?? 0;
-  const dday = getString(candidate, ["dDay", "dday", "deadlineLabel"]) ?? "";
-  const viewCount = getNumber(candidate, ["viewCount", "views"]) ?? 0;
+    getNumber(candidate, ["contestCandidateId", "candidateId", "id"]) ?? contestId ?? 0;
+  const dday =
+    getString(candidate, ["dDay", "dday", "deadlineLabel"]) ??
+    (contest ? getString(contest, ["dDay", "dday", "deadlineLabel"]) : undefined) ??
+    "";
+  const viewCount =
+    (contest ? getNumber(contest, ["viewCount", "views"]) : undefined) ??
+    getNumber(candidate, ["viewCount", "views"]) ??
+    0;
 
   return {
     id: String(contestCandidateId),
     contestId,
     contestCandidateId,
-    category: getString(candidate, ["category", "contestCategory"]) ?? "공모전",
+    candidateDeadlineAt:
+      getString(candidate, ["candidateDeadlineAt", "candidateEndsAt", "candidateClosedAt"]) ??
+      (contest ? getString(contest, ["candidateDeadlineAt", "candidateEndsAt"]) : undefined),
+    category:
+      (contest ? getString(contest, ["category", "contestCategory"]) : undefined) ??
+      getString(candidate, ["category", "contestCategory"]) ??
+      "공모전",
     dday,
     imageSrc:
-      getString(candidate, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"]) ?? undefined,
-    organizer: getString(candidate, ["organizer", "host", "organization"]) ?? "",
+      (contest
+        ? getString(contest, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"])
+        : undefined) ??
+      getString(candidate, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"]) ??
+      undefined,
+    organizer:
+      (contest ? getString(contest, ["organizer", "host", "organization"]) : undefined) ??
+      getString(candidate, ["organizer", "host", "organization"]) ??
+      "",
+    isRecommended:
+      getBoolean(candidate, ["recommended", "isRecommended", "aiRecommended", "isAiRecommended"]) ??
+      getString(candidate, ["source", "type"])?.toUpperCase().includes("RECOMMEND") ??
+      false,
     title:
+      (contest ? getString(contest, ["title", "contestTitle", "name"]) : undefined) ??
       getString(candidate, ["title", "contestTitle", "name"]) ??
       (contestId ? `공모전 #${contestId}` : "공모전"),
+    voteDeadlineAt:
+      getString(candidate, ["voteDeadlineAt", "voteEndsAt", "voteClosedAt"]) ??
+      (contest ? getString(contest, ["voteDeadlineAt", "voteEndsAt"]) : undefined),
     viewCount: viewCount.toLocaleString("ko-KR"),
   };
 }
 
 function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteStatus {
-  const resultsValue = getValue(status, ["results", "voteResults", "contestCandidates", "candidates"]);
+  const resultsValue = getValue(status, [
+    "results",
+    "voteResults",
+    "contestCandidates",
+    "candidates",
+  ]);
   const results = Array.isArray(resultsValue)
     ? resultsValue.filter(isRecord).map(mapContestVoteResultItem)
     : [];
@@ -1075,7 +1229,7 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     getNumber(status, ["participantCount", "voterCount", "totalVoteCount", "totalVotes"]) ??
     results.reduce((sum, result) => sum + result.voteCount, 0);
   const explicitStatus = getString(status, ["result", "status", "voteStatus"])?.toUpperCase();
-  const isTie = getBoolean(status, ["tie", "isTie"]) ?? (explicitStatus === "TIE");
+  const isTie = getBoolean(status, ["tie", "isTie"]) ?? explicitStatus === "TIE";
   const hasVotes =
     getBoolean(status, ["hasVotes"]) ??
     (explicitStatus === "NO_VOTES" || explicitStatus === "NO_VOTE"
@@ -1092,9 +1246,17 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
 }
 
 function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem {
+  const candidate = getRecord(result, "candidate") ?? getRecord(result, "contestCandidate");
+  const contest =
+    (candidate ? getRecord(candidate, "contest") : undefined) ?? getRecord(result, "contest");
+
   return {
-    contestCandidateId: getNumber(result, ["contestCandidateId", "candidateId", "id"]),
-    contestId: getNumber(result, ["contestId"]),
+    contestCandidateId:
+      getNumber(result, ["contestCandidateId", "candidateId", "id"]) ??
+      (candidate ? getNumber(candidate, ["contestCandidateId", "candidateId", "id"]) : undefined),
+    contestId:
+      (contest ? getNumber(contest, ["contestId", "id"]) : undefined) ??
+      getNumber(result, ["contestId"]),
     voteCount: getNumber(result, ["voteCount", "votes", "count"]) ?? 0,
     percent: getNumber(result, ["percent", "votePercent", "rate"]) ?? 0,
     isWinner: getBoolean(result, ["winner", "isWinner"]) ?? false,
@@ -1102,7 +1264,9 @@ function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem 
 }
 
 function mapReviewTarget(target: ReviewTargetResponse): ReviewMember {
-  const id = String(getValue(target, ["teamMemberId", "revieweeTeamMemberId", "id", "memberId"]) ?? "");
+  const id = String(
+    getValue(target, ["teamMemberId", "revieweeTeamMemberId", "id", "memberId"]) ?? "",
+  );
   const role = getString(target, ["role", "teamRole"]);
 
   return {
@@ -1182,6 +1346,12 @@ function getValue(record: UnknownRecord, keys: string[]) {
   }
 
   return undefined;
+}
+
+function getRecord(record: UnknownRecord, key: string): UnknownRecord | undefined {
+  const value = record[key];
+
+  return isRecord(value) ? value : undefined;
 }
 
 function getString(record: UnknownRecord, keys: string[]) {
