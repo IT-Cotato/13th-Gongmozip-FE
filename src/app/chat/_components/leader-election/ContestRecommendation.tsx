@@ -15,12 +15,15 @@ const popoverShadow =
 
 function formatCandidateTimer(seconds: number) {
   const safeSeconds = Math.max(0, seconds);
-  const minutes = Math.floor(safeSeconds / 60)
+  const hours = Math.floor(safeSeconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
     .toString()
     .padStart(2, "0");
   const restSeconds = (safeSeconds % 60).toString().padStart(2, "0");
 
-  return `00 : ${minutes} : ${restSeconds}`;
+  return `${hours} : ${minutes} : ${restSeconds}`;
 }
 
 export function ContestRecommendationMessage({
@@ -893,7 +896,7 @@ function ContestListCard({
         title={title}
       />
       <p className="mt-1 text-[12px] leading-[1.35] font-semibold text-color-coral-500">
-        *AI 챗봇이 추천한 공모전입니다.
+        *공모집이 추천한 공모전입니다.
       </p>
 
       <div className="mt-4 flex flex-col gap-3">

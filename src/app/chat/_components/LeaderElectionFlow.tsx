@@ -95,7 +95,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const router = useRouter();
   const membersQuery = useChatTeamMembersQuery(roomId);
   const chatMembers = membersQuery.data?.chatMembers ?? EMPTY_CHAT_MEMBERS;
+  const contestCandidateDeadlineAt = membersQuery.data?.contestCandidateDeadlineAt;
   const leaderSelectionDeadlineAt = membersQuery.data?.leaderSelectionDeadlineAt;
+  const leaderVoteDeadlineAt = membersQuery.data?.leaderVoteDeadlineAt;
   const projectEndedAt = membersQuery.data?.projectEndedAt;
   const messagesQuery = useChatTeamMessagesQuery(roomId, chatMembers, {
     enabled: membersQuery.isSuccess,
@@ -552,6 +554,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     void loadPreviousMessages();
   };
 
+  const isLeaderOverlay = sheetState === "leaderComplete";
   const isContestOverlay = sheetState === "contestResult" || sheetState === "contestDetail";
   const apiContestCandidates = contestCandidatesQuery.data ?? EMPTY_CONTEST_CANDIDATES;
   const contestCandidates = useMemo(
@@ -586,7 +589,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     (message) => message.messageType === "LEADER_RESULT_CARD",
   );
   const latestLeaderVoteMessage = useMemo(
-    () => [...serverMessages].reverse().find((message) => message.messageType === "LEADER_VOTE_CARD"),
+    () =>
+      [...serverMessages].reverse().find((message) => message.messageType === "LEADER_VOTE_CARD"),
     [serverMessages],
   );
   const latestLeaderResultMessage = useMemo(
@@ -611,10 +615,17 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
       ["voteDeadlineAt", "voteEndsAt", "voteClosedAt", "deadlineAt", "expiresAt"],
+      [],
+      now,
+    ) ??
+    getRemainingSeconds(contestCandidateDeadlineAt ?? undefined, now) ??
+    getRemainingSecondsFromContests(contestCandidates, "voteDeadlineAt", now) ??
+    getRemainingSecondsFromMetadata(
+      latestContestVoteReminderMessage?.metadata,
+      [],
       ["voteRemainingSeconds", "remainingSeconds"],
       now,
     ) ??
-    getRemainingSecondsFromContests(contestCandidates, "voteDeadlineAt", now) ??
     DEFAULT_CONTEST_VOTE_SECONDS;
   const isContestVoteClosed = voteCountdownSeconds <= 0;
   const leaderVoteCountdownSeconds =
@@ -628,20 +639,36 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         "deadlineAt",
         "expiresAt",
       ],
+      [],
+      now,
+    ) ??
+    getRemainingSeconds(leaderVoteDeadlineAt ?? undefined, now) ??
+    getRemainingSeconds(leaderSelectionDeadlineAt ?? undefined, now) ??
+    getRemainingSecondsFromMetadata(
+      latestLeaderVoteMessage?.metadata,
+      [],
       ["leaderVoteRemainingSeconds", "voteRemainingSeconds", "remainingSeconds"],
       now,
     ) ??
-    getRemainingSeconds(leaderSelectionDeadlineAt ?? undefined, now) ??
     DEFAULT_LEADER_VOTE_SECONDS;
   const isLeaderVoteResultReady = isLeaderVoteReadyToShow(
     latestLeaderResultMessage?.metadata ?? latestLeaderVoteMessage?.metadata,
     chatMembers,
     leaderVoteCountdownSeconds,
   );
+  const electedLeader = getLeaderResultMember(latestLeaderResultMessage, chatMembers);
   const activeContestCandidates = activeContestCandidateIds?.length
     ? contestCandidates.filter((contest) => activeContestCandidateIds.includes(contest.id))
     : contestCandidates;
-  const candidateContests = activeContestCandidates;
+  const userAddedContestCandidates = activeContestCandidateIds?.length
+    ? contestCandidates.filter(
+        (contest) => !activeContestCandidateIds.includes(contest.id) && !contest.isRecommended,
+      )
+    : [];
+  const candidateContests = mergeContestCandidates(
+    activeContestCandidates,
+    userAddedContestCandidates,
+  );
   const addedContestIds = candidateContests.map((contest) =>
     String(contest.contestId ?? contest.id),
   );
@@ -696,16 +723,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         }
         remainingSeconds={voteCountdownSeconds}
         selectedContestIds={selectedContestIds}
-      />
-    );
-  }
-
-  if (sheetState === "leaderComplete" && selectedCandidate) {
-    return (
-      <VoteCompleteSheet
-        isResultReady={isLeaderVoteResultReady && hasLeaderResultMessage}
-        onShowResult={() => setSheetState("closed")}
-        remainingSeconds={leaderVoteCountdownSeconds}
       />
     );
   }
@@ -801,7 +818,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             isLeaderCandidacySubmitted={isLeaderCandidacySubmitted}
             isLeaderVoteFlowEnded={hasLeaderResultMessage && isLeaderVoteResultReady}
             isLeaderVoteSubmitted={isLeaderVoteSubmitted}
-            isLeaderVoteResultReady={isLeaderVoteResultReady}
             leaderRecommendation={leaderRecommendationQuery.data}
             key={message.id}
             message={message}
@@ -887,6 +903,23 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         </div>
       ) : null}
 
+      {isLeaderOverlay ? (
+        <div
+          className="absolute inset-0 z-40 flex items-end bg-color-gray-850/60"
+          onClick={closeActiveSheet}
+        >
+          <div className="w-full" onClick={(event) => event.stopPropagation()}>
+            {sheetState === "leaderComplete" ? (
+              <VoteCompleteSheet
+                isResultReady={hasLeaderResultMessage && Boolean(electedLeader)}
+                onShowResult={() => setSheetState("closed")}
+                remainingSeconds={leaderVoteCountdownSeconds}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {isContestOverlay ? (
         <div
           className="absolute inset-0 z-40 flex items-center justify-center bg-color-gray-850/60"
@@ -961,7 +994,6 @@ function ChatMessageRenderer({
   isLeaderCandidacySubmitted,
   isLeaderVoteFlowEnded,
   isLeaderRecommendationPending,
-  isLeaderVoteResultReady,
   isLeaderVoteSubmitted,
   isContestVoteClosed,
   leaderRecommendation,
@@ -984,7 +1016,6 @@ function ChatMessageRenderer({
   isLeaderCandidacySubmitted: boolean;
   isLeaderVoteFlowEnded: boolean;
   isLeaderRecommendationPending: boolean;
-  isLeaderVoteResultReady: boolean;
   isLeaderVoteSubmitted: boolean;
   isContestVoteClosed: boolean;
   leaderRecommendation?: LeaderRecommendation;
@@ -1095,12 +1126,7 @@ function ChatMessageRenderer({
   }
 
   if (message.messageType === "LEADER_RESULT_CARD") {
-    if (!isLeaderVoteResultReady) {
-      return null;
-    }
-
-    const leaderTeamMemberId = getMetadataNumber(message.metadata, "leaderTeamMemberId");
-    const leader = chatMembers.find((member) => member.id === String(leaderTeamMemberId));
+    const leader = getLeaderResultMember(message, chatMembers);
 
     return leader ? (
       <LeaderElectedMessage
@@ -1131,10 +1157,13 @@ function ChatMessageRenderer({
   }
 
   if (message.messageType === "CONTEST_RECOMMEND_CARD") {
-    const contestIds = getMetadataNumberArray(message.metadata, "contestIds");
+    const contestIds = getMetadataNumberArray(message.metadata, "contestIds").slice(0, 2);
     const contests = getContestsByIds(contestCandidates, contestIds, "contestId");
-    const displayContests =
-      contests.length > 0 ? contests : contestIds.map(createPlaceholderContest);
+    const displayContests = contestIds.map(
+      (contestId) =>
+        contests.find((contest) => String(contest.contestId ?? contest.id) === String(contestId)) ??
+        createPlaceholderContest(contestId),
+    );
     return (
       <ContestRecommendationMessage
         body={message.body}
@@ -1427,17 +1456,34 @@ function isLeaderVoteReadyToShow(
 
   const votedCount =
     getMetadataNumber(metadata, "votedCount") ??
+    getMetadataNumber(metadata, "completedVoterCount") ??
+    getMetadataNumber(metadata, "votedMemberCount") ??
+    getMetadataNumber(metadata, "votedTeamMemberCount") ??
     getMetadataNumber(metadata, "voteCount") ??
     getMetadataNumber(metadata, "participantCount") ??
     getMetadataNumber(metadata, "leaderVoteParticipantCount");
+  const votedMemberIds = getMetadataNumberArrayByKeys(metadata, [
+    "votedMemberIds",
+    "votedTeamMemberIds",
+    "participantIds",
+    "participantTeamMemberIds",
+    "leaderVoteParticipantIds",
+    "leaderVoteParticipantTeamMemberIds",
+  ]);
   const totalCount =
     getMetadataNumber(metadata, "totalVoterCount") ??
+    getMetadataNumber(metadata, "totalVoteCount") ??
+    getMetadataNumber(metadata, "totalMemberCount") ??
+    getMetadataNumber(metadata, "totalTeamMemberCount") ??
     getMetadataNumber(metadata, "voterCount") ??
     getMetadataNumber(metadata, "teamMemberCount") ??
     getMetadataNumber(metadata, "memberCount") ??
     members.filter((member) => !member.isChatbot).length;
 
-  return votedCount !== undefined && totalCount > 0 && votedCount >= totalCount;
+  return (
+    totalCount > 0 &&
+    ((votedCount !== undefined && votedCount >= totalCount) || votedMemberIds.length >= totalCount)
+  );
 }
 
 function getChatbotNoticeAction(body: string): "added" | "removed" | null {
@@ -1582,6 +1628,48 @@ function getLeaderRecommendedMember(
   return leaderRecommendation?.recommendedMemberNickname
     ? members.find((member) => member.name === leaderRecommendation.recommendedMemberNickname)
     : undefined;
+}
+
+function getLeaderResultMember(message: ChatMessage | undefined, members: ChatMember[]) {
+  const metadata = message?.metadata;
+  const leaderTeamMemberId =
+    getMetadataNumber(metadata, "leaderTeamMemberId") ??
+    getMetadataNumber(metadata, "electedLeaderTeamMemberId") ??
+    getMetadataNumber(metadata, "electedTeamMemberId") ??
+    getMetadataNumber(metadata, "selectedTeamMemberId") ??
+    getMetadataNumber(metadata, "candidateTeamMemberId") ??
+    getMetadataNumber(metadata, "leaderMemberId") ??
+    getMetadataNumber(metadata, "memberId") ??
+    getMetadataNumber(metadata, "teamMemberId") ??
+    getMetadataNumber(metadata, "id");
+
+  const leaderById = leaderTeamMemberId
+    ? members.find((member) => member.id === String(leaderTeamMemberId))
+    : undefined;
+
+  if (leaderById) {
+    return leaderById;
+  }
+
+  const leaderName =
+    getMetadataString(metadata, "leaderNickname") ??
+    getMetadataString(metadata, "leaderName") ??
+    getMetadataString(metadata, "electedLeaderNickname") ??
+    getMetadataString(metadata, "electedLeaderName") ??
+    getMetadataString(metadata, "nickname") ??
+    getMetadataString(metadata, "name");
+
+  const leaderByName = leaderName ? members.find((member) => member.name === leaderName) : undefined;
+
+  if (leaderByName) {
+    return leaderByName;
+  }
+
+  const body = message?.body ?? "";
+
+  return members.find(
+    (member) => !member.isChatbot && member.name.length > 0 && body.includes(member.name),
+  );
 }
 
 function getMembersByMetadataIds(members: LeaderCandidate[], ids: Array<number | string>) {

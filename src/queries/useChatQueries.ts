@@ -52,7 +52,10 @@ type ChatCharacterType =
 
 export type TeamMembersResponse = {
   chatbotEnabled: boolean;
+  contestCandidateDeadlineAt: string | null;
+  leaderCandidacyDeadlineAt: string | null;
   members: ChatTeamMemberResponse[];
+  leaderVoteDeadlineAt: string | null;
   leaderSelectionDeadlineAt: string | null;
   myTeamMemberId: number | string | null;
   projectEndedAt: string | null;
@@ -163,7 +166,10 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
         members?: ChatTeamMemberResponse[];
         teamMembers?: ChatTeamMemberResponse[];
         chatbotEnabled?: boolean;
+        contestCandidateDeadlineAt?: string | null;
+        leaderCandidacyDeadlineAt?: string | null;
         leaderSelectionDeadlineAt?: string | null;
+        leaderVoteDeadlineAt?: string | null;
         myTeamMemberId?: number | string | null;
       }
   >(`/api/teams/${encodeURIComponent(teamId)}/members`);
@@ -171,7 +177,10 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
   if (Array.isArray(data)) {
     return {
       chatbotEnabled: true,
+      contestCandidateDeadlineAt: null,
+      leaderCandidacyDeadlineAt: null,
       members: data,
+      leaderVoteDeadlineAt: null,
       leaderSelectionDeadlineAt: null,
       myTeamMemberId: findMyTeamMemberId(data),
       projectEndedAt: null,
@@ -182,7 +191,10 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
 
   return {
     chatbotEnabled: data.chatbotEnabled ?? true,
+    contestCandidateDeadlineAt: data.contestCandidateDeadlineAt ?? null,
+    leaderCandidacyDeadlineAt: data.leaderCandidacyDeadlineAt ?? null,
     members,
+    leaderVoteDeadlineAt: data.leaderVoteDeadlineAt ?? null,
     leaderSelectionDeadlineAt: data.leaderSelectionDeadlineAt ?? null,
     myTeamMemberId: data.myTeamMemberId ?? findMyTeamMemberId(members),
     projectEndedAt:
