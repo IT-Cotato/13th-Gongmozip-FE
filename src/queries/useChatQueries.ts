@@ -20,7 +20,9 @@ import type {
 import type { RecommendedContest } from "@/app/chat/_components/leader-election/types";
 import type { ReviewMember } from "@/app/chat/_components/member-review/types";
 import { API_BASE_URL, apiFetch, isBaseResponse } from "@/lib/http";
+import { getNextImageSafeSrc } from "@/lib/imageSources";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { contestCategoryLabels } from "./useContestsQuery";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -310,7 +312,7 @@ export type LeaderCandidacyPayload = {
 };
 
 export type LeaderVotePayload = {
-  candidateTeamMemberId: number;
+  candidateTeamMemberId: number | string;
 };
 
 export type TeamProgressPayload = {
@@ -1036,7 +1038,9 @@ function getChatRoomMemberAvatarItem(member: UnknownRecord): ChatRoomAvatarItem 
   return src ? { src } : null;
 }
 
-function getCharacterAvatarMeta(characterType: string | undefined): Required<ChatRoomAvatarItem> | null {
+function getCharacterAvatarMeta(
+  characterType: string | undefined,
+): Required<ChatRoomAvatarItem> | null {
   if (!characterType || !(characterType in CHARACTER_AVATAR_META)) {
     return null;
   }
@@ -1169,11 +1173,26 @@ function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedCo
   const dday =
     getString(candidate, ["dDay", "dday", "deadlineLabel"]) ??
     (contest ? getString(contest, ["dDay", "dday", "deadlineLabel"]) : undefined) ??
-    "";
+    formatContestDday(
+      (contest ? getNumber(contest, ["daysRemaining"]) : undefined) ??
+        getNumber(candidate, ["daysRemaining"]),
+    );
   const viewCount =
-    (contest ? getNumber(contest, ["viewCount", "views"]) : undefined) ??
-    getNumber(candidate, ["viewCount", "views"]) ??
+    (contest
+      ? getNumber(contest, ["viewCount", "views", "hitCount", "hits", "readCount"])
+      : undefined) ??
+    getNumber(candidate, ["viewCount", "views", "hitCount", "hits", "readCount"]) ??
     0;
+  const imageSrc =
+    (contest
+      ? getString(contest, ["thumbnailUrl", "posterImageUrl", "imageUrl", "posterUrl"])
+      : undefined) ??
+    getString(candidate, ["thumbnailUrl", "posterImageUrl", "imageUrl", "posterUrl"]);
+  const category =
+    (contest
+      ? getString(contest, ["category", "contestCategory", "field", "fieldName", "contestField"])
+      : undefined) ??
+    getString(candidate, ["category", "contestCategory", "field", "fieldName", "contestField"]);
 
   return {
     id: String(contestCandidateId),
@@ -1182,20 +1201,28 @@ function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedCo
     candidateDeadlineAt:
       getString(candidate, ["candidateDeadlineAt", "candidateEndsAt", "candidateClosedAt"]) ??
       (contest ? getString(contest, ["candidateDeadlineAt", "candidateEndsAt"]) : undefined),
-    category:
-      (contest ? getString(contest, ["category", "contestCategory"]) : undefined) ??
-      getString(candidate, ["category", "contestCategory"]) ??
-      "공모전",
+    category: category ? (contestCategoryLabels[category] ?? category) : "공모전",
     dday,
-    imageSrc:
-      (contest
-        ? getString(contest, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"])
-        : undefined) ??
-      getString(candidate, ["posterImageUrl", "imageUrl", "thumbnailUrl", "posterUrl"]) ??
-      undefined,
+    imageSrc: getNextImageSafeSrc(imageSrc),
     organizer:
-      (contest ? getString(contest, ["organizer", "host", "organization"]) : undefined) ??
-      getString(candidate, ["organizer", "host", "organization"]) ??
+      (contest
+        ? getString(contest, [
+            "hostName",
+            "organizer",
+            "organizerName",
+            "host",
+            "organization",
+            "organizationName",
+          ])
+        : undefined) ??
+      getString(candidate, [
+        "hostName",
+        "organizer",
+        "organizerName",
+        "host",
+        "organization",
+        "organizationName",
+      ]) ??
       "",
     isRecommended:
       getBoolean(candidate, ["recommended", "isRecommended", "aiRecommended", "isAiRecommended"]) ??
@@ -1242,6 +1269,14 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     myVoted,
     results,
   };
+}
+
+function formatContestDday(daysRemaining: number | undefined) {
+  if (daysRemaining === undefined) {
+    return "";
+  }
+
+  return daysRemaining <= 0 ? "D-Day" : `D-${daysRemaining}`;
 }
 
 function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem {
