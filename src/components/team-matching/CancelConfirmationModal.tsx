@@ -17,18 +17,12 @@ export default function CancelConfirmationModal() {
   const withdrawal = todayApplication?.withdrawal;
   const applicationId = todayApplication?.applicationId;
   const canWithdraw = Boolean(applicationId) && (withdrawal?.withdrawable ?? true);
-  const expectedPenalty = withdrawal?.expectedPenalty ?? 0;
   const isWithdrawing = withdrawMutation.isPending;
   const errorMessage = withdrawMutation.error
     ? withdrawMutation.error instanceof ApiError
       ? withdrawMutation.error.message
       : "매칭 신청 취소 중 오류가 발생했어요."
     : null;
-  const withdrawalDescription = canWithdraw
-    ? expectedPenalty > 0
-      ? `취소하면 협업거리가 ${expectedPenalty}m 줄어들어요.`
-      : "지금은 감점 없이 취소할 수 있어요."
-    : "현재는 매칭 신청을 취소할 수 없어요.";
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -70,16 +64,13 @@ export default function CancelConfirmationModal() {
       }}
       ref={dialogRef}
     >
-      <section className="flex max-h-[400px] w-full max-w-[350px] shrink-0 flex-col items-center rounded-2xl bg-white px-4 pb-4 pt-2 shadow-[0_53px_15px_0_rgba(0,0,0,0),0_34px_14px_0_rgba(0,0,0,0.01),0_19px_12px_0_rgba(0,0,0,0.05),0_9px_9px_0_rgba(0,0,0,0.09),0_2px_5px_0_rgba(0,0,0,0.10)]">
+      <section className="flex max-h-[400px] w-[350px] max-w-full shrink-0 flex-col items-center rounded-2xl bg-white px-4 pb-4 pt-2 shadow-[0_53px_15px_0_rgba(0,0,0,0),0_34px_14px_0_rgba(0,0,0,0.01),0_19px_12px_0_rgba(0,0,0,0.05),0_9px_9px_0_rgba(0,0,0,0.09),0_2px_5px_0_rgba(0,0,0,0.10)]">
         <h2
-          className="mt-4 w-full text-center font-[Pretendard] text-[20px] font-medium leading-[135%] text-[#1F1F1F]"
+          className="mt-4 w-full translate-y-0.5 text-center font-[Pretendard] text-[20px] font-medium leading-[135%] text-[#1F1F1F]"
           id="matching-cancel-title"
         >
           팀원 매칭을 취소할까요?
         </h2>
-        <p className="mt-2 text-center font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#616161]">
-          {withdrawalDescription}
-        </p>
         {errorMessage ? (
           <p
             aria-live="polite"
