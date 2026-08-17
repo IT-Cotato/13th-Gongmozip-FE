@@ -24,40 +24,51 @@ function formatCandidateTimer(seconds: number) {
 }
 
 export function ContestRecommendationMessage({
+  body,
   contests,
   isActionDisabled = false,
-  isCandidateClosed,
   onRemove,
-  onShowAll,
   onStartVote,
   remainingSeconds,
+  sentAt,
   timerLabel,
   title,
 }: {
+  body?: string;
   contests: RecommendedContest[];
   isActionDisabled?: boolean;
-  isCandidateClosed: boolean;
   onRemove?: (contest: RecommendedContest) => void;
-  onShowAll: () => void;
   onStartVote: () => void;
   remainingSeconds: number;
+  sentAt?: string;
   timerLabel: string;
   title: string;
 }) {
+  const guideBody =
+    body ||
+    `자기소개를 마쳤다면, 이제 함께 나갈 공모전을 골라볼까요? 🏆
+팀의 카테고리를 바탕으로 공모전을 먼저 추천해드릴게요!
+• 더 원하는 공모전이 있다면 후보 리스트에 자유롭게 추가해주세요.
+• 공모전 투표는 2개까지 가능해요.
+• 후보 등록과 투표는 24시간 동안 진행되고, 모든 팀원이 투표하면 바로 마감돼요!`;
+
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
 
       <div className="flex w-[304px] min-w-0 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+        <div className="flex w-full items-end gap-2">
+          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+            {guideBody}
+          </p>
+          <MessageMeta sentAt={sentAt} />
+        </div>
         <ContestListCard
-          actionLabel={isCandidateClosed ? "원하는 공모전 투표하러 가기" : "다른 공모전 보러가기"}
           contests={contests}
           disabled={isActionDisabled}
-          isCandidateClosed={isCandidateClosed}
           onAction={onStartVote}
           onRemove={onRemove}
-          onShowAll={onShowAll}
           remainingSeconds={remainingSeconds}
           timerLabel={timerLabel}
           title={title}
@@ -857,24 +868,18 @@ export function ContestVoteDetailSheet({
 }
 
 function ContestListCard({
-  actionLabel,
   contests,
   disabled = false,
-  isCandidateClosed,
   onAction,
   onRemove,
-  onShowAll,
   remainingSeconds,
   timerLabel,
   title,
 }: {
-  actionLabel: string;
   contests: RecommendedContest[];
   disabled?: boolean;
-  isCandidateClosed: boolean;
   onAction: () => void;
   onRemove?: (contest: RecommendedContest) => void;
-  onShowAll: () => void;
   remainingSeconds: number;
   timerLabel: string;
   title: string;
@@ -887,28 +892,33 @@ function ContestListCard({
         timerLabel={timerLabel}
         title={title}
       />
+      <p className="mt-1 text-[12px] leading-[1.35] font-semibold text-color-coral-500">
+        *AI 챗봇이 추천한 공모전입니다.
+      </p>
 
       <div className="mt-4 flex flex-col gap-3">
-        {contests.slice(0, 3).map((contest, index) => (
+        {contests.slice(0, 3).map((contest) => (
           <CompactContestListItem
             contest={contest}
             key={contest.id}
             onRemove={onRemove}
-            removable={index > 0 && !contest.isRecommended}
+            removable={false}
           />
         ))}
       </div>
 
       <button
-        className="mx-auto mt-4 flex h-7 items-center justify-center px-0.5 text-[13px] leading-[1.25] font-medium text-color-gray-650 underline underline-offset-2"
-        onClick={onShowAll}
+        className="hidden"
+        onClick={() => undefined}
         type="button"
       >
         전체보기
       </button>
       <button
         className={`mt-4 flex h-9 w-full items-center justify-center gap-1 rounded-[10px] px-3 text-[13px] leading-[1.25] font-semibold ${
-          disabled ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650" : "bg-color-coral-500 text-white"
+          disabled
+            ? "bg-[rgba(97,97,97,0.10)] text-color-gray-650"
+            : "bg-color-coral-500 text-white"
         }`}
         disabled={disabled}
         onClick={onAction}
@@ -919,12 +929,12 @@ function ContestListCard({
         ) : (
           <>
             <Image
-              src={isCandidateClosed ? "/icons/chat/vote_2_1.svg" : "/icons/chat/vote_1_1.svg"}
+              src="/icons/chat/vote_1_1.svg"
               alt=""
               width={18}
               height={18}
             />
-            {actionLabel}
+            원하는 공모전 투표하러 가기
           </>
         )}
       </button>
@@ -945,16 +955,19 @@ function ContestCardHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
+      <span className="sr-only">
+        {title} {timerLabel}
+      </span>
       <div className="flex min-w-0 shrink-0 items-center gap-[7px] text-[13px] leading-[1.25] font-semibold text-color-coral-900">
         <Image src="/icons/chat/tabler_list.svg" alt="" width={24} height={24} />
-        <span className="whitespace-nowrap">{title}</span>
+        <span className="whitespace-nowrap">추천 공모전 리스트</span>
       </div>
       <span
         className={`flex shrink-0 items-center rounded-[16px] px-2 py-1 text-[12px] leading-[1.35] font-semibold ${
           isEnded ? "bg-white/80 text-color-gray-650" : "bg-color-coral-50 text-color-coral-700"
         }`}
       >
-        {timerLabel} {formatCandidateTimer(remainingSeconds)}
+        투표 마감까지 {formatCandidateTimer(remainingSeconds)}
       </span>
     </div>
   );
@@ -976,11 +989,7 @@ function CompactContestListItem({
   return (
     <article
       className={`relative flex h-[97px] w-full items-center gap-[6px] rounded-[10px] p-2 text-left ${
-        muted
-          ? "bg-color-gray-350 opacity-70"
-          : highlight
-            ? "bg-color-orange-50"
-            : "bg-white"
+        muted ? "bg-color-gray-350 opacity-70" : highlight ? "bg-color-orange-50" : "bg-white"
       }`}
     >
       <ContestPoster contest={contest} />
@@ -1121,19 +1130,26 @@ function ContestSharedCard({
   onAdd: () => void;
 }) {
   return (
-    <div className="flex min-h-[97px] w-[230px] gap-[6px] rounded-[10px] bg-white p-2 text-left">
-      <ContestPoster contest={contest} />
-      <ContestSummary contest={contest} />
+    <div className="relative h-[97px] w-[290px] overflow-hidden rounded-[10px] bg-color-gray-200 p-2 text-left">
+      <div className="flex h-[77px] w-[260px] items-center gap-[6px]">
+        <ContestPoster contest={contest} />
+        <ContestSummary contest={contest} />
+      </div>
       <button
         aria-label={`${contest.title} 후보 추가`}
-        className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[18px] leading-none font-semibold ${
-          isAdded ? "bg-color-gray-200 text-color-gray-350" : "bg-[#6A2A19] text-white"
-        }`}
+        className="absolute top-2 right-2 flex size-8 items-center justify-center overflow-hidden rounded-[12px] bg-color-coral-900"
         disabled={isAdded}
         onClick={onAdd}
         type="button"
       >
-        {isAdded ? "✓" : "+"}
+        <Image
+          src="/icons/chat/contest_plus.svg"
+          alt=""
+          aria-hidden="true"
+          width={16}
+          height={16}
+          className="size-4"
+        />
       </button>
     </div>
   );
@@ -1195,20 +1211,26 @@ function ContestSummary({
   reserveActionSpace?: boolean;
 }) {
   return (
-    <div className={`min-w-0 flex-1 ${reserveActionSpace ? "pr-8" : ""}`}>
-      <span className="block truncate text-[8px] leading-[1.35] font-semibold text-color-coral-700">
+    <div
+      className={`flex h-[75px] min-w-0 w-[162px] flex-none flex-col items-start justify-center gap-1 ${
+        reserveActionSpace ? "pr-8" : ""
+      }`}
+    >
+      <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
         {contest.category}
       </span>
-      <strong className="mt-1 block text-[12px] leading-[1.35] font-semibold text-color-gray-850 [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">
+      <strong className="block truncate text-[12px] leading-[1.35] font-semibold text-color-gray-850">
         {contest.title}
       </strong>
-      <span className="mt-1 block truncate text-[12px] leading-[1.35] text-color-gray-650">
+      <span className="block truncate text-[12px] leading-[1.35] text-color-gray-650">
         {contest.organizer}
       </span>
-      <div className="mt-2 flex items-center gap-2 text-[12px] leading-[1.35] font-semibold text-color-gray-350">
-        <span className="rounded-[85px] bg-color-coral-500 px-2 py-1 text-[8px] leading-[1.35] text-white">
-          {contest.dday}
-        </span>
+      <div className="flex items-center gap-2 text-[12px] leading-[1.35] font-semibold text-color-gray-350">
+        {contest.dday ? (
+          <span className="rounded-[85px] bg-color-coral-500 px-2 py-1 text-[8px] leading-[1.35] text-white">
+            {contest.dday}
+          </span>
+        ) : null}
         <ViewCount value={contest.viewCount} />
       </div>
     </div>

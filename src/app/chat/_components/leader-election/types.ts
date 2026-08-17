@@ -6,7 +6,6 @@ export type SheetState =
   | "candidateVote"
   | "leaderComplete"
   | "contestAddList"
-  | "contestList"
   | "contestVote"
   | "contestComplete"
   | "contestResult"
