@@ -17,6 +17,8 @@ import {
 import { useSignupMutation } from "@/queries/useSignupMutation";
 import { useSendVerificationCodeMutation } from "@/queries/useSendVerificationCodeMutation";
 import { useVerifyEmailCodeMutation } from "@/queries/useVerifyEmailCodeMutation";
+import { useLoginMutation } from "@/queries/useLoginMutation";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiError } from "@/lib/http";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
@@ -90,6 +92,8 @@ function SignupPageInner() {
   const signupMutation = useSignupMutation();
   const sendCodeMutation = useSendVerificationCodeMutation();
   const verifyCodeMutation = useVerifyEmailCodeMutation();
+  const loginMutation = useLoginMutation();
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
 
   useEffect(() => {
     if (step !== 3 || secondsLeft <= 0) return;
@@ -219,7 +223,21 @@ function SignupPageInner() {
           birthDate: `${birthdate.slice(0, 4)}-${birthdate.slice(4, 6)}-${birthdate.slice(6, 8)}`,
         },
         {
-          onSuccess: () => router.push("/signup/complete"),
+          onSuccess: () => {
+            // 가입 API는 accessToken을 내려주지 않으므로, 방금 입력한 자격증명으로
+            // 바로 로그인해 자동 로그인 상태로 만든다. 로그인이 실패해도 가입 자체는
+            // 성공했으니 완료 화면으로는 이동시키고, 사용자는 필요 시 수동 로그인한다.
+            loginMutation.mutate(
+              { email, password },
+              {
+                onSuccess: (data) => {
+                  setAccessToken(data.accessToken);
+                  router.push("/signup/complete");
+                },
+                onError: () => router.push("/signup/complete"),
+              },
+            );
+          },
           onError: (error) => {
             if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
               setServerEmailDuplicate(true);
@@ -471,6 +489,7 @@ function SignupPageInner() {
           disabled={
             !isCurrentStepValid ||
             signupMutation.isPending ||
+            loginMutation.isPending ||
             sendCodeMutation.isPending ||
             verifyCodeMutation.isPending
           }
@@ -478,6 +497,7 @@ function SignupPageInner() {
           className={`w-full rounded-xl py-3.5 text-sm font-medium transition-colors ${
             isCurrentStepValid &&
             !signupMutation.isPending &&
+            !loginMutation.isPending &&
             !sendCodeMutation.isPending &&
             !verifyCodeMutation.isPending
               ? "bg-[#FF7658] text-white"
@@ -493,7 +513,7 @@ function SignupPageInner() {
                 ? "확인 중..."
                 : "다음"
               : step === TOTAL_STEPS
-                ? signupMutation.isPending
+                ? signupMutation.isPending || loginMutation.isPending
                   ? "가입 처리 중..."
                   : "동의하고 가입 완료하기"
                 : "다음"}
