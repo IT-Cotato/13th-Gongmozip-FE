@@ -21,6 +21,7 @@ export default function CertificatesPage() {
   const draftCertificates = useProfileDraftStore((state) => state.certificates);
   const setDraftCertificates = useProfileDraftStore((state) => state.setCertificates);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
   const updateProfileMutation = useUpdateProfileWithDetailsMutation();
@@ -102,8 +103,13 @@ export default function CertificatesPage() {
     createProfileMutation.mutate(
       { basicInfo: draftBasicInfo, projects: draftProjects, certificates },
       {
-        onSuccess: () => {
-          resetProfileDraft();
+        onSuccess: (data) => {
+          // 완료 화면에서 "프로젝트 경험/자격증 추가"로 같은 프로필에 이어서 더
+          // 담을 수 있으므로, 여기서 초안을 지우지 않고 방금 만든 프로필 ID만
+          // 기억해 둔다 - 그래야 다음 제출이 새 프로필을 또 만들지 않고 이
+          // 프로필을 수정하는 쪽으로 간다. 초안은 진짜로 나갈 때(완료하기/이탈)
+          // 지운다.
+          setEditingProfileId(data.profileId);
           router.replace("/mypage/profile-management/new/complete");
         },
         onError,
@@ -216,15 +222,12 @@ export default function CertificatesPage() {
 
       <ExitProfileWriteModal
         onExit={() => {
-          const exitDestination =
-            editingProfileId !== null
-              ? `/mypage/profile-management/${editingProfileId}`
-              : "/mypage/profile-management";
-          resetProfileDraft();
           // 1~3단계는 서로 push가 아닌 replace로만 이동하므로 스택에는 마법사 진입
-          // 시점에 쌓인 엔트리 하나뿐이다. replace로 나가야 그 자리를 그대로
-          // 대체해서, 이후 뒤로가기를 눌러도 마법사 화면으로 되돌아가지 않는다.
-          router.replace(exitDestination);
+          // 시점에 쌓인 엔트리 하나뿐이다. replace로 나가면 그 위에 엔트리가 하나
+          // 더 쌓여 뒤로가기 시 마법사로 되돌아오므로, back()으로 진입 화면(목록/
+          // 미리보기)으로 정확히 되돌아간다.
+          resetProfileDraft();
+          router.back();
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

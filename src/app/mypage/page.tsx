@@ -8,6 +8,7 @@ import BottomNavigation from "@/components/layout/BottomNavigation";
 import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
+import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
@@ -54,6 +55,7 @@ export default function MyPage() {
   const isLoading = summaryQuery.isLoading;
   const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const isUnauthorized =
     summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
@@ -87,7 +89,7 @@ export default function MyPage() {
     profileListQuery.refetch();
   }
 
-  function handleLogout() {
+  function handleConfirmLogout() {
     if (logoutMutation.isPending) return;
 
     logoutMutation.mutate(undefined, {
@@ -119,7 +121,7 @@ export default function MyPage() {
   const menuSections: MenuSection[] = [
     infoManagementSection,
     ...MENU_SECTIONS,
-    { items: [{ label: "로그아웃", onClick: handleLogout }] },
+    { items: [{ label: "로그아웃", onClick: () => setIsLogoutConfirmOpen(true) }] },
   ];
 
   const isProfileListUnavailable = profileListQuery.isLoading || profileListQuery.isError;
@@ -321,6 +323,13 @@ export default function MyPage() {
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
           onStartTest={() => router.push("/collaboration-type?returnTo=/mypage")}
+        />
+      )}
+      {isLogoutConfirmOpen && (
+        <LogoutConfirmModal
+          onCancel={() => setIsLogoutConfirmOpen(false)}
+          onConfirm={handleConfirmLogout}
+          isLoggingOut={logoutMutation.isPending}
         />
       )}
     </div>
