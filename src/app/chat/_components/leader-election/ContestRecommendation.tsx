@@ -269,17 +269,7 @@ export function ContestCandidateAddListPage({
                 tabIndex={0}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-[14px]">
-                  <div className="relative h-[113px] w-[85px] shrink-0 overflow-hidden bg-color-gray-250">
-                    {contest.posterImageUrl ? (
-                      <Image
-                        src={contest.posterImageUrl}
-                        alt=""
-                        fill
-                        sizes="85px"
-                        className="object-cover"
-                      />
-                    ) : null}
-                  </div>
+                  <LargeContestPosterImage src={contest.posterImageUrl} />
                   <div className="min-w-0 flex-1">
                     <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
                       {contest.category}
@@ -1361,11 +1351,7 @@ function FullContestListItem({
       tabIndex={isClickable ? 0 : undefined}
     >
       <div className="flex min-w-0 flex-1 items-center gap-[14px]">
-        <div className="relative h-[113px] w-[85px] shrink-0 overflow-hidden bg-color-gray-250">
-          {contest.imageSrc ? (
-            <Image src={contest.imageSrc} alt="" fill sizes="85px" className="object-cover" />
-          ) : null}
-        </div>
+        <LargeContestPosterImage src={contest.imageSrc} />
         <div className="min-w-0 flex-1">
           <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
             {contest.category}
@@ -1444,11 +1430,43 @@ function ContestSummary({
 }
 
 function ContestPoster({ contest }: { contest: RecommendedContest }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!contest.imageSrc || hasError) {
+    return <div aria-hidden="true" className="h-[77px] w-[58px] shrink-0 bg-white" />;
+  }
+
   return (
-    <div className="relative h-[77px] w-[58px] shrink-0 overflow-hidden bg-color-gray-200">
-      {contest.imageSrc ? (
-        <Image src={contest.imageSrc} alt="" fill sizes="58px" className="object-cover" />
-      ) : null}
+    <div className="relative h-[77px] w-[58px] shrink-0 overflow-hidden bg-white">
+      <Image
+        src={contest.imageSrc}
+        alt=""
+        fill
+        sizes="58px"
+        className="object-cover"
+        onError={() => setHasError(true)}
+      />
+    </div>
+  );
+}
+
+function LargeContestPosterImage({ src }: { src?: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return <div aria-hidden="true" className="h-[113px] w-[85px] shrink-0 bg-white" />;
+  }
+
+  return (
+    <div className="relative h-[113px] w-[85px] shrink-0 overflow-hidden bg-white">
+      <Image
+        src={src}
+        alt=""
+        fill
+        sizes="85px"
+        className="object-cover"
+        onError={() => setHasError(true)}
+      />
     </div>
   );
 }

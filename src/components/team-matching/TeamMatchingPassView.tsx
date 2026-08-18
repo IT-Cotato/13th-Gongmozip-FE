@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
 import {
   TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
   useTeamMatchingProposalStore,
@@ -73,12 +74,26 @@ export function AiMatchingNoticeCard() {
   );
 }
 
+function getDisplayPenalty(penalty: number | null | undefined) {
+  return penalty && penalty > 0 ? penalty : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
+}
+
 export default function TeamMatchingPassView() {
   const lastResult = useTeamMatchingProposalStore((state) => state.lastResult);
+  const pendingExpectedPenalty = useTeamMatchingProposalStore(
+    (state) => state.pendingExpectedPenalty,
+  );
+  const { data: todayApplication } = useTodayMatchingApplicationQuery();
+  const hasCurrentPassResult =
+    lastResult?.status === "passed" &&
+    todayApplication !== undefined &&
+    String(todayApplication.applicationId) === lastResult.proposalId;
   const distanceReductionMeters =
-    lastResult?.status === "passed"
-      ? (lastResult.distanceReductionMeters ?? TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS)
-      : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
+    hasCurrentPassResult
+      ? getDisplayPenalty(
+          lastResult.distanceReductionMeters ?? todayApplication?.withdrawal.expectedPenalty,
+        )
+      : getDisplayPenalty(pendingExpectedPenalty ?? todayApplication?.withdrawal.expectedPenalty);
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">

@@ -33,21 +33,86 @@ type ContestListItemResponse = {
   thumbnailUrl: string | null;
   applyEndAt: string;
   daysRemaining: number;
+  view?: number | string | null;
   viewCount?: number | string | null;
   views?: number | string | null;
+  viewNum?: number | string | null;
   hitCount?: number | string | null;
   hits?: number | string | null;
   readCount?: number | string | null;
+  view_count?: number | string | null;
+  viewCnt?: number | string | null;
+  view_cnt?: number | string | null;
+  hit_count?: number | string | null;
+  hitCnt?: number | string | null;
+  hit_cnt?: number | string | null;
+  read_count?: number | string | null;
+  readCnt?: number | string | null;
+  read_cnt?: number | string | null;
+  viewsCount?: number | string | null;
+  views_count?: number | string | null;
+  hitsCount?: number | string | null;
+  hits_count?: number | string | null;
   isScrapped?: boolean;
 };
 
 export type ContestViewCountFields = {
+  view?: number | string | null;
   viewCount?: number | string | null;
   views?: number | string | null;
+  viewNum?: number | string | null;
   hitCount?: number | string | null;
   hits?: number | string | null;
   readCount?: number | string | null;
+  view_count?: number | string | null;
+  viewCnt?: number | string | null;
+  view_cnt?: number | string | null;
+  hit_count?: number | string | null;
+  hitCnt?: number | string | null;
+  hit_cnt?: number | string | null;
+  read_count?: number | string | null;
+  readCnt?: number | string | null;
+  read_cnt?: number | string | null;
+  viewsCount?: number | string | null;
+  views_count?: number | string | null;
+  hitsCount?: number | string | null;
+  hits_count?: number | string | null;
 };
+
+const contestViewCountKeys = [
+  "view",
+  "viewCount",
+  "views",
+  "viewNum",
+  "view_count",
+  "viewCnt",
+  "view_cnt",
+  "viewsCount",
+  "views_count",
+  "hitCount",
+  "hits",
+  "hit_count",
+  "hitCnt",
+  "hit_cnt",
+  "hitsCount",
+  "hits_count",
+  "readCount",
+  "read_count",
+  "readCnt",
+  "read_cnt",
+] as const;
+
+const contestViewCountContainerKeys = [
+  "contest",
+  "contestInfo",
+  "metrics",
+  "stats",
+  "statistics",
+  "counts",
+  "contestMetrics",
+  "contestStats",
+  "contestStatistics",
+] as const;
 
 export type ContestsResponse = {
   contests: ContestSummary[];
@@ -79,12 +144,26 @@ export const contestCategoryApiValues: Record<ContestCategory, ContestApiCategor
 
 export const contestCategoryLabels: Record<string, ContestCategory> = {
   IT_AI_TECH: "IT/AI/기술",
+  MARKETING: "마케팅/광고/브랜딩",
+  Marketing: "마케팅/광고/브랜딩",
   MARKETING_AD_BRANDING: "마케팅/광고/브랜딩",
+  idea_planning: "기획/아이디어",
+  IDEA_PLANNING: "기획/아이디어",
   PLANNING_IDEA: "기획/아이디어",
   ART_DESIGN: "미술/디자인",
   DATA_ANALYSIS: "데이터 분석",
   PHOTO_VIDEO: "사진/영상",
 };
+
+export function getContestCategoryLabel(category: string) {
+  const normalizedCategory = category
+    .trim()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_")
+    .toUpperCase();
+
+  return contestCategoryLabels[category] ?? contestCategoryLabels[normalizedCategory] ?? category;
+}
 
 export const contestsQueryKey = (params: ContestsQueryParams) => ["contests", params] as const;
 export const infiniteContestsQueryKey = (params: ContestsQueryParams) =>
@@ -153,7 +232,7 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
     id: String(contest.contestId),
     title: contest.title,
     organizer: contest.hostName,
-    category: contestCategoryLabels[contest.category] ?? contest.category,
+    category: getContestCategoryLabel(contest.category),
     dDay: formatDday(contest.daysRemaining),
     viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",
@@ -161,18 +240,13 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
   };
 }
 
-export function getContestViewCount(contest: ContestViewCountFields) {
-  return (
-    parseCount(contest.viewCount) ??
-    parseCount(contest.views) ??
-    parseCount(contest.hitCount) ??
-    parseCount(contest.hits) ??
-    parseCount(contest.readCount) ??
-    0
-  );
+export function getContestViewCount(contest: ContestViewCountFields): number {
+  const count = getContestViewCountFromRecord(contest as Record<string, unknown>);
+
+  return count ?? 0;
 }
 
-function parseCount(value: number | string | null | undefined) {
+function parseCount(value: number | string | null | undefined): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : undefined;
   }
@@ -184,6 +258,34 @@ function parseCount(value: number | string | null | undefined) {
   const parsedValue = Number(value.replaceAll(",", ""));
 
   return Number.isFinite(parsedValue) ? parsedValue : undefined;
+}
+
+function getContestViewCountFromRecord(record: Record<string, unknown>): number | undefined {
+  for (const key of contestViewCountKeys) {
+    const count = parseCount(record[key] as number | string | null | undefined);
+
+    if (count !== undefined) {
+      return count;
+    }
+  }
+
+  for (const key of contestViewCountContainerKeys) {
+    const value = record[key];
+
+    if (isRecord(value)) {
+      const count = getContestViewCountFromRecord(value);
+
+      if (count !== undefined) {
+        return count;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function formatDday(daysRemaining: number) {
