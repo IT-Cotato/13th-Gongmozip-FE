@@ -29,6 +29,8 @@ type UnknownRecord = Record<string, unknown>;
 
 const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL ?? API_BASE_URL).replace(/\/+$/, "");
 const HAS_TIMEZONE_REGEX = /(Z|[+-]\d{2}:?\d{2})$/;
+const CHAT_TIME_ZONE = "Asia/Seoul";
+const KOREA_TIME_ZONE_OFFSET = "+09:00";
 
 export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
@@ -1150,6 +1152,7 @@ function mapChatMember(
 }
 
 function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): ChatMessage {
+  const sentAtValue = getString(message, ["createdAt", "sentAt", "timestamp"]);
   const senderId = getValue(message, [
     "senderTeamMemberId",
     "teamMemberId",
@@ -1175,7 +1178,9 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     senderId: senderId === undefined ? undefined : String(senderId),
     senderName,
     body: getString(message, ["content", "body", "message"]) ?? "",
-    sentAt: formatMessageTime(getString(message, ["createdAt", "sentAt", "timestamp"])),
+    sentAt: formatMessageTime(sentAtValue),
+    sentAtDateKey: formatMessageDateKey(sentAtValue),
+    sentAtDateLabel: formatMessageDateLabel(sentAtValue),
     direction: isMine ? "outgoing" : "incoming",
     senderType,
     messageType,
@@ -1502,11 +1507,77 @@ function formatMessageTime(dateValue: string | undefined) {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone: CHAT_TIME_ZONE,
   }).format(date);
 }
 
+function formatMessageDateKey(dateValue: string | undefined) {
+  const date = parseValidApiDate(dateValue);
+
+  if (!date) {
+    return undefined;
+  }
+
+  const parts = getKoreanDateParts(date);
+
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
+function formatMessageDateLabel(dateValue: string | undefined) {
+  const date = parseValidApiDate(dateValue);
+
+  if (!date) {
+    return undefined;
+  }
+
+  const parts = getKoreanDateParts(date);
+  const todayParts = getKoreanDateParts(new Date());
+  const isToday =
+    parts.year === todayParts.year &&
+    parts.month === todayParts.month &&
+    parts.day === todayParts.day;
+
+  if (isToday) {
+    return `오늘 ${formatMessageTime(dateValue)}`;
+  }
+
+  return `${parts.year}년 ${parts.month}월 ${parts.day}일`;
+}
+
+function parseValidApiDate(dateValue: string | undefined) {
+  if (!dateValue) {
+    return undefined;
+  }
+
+  const date = parseApiDate(dateValue);
+
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function getKoreanDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: CHAT_TIME_ZONE,
+  }).formatToParts(date);
+
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value ?? "0"),
+    month: Number(parts.find((part) => part.type === "month")?.value ?? "0"),
+    day: Number(parts.find((part) => part.type === "day")?.value ?? "0"),
+  };
+}
+
 function parseApiDate(dateValue: string) {
-  const normalizedDateValue = HAS_TIMEZONE_REGEX.test(dateValue) ? dateValue : `${dateValue}Z`;
+  const trimmedDateValue = dateValue.trim();
+  const normalizedInputValue = trimmedDateValue.replace(" ", "T");
+  const dateTimeValue = /^\d{4}-\d{2}-\d{2}$/.test(trimmedDateValue)
+    ? `${trimmedDateValue}T00:00:00`
+    : normalizedInputValue;
+  const normalizedDateValue = HAS_TIMEZONE_REGEX.test(trimmedDateValue)
+    ? normalizedInputValue
+    : `${dateTimeValue}${KOREA_TIME_ZONE_OFFSET}`;
 
   return new Date(normalizedDateValue);
 }

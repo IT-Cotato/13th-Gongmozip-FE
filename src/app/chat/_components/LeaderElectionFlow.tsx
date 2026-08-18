@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueries } from "@tanstack/react-query";
 
@@ -877,39 +877,49 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           </button>
         ) : null}
 
-        {serverMessages.map((message) => (
-          <ChatMessageRenderer
-            chatMembers={chatMembers}
-            contestCandidates={contestCandidates}
-            shareContestsById={shareContestsById}
-            hasContestResultMessage={hasContestResultMessage}
-            hasLeaderResultMessage={hasLeaderResultMessage}
-            isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
-            isContestVoteClosed={isContestVoteClosed}
-            isLeaderCandidacySubmitted={isLeaderCandidacySubmitted}
-            isLeaderVoteFlowEnded={hasLeaderResultMessage && isLeaderVoteResultReady}
-            isLeaderVoteSubmitted={isLeaderVoteSubmitted}
-            leaderRecommendation={leaderRecommendationQuery.data}
-            key={message.id}
-            message={message}
-            onAddContestCandidate={openContestSharedCandidateAdd}
-            onAcceptRecommendation={acceptRecommendedLeader}
-            onRemoveContestCandidate={(contest) => {
-              void removeContestCandidate(contest);
-            }}
-            onOpenContestVote={startContestVote}
-            onOpenCandidateVote={openCandidateVote}
-            onOpenMemberProfile={setProfileMember}
-            onOpenWillingness={() => {
-              setLeaderActionError(null);
-              setSheetState("willingness");
-            }}
-            onRequestLeaderRecommendation={requestLeaderRecommendation}
-            onRequestRevote={requestRevote}
-            onUseChatbot={insertChatbotMention}
-            voteRemainingSeconds={displayedVoteCountdownSeconds}
-          />
-        ))}
+        {serverMessages.map((message, index) => {
+          const previousMessage = serverMessages[index - 1];
+          const dateSeparatorLabel =
+            message.sentAtDateKey !== previousMessage?.sentAtDateKey
+              ? message.sentAtDateLabel
+              : undefined;
+
+          return (
+            <Fragment key={message.id}>
+              {dateSeparatorLabel ? <ChatDateSeparator label={dateSeparatorLabel} /> : null}
+              <ChatMessageRenderer
+                chatMembers={chatMembers}
+                contestCandidates={contestCandidates}
+                shareContestsById={shareContestsById}
+                hasContestResultMessage={hasContestResultMessage}
+                hasLeaderResultMessage={hasLeaderResultMessage}
+                isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
+                isContestVoteClosed={isContestVoteClosed}
+                isLeaderCandidacySubmitted={isLeaderCandidacySubmitted}
+                isLeaderVoteFlowEnded={hasLeaderResultMessage && isLeaderVoteResultReady}
+                isLeaderVoteSubmitted={isLeaderVoteSubmitted}
+                leaderRecommendation={leaderRecommendationQuery.data}
+                message={message}
+                onAddContestCandidate={openContestSharedCandidateAdd}
+                onAcceptRecommendation={acceptRecommendedLeader}
+                onRemoveContestCandidate={(contest) => {
+                  void removeContestCandidate(contest);
+                }}
+                onOpenContestVote={startContestVote}
+                onOpenCandidateVote={openCandidateVote}
+                onOpenMemberProfile={setProfileMember}
+                onOpenWillingness={() => {
+                  setLeaderActionError(null);
+                  setSheetState("willingness");
+                }}
+                onRequestLeaderRecommendation={requestLeaderRecommendation}
+                onRequestRevote={requestRevote}
+                onUseChatbot={insertChatbotMention}
+                voteRemainingSeconds={displayedVoteCountdownSeconds}
+              />
+            </Fragment>
+          );
+        })}
 
         {leaderActionError ? (
           <p className="text-center text-[13px] leading-[1.5] text-color-coral-500">
@@ -2016,6 +2026,19 @@ function getRemainingSeconds(deadlineAt: string | undefined, now: number) {
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string) {
   return error instanceof ApiError ? error.message : fallbackMessage;
+}
+
+function ChatDateSeparator({ label }: { label: string }) {
+  return (
+    <div
+      aria-label={`${label} 날짜 구분`}
+      className="flex w-full items-center text-[10px] leading-[1.2] font-medium text-color-gray-500"
+    >
+      <div className="h-px flex-1 bg-color-gray-200" />
+      <span className="shrink-0 px-2">{label}</span>
+      <div className="h-px flex-1 bg-color-gray-200" />
+    </div>
+  );
 }
 
 function SystemChatMessage({ body }: { body: string }) {
