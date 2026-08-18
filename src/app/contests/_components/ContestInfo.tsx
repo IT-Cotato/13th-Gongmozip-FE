@@ -453,7 +453,13 @@ function ContestImage({
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
-    return <div aria-hidden="true" className="bg-white" style={{ width, height }} />;
+    return (
+      <div
+        aria-hidden="true"
+        className={`${className} bg-white`}
+        style={{ aspectRatio: `${width} / ${height}` }}
+      />
+    );
   }
 
   if (isExternalUrl(src)) {
