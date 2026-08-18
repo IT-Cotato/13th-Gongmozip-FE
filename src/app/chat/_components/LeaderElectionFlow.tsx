@@ -817,6 +817,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             chatMembers={chatMembers}
             contestCandidates={contestCandidates}
             hasContestResultMessage={hasContestResultMessage}
+            hasLeaderResultMessage={hasLeaderResultMessage}
             isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
             isContestVoteClosed={isContestVoteClosed}
             isLeaderCandidacySubmitted={isLeaderCandidacySubmitted}
@@ -995,6 +996,7 @@ function ChatMessageRenderer({
   chatMembers,
   contestCandidates,
   hasContestResultMessage,
+  hasLeaderResultMessage,
   isLeaderCandidacySubmitted,
   isLeaderVoteFlowEnded,
   isLeaderRecommendationPending,
@@ -1017,6 +1019,7 @@ function ChatMessageRenderer({
   chatMembers: LeaderCandidate[];
   contestCandidates: RecommendedContest[];
   hasContestResultMessage: boolean;
+  hasLeaderResultMessage: boolean;
   isLeaderCandidacySubmitted: boolean;
   isLeaderVoteFlowEnded: boolean;
   isLeaderRecommendationPending: boolean;
@@ -1089,7 +1092,7 @@ function ChatMessageRenderer({
       leaderRecommendation,
     );
     const isVoteActionCompleted =
-      isLeaderVoteFlowEnded || isLeaderVoteSubmitted || isLeaderActionCompleted(message);
+      hasLeaderResultMessage || isLeaderVoteFlowEnded || isLeaderVoteSubmitted || isLeaderActionCompleted(message);
     const aiRecommendedTeamMemberId =
       getMetadataNumber(message.metadata, "aiRecommendedTeamMemberId") ??
       leaderRecommendation?.recommendedMemberId ??
