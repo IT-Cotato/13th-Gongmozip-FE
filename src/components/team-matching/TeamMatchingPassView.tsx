@@ -84,8 +84,12 @@ export default function TeamMatchingPassView() {
     (state) => state.pendingExpectedPenalty,
   );
   const { data: todayApplication } = useTodayMatchingApplicationQuery();
+  const hasCurrentPassResult =
+    lastResult?.status === "passed" &&
+    (todayApplication === undefined ||
+      String(todayApplication.applicationId) === lastResult.proposalId);
   const distanceReductionMeters =
-    lastResult?.status === "passed"
+    hasCurrentPassResult
       ? getDisplayPenalty(
           lastResult.distanceReductionMeters ?? todayApplication?.withdrawal.expectedPenalty,
         )
