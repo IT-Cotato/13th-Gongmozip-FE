@@ -330,11 +330,15 @@ export default function TeamMatchingStatusResultView({
 
     void fetchTodayMatchingApplication()
       .then((todayApplication) => {
-        queryClient.setQueryData(todayMatchingApplicationQueryKey, todayApplication);
-
-        if (useTeamMatchingProposalStore.getState().pendingProposalId === applicationId) {
-          setPendingProposal(applicationId, todayApplication.withdrawal.expectedPenalty);
+        if (
+          useTeamMatchingProposalStore.getState().pendingProposalId !== applicationId ||
+          String(todayApplication.applicationId) !== applicationId
+        ) {
+          return;
         }
+
+        queryClient.setQueryData(todayMatchingApplicationQueryKey, todayApplication);
+        setPendingProposal(applicationId, todayApplication.withdrawal.expectedPenalty);
       })
       .catch(() => {
         // 패널티 사전 조회가 실패해도 패스 확인 화면에서는 기본값으로 안내할 수 있다.

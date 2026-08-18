@@ -12,6 +12,7 @@ import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
 import { SurveyRetakeLimitModal } from "./_components/SurveyRetakeLimitModal";
 import { useSurveyRetakeNavigation } from "./_hooks/useSurveyRetakeNavigation";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
+import { useCollaborationDistanceQuery } from "@/queries/useCollaborationDistanceQuery";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
@@ -49,6 +50,9 @@ export default function MyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const summaryQuery = useMypageSummaryQuery();
+  const collaborationDistanceQuery = useCollaborationDistanceQuery({
+    enabled: summaryQuery.isSuccess,
+  });
   const profileQuery = useMemberProfileQuery();
   const profileListQuery = useProfileListQuery();
   const palettesQuery = useCharacterPalettesQuery();
@@ -93,6 +97,7 @@ export default function MyPage() {
 
   function refetch() {
     summaryQuery.refetch();
+    collaborationDistanceQuery.refetch();
     profileQuery.refetch();
     profileListQuery.refetch();
   }
@@ -137,6 +142,13 @@ export default function MyPage() {
   ];
 
   const isProfileListUnavailable = profileListQuery.isLoading || profileListQuery.isError;
+  const collaborationDistance = collaborationDistanceQuery.data
+    ? {
+        current: collaborationDistanceQuery.data.collaborationPoint,
+        max: collaborationDistanceQuery.data.maxCollaborationPoint,
+        progress: normalizeProgressPercent(collaborationDistanceQuery.data.gaugePercent),
+      }
+    : (data?.collaborationDistance ?? { current: 0, max: 0, progress: 0 });
 
   const statsItems = data
     ? [
@@ -266,9 +278,9 @@ export default function MyPage() {
                     협업거리
                   </p>
                   <CollaborativeDistance
-                    current={data.collaborationDistance.current}
-                    max={data.collaborationDistance.max}
-                    progress={data.collaborationDistance.progress}
+                    current={collaborationDistance.current}
+                    max={collaborationDistance.max}
+                    progress={collaborationDistance.progress}
                   />
                 </div>
               </div>
@@ -415,14 +427,14 @@ function CollaborativeDistance({
   if (milestones[milestones.length - 1] !== max) {
     milestones.push(max);
   }
-  const calculatedProgress = max > 0 ? (current / max) * 100 : progress;
+  const calculatedProgress = max > 0 ? (current / max) * 100 : normalizeProgressPercent(progress);
   const filledPercent = Math.min(100, Math.max(0, calculatedProgress));
 
   return (
     <div className="flex w-full flex-col items-center gap-1">
       <div className="relative flex h-[10px] w-full items-center justify-between rounded-full border border-white bg-white px-[2px]">
         <div
-          className="absolute inset-y-0 left-0 rounded-full"
+          className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out"
           style={{
             width: `${filledPercent}%`,
             backgroundImage: "linear-gradient(90deg, #ff7658, #ffad62)",
@@ -439,4 +451,8 @@ function CollaborativeDistance({
       </div>
     </div>
   );
+}
+
+function normalizeProgressPercent(progress: number) {
+  return progress > 0 && progress <= 1 ? progress * 100 : progress;
 }

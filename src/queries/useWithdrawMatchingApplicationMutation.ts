@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 
 import {
+  COLLABORATION_DISTANCE_HISTORIES_QUERY_KEY,
   COLLABORATION_DISTANCE_QUERY_KEY,
   type CollaborationDistance,
 } from "./useCollaborationDistanceQuery";
@@ -63,8 +64,8 @@ export function useWithdrawMatchingApplicationMutation() {
       );
 
       if (shouldUpdateCollaborationDistance) {
-        queryClient.setQueryData<CollaborationDistance>(
-          COLLABORATION_DISTANCE_QUERY_KEY,
+        queryClient.setQueriesData<CollaborationDistance>(
+          { queryKey: COLLABORATION_DISTANCE_QUERY_KEY },
           (current) =>
             current
               ? {
@@ -97,6 +98,10 @@ export function useWithdrawMatchingApplicationMutation() {
         );
         void queryClient.invalidateQueries({
           queryKey: COLLABORATION_DISTANCE_QUERY_KEY,
+          refetchType: "all",
+        });
+        void queryClient.invalidateQueries({
+          queryKey: COLLABORATION_DISTANCE_HISTORIES_QUERY_KEY,
           refetchType: "all",
         });
         void queryClient.invalidateQueries({
