@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueries } from "@tanstack/react-query";
 
 import { ApiError } from "@/lib/http";
 import { getNextImageSafeSrc } from "@/lib/imageSources";
@@ -27,6 +28,10 @@ import {
   type LeaderRecommendation,
 } from "@/queries/useChatQueries";
 import { contestCategoryLabels, useContestsQuery } from "@/queries/useContestsQuery";
+import {
+  contestSharePreviewQueryKey,
+  fetchContestSharePreview,
+} from "@/queries/useContestSharePreviewQuery";
 
 import { type ChatMember, type ChatMessage, type ChatMessageMetadata } from "../_data/chatTypes";
 import { ChatInputBar } from "./ChatInputBar";
@@ -608,6 +613,33 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         : [],
     [latestContestVoteReminderMessage],
   );
+  const shareContestIds = useMemo(() => {
+    const ids = serverMessages
+      .filter((message) => message.messageType === "CONTEST_SHARE_CARD")
+      .map((message) => getMetadataNumber(message.metadata, "contestId"))
+      .filter((contestId): contestId is number => contestId !== undefined);
+
+    return Array.from(new Set(ids));
+  }, [serverMessages]);
+  const shareContestPreviewQueries = useQueries({
+    queries: shareContestIds.map((contestId) => ({
+      queryKey: contestSharePreviewQueryKey(String(contestId)),
+      queryFn: () => fetchContestSharePreview(String(contestId)),
+      select: mapContestSharePreviewToRecommendedContest,
+      staleTime: 1000 * 60,
+    })),
+  });
+  const shareContestsById = useMemo(() => {
+    const contests = new Map<number, RecommendedContest>();
+
+    shareContestPreviewQueries.forEach((query) => {
+      if (query.data?.contestId !== undefined) {
+        contests.set(query.data.contestId, query.data);
+      }
+    });
+
+    return contests;
+  }, [shareContestPreviewQueries]);
   const contestVoteStatus = contestVoteStatusQuery.data;
   const contestVoteResult = contestVoteStatus?.result ?? "normal";
   const hasMyVoted = contestVoteStatus?.myVoted ?? isContestVoteSubmitted;
@@ -816,6 +848,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           <ChatMessageRenderer
             chatMembers={chatMembers}
             contestCandidates={contestCandidates}
+            shareContestsById={shareContestsById}
             hasContestResultMessage={hasContestResultMessage}
             hasLeaderResultMessage={hasLeaderResultMessage}
             isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
@@ -995,6 +1028,7 @@ function ChatRoomState({ message, roomId }: { message: string; roomId: string })
 function ChatMessageRenderer({
   chatMembers,
   contestCandidates,
+  shareContestsById,
   hasContestResultMessage,
   hasLeaderResultMessage,
   isLeaderCandidacySubmitted,
@@ -1018,6 +1052,7 @@ function ChatMessageRenderer({
 }: {
   chatMembers: LeaderCandidate[];
   contestCandidates: RecommendedContest[];
+  shareContestsById: Map<number, RecommendedContest>;
   hasContestResultMessage: boolean;
   hasLeaderResultMessage: boolean;
   isLeaderCandidacySubmitted: boolean;
@@ -1190,9 +1225,18 @@ function ChatMessageRenderer({
 
   if (message.messageType === "CONTEST_SHARE_CARD") {
     const contestId = getMetadataNumber(message.metadata, "contestId");
+    const metadataContest = contestId
+      ? createContestFromShareMetadata(contestId, message.metadata)
+      : undefined;
+    const sharePreviewContest = contestId ? shareContestsById.get(contestId) : undefined;
     const contest =
       contestCandidates.find((candidate) => candidate.contestId === contestId) ??
-      (contestId ? createContestFromShareMetadata(contestId, message.metadata) : undefined) ??
+      (sharePreviewContest
+        ? {
+            ...sharePreviewContest,
+            viewCount: sharePreviewContest.viewCount || metadataContest?.viewCount || "",
+          }
+        : metadataContest) ??
       (contestId ? createPlaceholderContest(contestId) : undefined);
 
     return contest && contestId ? (
@@ -1811,6 +1855,23 @@ function mapContestSummaryToRecommendedContest(contest: ContestSummary): Recomme
     organizer: contest.organizer,
     title: contest.title,
     viewCount: contest.viewCount.toLocaleString("ko-KR"),
+  };
+}
+
+function mapContestSharePreviewToRecommendedContest(
+  contest: Awaited<ReturnType<typeof fetchContestSharePreview>>,
+): RecommendedContest {
+  const contestId = Number(contest.contestId);
+
+  return {
+    id: contest.contestId,
+    contestId: Number.isFinite(contestId) ? contestId : undefined,
+    category: contest.category,
+    dday: contest.dDay,
+    imageSrc: getNextImageSafeSrc(contest.thumbnailUrl),
+    organizer: contest.hostName,
+    title: contest.title,
+    viewCount: "",
   };
 }
 

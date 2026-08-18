@@ -201,6 +201,9 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
     document.body.removeChild(textarea);
   };
 
+  const getContestShareText = () =>
+    [contest.category, contest.title, contest.organizer].filter((value) => value.trim().length > 0).join("\n");
+
   const handleWebShareClick = async () => {
     if (isWebSharePending) {
       return;
@@ -209,7 +212,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
     const shareUrl = window.location.href;
     const shareData: ShareData = {
       title: contest.title,
-      text: contest.description || `${contest.organizer} ${contest.category} 공모전`,
+      text: getContestShareText(),
       url: shareUrl,
     };
 

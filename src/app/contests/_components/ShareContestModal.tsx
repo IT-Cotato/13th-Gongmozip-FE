@@ -7,7 +7,6 @@ import type { ChatRoomAvatarItem } from "@/app/chat/_data/chatTypes";
 import Dialog from "@/components/Dialog";
 import { ApiError } from "@/lib/http";
 import { useChatTeamsQuery, useShareContestToChatsMutation } from "@/queries/useChatQueries";
-import { useContestSharePreviewQuery } from "@/queries/useContestSharePreviewQuery";
 
 type ShareContestModalProps = {
   contestId: number | string;
@@ -29,9 +28,7 @@ export function ShareContestModal({
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedRoomIds, setSelectedRoomIds] = useState<Set<string>>(new Set());
   const [shareErrorMessage, setShareErrorMessage] = useState<string | null>(null);
-  const normalizedContestId = String(contestId);
   const chatTeamsQuery = useChatTeamsQuery();
-  const sharePreviewQuery = useContestSharePreviewQuery(normalizedContestId, { enabled: open });
   const shareContestMutation = useShareContestToChatsMutation();
   const chatRooms = useMemo(() => chatTeamsQuery.data ?? [], [chatTeamsQuery.data]);
 
@@ -47,8 +44,7 @@ export function ShareContestModal({
 
   const selectedCount = selectedRoomIds.size;
   const isPending = shareContestMutation.isPending;
-  const isSharePreviewUnavailable = sharePreviewQuery.isLoading || sharePreviewQuery.isError;
-  const isSendDisabled = selectedCount === 0 || isPending || isSharePreviewUnavailable;
+  const isSendDisabled = selectedCount === 0 || isPending;
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -222,29 +218,6 @@ export function ShareContestModal({
           >
             {shareErrorMessage}
           </p>
-        ) : null}
-
-        {sharePreviewQuery.isLoading ? (
-          <p className="mb-3 text-center text-[13px] leading-[150%] font-medium text-color-gray-650">
-            공모전 정보를 확인하는 중입니다.
-          </p>
-        ) : null}
-
-        {sharePreviewQuery.isError ? (
-          <div className="mb-3 flex flex-col items-center gap-2 text-center">
-            <p role="alert" className="text-[13px] leading-[150%] font-medium text-color-coral-500">
-              {sharePreviewQuery.error instanceof ApiError
-                ? sharePreviewQuery.error.message
-                : "공유할 공모전 정보를 확인하지 못했습니다."}
-            </p>
-            <button
-              type="button"
-              className="flex h-8 items-center justify-center rounded-[10px] bg-color-coral-500 px-3 text-[12px] leading-[125%] font-semibold text-white"
-              onClick={() => void sharePreviewQuery.refetch()}
-            >
-              다시 시도
-            </button>
-          </div>
         ) : null}
 
         <div className="flex shrink-0 gap-2.5">

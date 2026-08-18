@@ -218,7 +218,7 @@ export function ContestCandidateAddListPage({
                     <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
                       {contest.category}
                     </span>
-                    <strong className="mt-1 block max-w-full truncate text-[17px] leading-[1.35] font-bold text-color-gray-850">
+                    <strong className="mt-1 block max-w-full overflow-hidden whitespace-nowrap text-ellipsis text-[17px] leading-[1.35] font-bold text-color-gray-850">
                       {contest.title}
                     </strong>
                     <span className="mt-1 block truncate text-[13px] leading-[1.25] font-medium text-color-gray-650">
@@ -1164,10 +1164,39 @@ function ContestSharedCard({
   onAdd: () => void;
 }) {
   return (
-    <div className="relative h-[97px] w-[290px] overflow-hidden rounded-[10px] bg-color-gray-200 p-2 text-left">
-      <div className="flex h-[77px] w-[260px] items-center gap-[6px]">
+    <div className="relative h-[97px] w-[304px] overflow-hidden rounded-[10px] bg-color-gray-200 p-2 text-left">
+      <div className="flex h-[77px] w-full min-w-0 items-center gap-[6px] pr-[38px]">
         <ContestPoster contest={contest} />
-        <ContestSummary contest={contest} />
+        <div
+          className="flex min-w-0 flex-1 flex-col gap-1"
+          style={{ width: "100%", maxWidth: "100%" }}
+        >
+          <span className="block min-w-0 truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
+            {contest.category}
+          </span>
+          <strong
+            className="block min-w-0 text-[12px] leading-[1.35] font-semibold text-color-gray-850"
+            style={{
+              maxWidth: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {truncateSharedCardText(contest.title, 20)}
+          </strong>
+          <span className="block min-w-0 truncate text-[12px] leading-[1.35] font-normal text-color-gray-650">
+            {contest.organizer}
+          </span>
+          <div className="flex min-w-0 items-center gap-2 text-[12px] leading-[1.35] font-semibold text-color-gray-350">
+            {contest.dday ? (
+              <span className="shrink-0 rounded-[85px] bg-color-coral-500 px-2 py-1 text-[8px] leading-[1.35] text-white">
+                {contest.dday}
+              </span>
+            ) : null}
+            <ViewCount value={contest.viewCount} />
+          </div>
+        </div>
       </div>
       <button
         aria-label={`${contest.title} 후보 추가`}
@@ -1239,21 +1268,29 @@ function FullContestListItem({
 
 function ContestSummary({
   contest,
+  titleClassName,
+  titleMaxWidthClassName = "",
   reserveActionSpace = false,
 }: {
   contest: RecommendedContest;
+  titleClassName?: string;
+  titleMaxWidthClassName?: string;
   reserveActionSpace?: boolean;
 }) {
   return (
     <div
-      className={`flex h-[75px] min-w-0 w-[162px] flex-none flex-col items-start justify-center gap-1 ${
+      className={`flex h-[75px] min-w-0 w-[162px] max-w-[162px] flex-1 flex-col items-start justify-center gap-1 ${
         reserveActionSpace ? "pr-8" : ""
       }`}
     >
       <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
         {contest.category}
       </span>
-      <strong className="block w-full max-w-full truncate text-[12px] leading-[1.35] font-semibold text-color-gray-850">
+      <strong
+        className={`block w-full min-w-0 overflow-hidden text-ellipsis text-[12px] leading-[1.35] font-semibold text-color-gray-850 ${
+          titleClassName ?? "whitespace-nowrap"
+        } ${titleMaxWidthClassName}`}
+      >
         {contest.title}
       </strong>
       <span className="block truncate text-[12px] leading-[1.35] text-color-gray-650">
@@ -1288,6 +1325,10 @@ function ViewCount({ value }: { value: string }) {
       <span className="truncate">{value}</span>
     </span>
   );
+}
+
+function truncateSharedCardText(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
 }
 
 function SmallTimer({
