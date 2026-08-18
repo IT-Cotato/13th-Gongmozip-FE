@@ -500,7 +500,13 @@ export default function TeamMatchingPage() {
           </section>
         </div>
 
-        <div className="shrink-0 bg-white px-4 pb-3 pt-2">
+        <div
+          className="flex w-[390px] max-w-full shrink-0 flex-col items-start gap-2.5 p-4"
+          style={{
+            background:
+              "var(--Semantic-Background-ButtonBackground, linear-gradient(0deg, #FFF 38.46%, rgba(255, 255, 255, 0.00) 100%))",
+          }}
+        >
           <FixedApplyButton
             disabled={isLoading || (isError && !isUnauthorized) || !canOpenApplyDestination}
             href={isUnauthorized ? "/login" : applyHref}
