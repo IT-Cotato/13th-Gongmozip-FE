@@ -6,6 +6,9 @@ import { PwaServiceWorker } from "./PwaServiceWorker";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_FRONTEND_URL ?? "https://gongmozip.site",
+  ),
   applicationName: "Gongmozip",
   title: "Gongmozip",
   description: "Gongmozip frontend web application",
@@ -16,8 +19,19 @@ export const metadata: Metadata = {
     title: "Gongmozip",
   },
   icons: {
-    icon: "/icons/icon.svg",
-    apple: "/icons/icon.svg",
+    icon: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
+  openGraph: {
+    title: "Gongmozip",
+    description: "Gongmozip frontend web application",
+    images: ["/images/logo.png"],
+  },
+  twitter: {
+    card: "summary",
+    title: "Gongmozip",
+    description: "Gongmozip frontend web application",
+    images: ["/images/logo.png"],
   },
 };
 

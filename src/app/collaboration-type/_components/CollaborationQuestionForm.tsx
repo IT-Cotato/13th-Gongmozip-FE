@@ -41,10 +41,10 @@ export default function CollaborationQuestionForm({
     ? "h-[60px] text-[15px] leading-[125%]"
     : "h-[101px] text-[15px] leading-[125%]";
   const nextButtonClassName = selectedOptionId
-    ? "inline-flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Roboto] text-[17px] font-semibold leading-[125%] text-white"
-    : "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#EFEFEF] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#C8C8C8]";
+    ? "inline-flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-normal leading-[125%] text-white"
+    : "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#EFEFEF] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-normal leading-[125%] text-[#C8C8C8]";
   const previousButtonClassName =
-    "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white";
+    "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-normal leading-[125%] text-white";
 
   const previousButtonContent = (
     <>
@@ -80,7 +80,7 @@ export default function CollaborationQuestionForm({
         <p className="h-[17px] self-stretch text-center font-[Pretendard] text-[17px] font-bold leading-[135%] text-semantic-fill-brand">
           Q{currentQuestionOrder}
         </p>
-        <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal">
+        <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal [word-break:keep-all]">
           {title}
         </p>
         <div
