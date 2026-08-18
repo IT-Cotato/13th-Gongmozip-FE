@@ -9,12 +9,14 @@ import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/ico
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
 import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
+import { SurveyRetakeLimitModal } from "./_components/SurveyRetakeLimitModal";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { useLogoutMutation } from "@/queries/useLogoutMutation";
+import { fetchSurveyStatus, surveyStatusQueryKey } from "@/queries/useSurveyStatusQuery";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiError } from "@/lib/http";
 
@@ -56,6 +58,8 @@ export default function MyPage() {
   const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isRetakeLimitOpen, setIsRetakeLimitOpen] = useState(false);
+  const [isCheckingSurveyStatus, setIsCheckingSurveyStatus] = useState(false);
   const isUnauthorized =
     summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
@@ -81,6 +85,41 @@ export default function MyPage() {
       return;
     }
     setIsTestPromptOpen(true);
+  }
+
+  async function handleCollaborationTypeTestClick() {
+    if (isCheckingSurveyStatus) return;
+
+    setIsCheckingSurveyStatus(true);
+
+    try {
+      const surveyStatus = await queryClient.fetchQuery({
+        queryFn: fetchSurveyStatus,
+        queryKey: surveyStatusQueryKey,
+        staleTime: 0,
+      });
+
+      if (surveyStatus.status === "SUBMITTED") {
+        setIsRetakeLimitOpen(true);
+        return;
+      }
+
+      router.push("/collaboration-type?returnTo=/mypage");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login/email");
+        return;
+      }
+
+      if (error instanceof ApiError && error.code === "SURVEY_409_1") {
+        setIsRetakeLimitOpen(true);
+        return;
+      }
+
+      setIsRetakeLimitOpen(true);
+    } finally {
+      setIsCheckingSurveyStatus(false);
+    }
   }
 
   function refetch() {
@@ -226,13 +265,15 @@ export default function MyPage() {
                     >
                       {collaborationType?.label ?? "검사 전"}
                     </span>
-                    <Link
-                      href="/collaboration-type?returnTo=/mypage"
-                      className="flex items-center text-[13px] font-semibold text-[#616161] underline"
+                    <button
+                      type="button"
+                      onClick={handleCollaborationTypeTestClick}
+                      disabled={isCheckingSurveyStatus}
+                      className="flex items-center text-[13px] font-semibold text-[#616161] underline disabled:opacity-60"
                     >
-                      협업 유형 검사
+                      {isCheckingSurveyStatus ? "확인 중" : "협업 유형 검사"}
                       <img src="/icons/common/tabler_chevron-right.svg" alt="" className="size-5" />
-                    </Link>
+                    </button>
                   </div>
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
                     {profileQuery.data?.name ? `${profileQuery.data.name}님,` : "반가워요,"}
@@ -327,7 +368,10 @@ export default function MyPage() {
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
-          onStartTest={() => router.push("/collaboration-type?returnTo=/mypage")}
+          onStartTest={() => {
+            setIsTestPromptOpen(false);
+            void handleCollaborationTypeTestClick();
+          }}
         />
       )}
       {isLogoutConfirmOpen && (
@@ -336,6 +380,9 @@ export default function MyPage() {
           onConfirm={handleConfirmLogout}
           isLoggingOut={logoutMutation.isPending}
         />
+      )}
+      {isRetakeLimitOpen && (
+        <SurveyRetakeLimitModal onClose={() => setIsRetakeLimitOpen(false)} />
       )}
     </div>
   );

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeftIcon } from "./_components/icons";
+import { SurveyRetakeLimitModal } from "../_components/SurveyRetakeLimitModal";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "../_lib/collaborationCharacter";
 import {
   useCurrentCharacterQuery,
@@ -15,6 +16,7 @@ import {
   type PaletteCode,
   type PaletteListResponse,
 } from "@/queries/useCharacterPalettesQuery";
+import { fetchSurveyStatus, surveyStatusQueryKey } from "@/queries/useSurveyStatusQuery";
 import { useUpdateCharacterPaletteMutation } from "@/queries/useUpdateCharacterPaletteMutation";
 import { ApiError } from "@/lib/http";
 
@@ -49,9 +51,12 @@ function CharacterManagementContent({
   palettes: PaletteListResponse;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const updatePaletteMutation = useUpdateCharacterPaletteMutation();
   const [selectedCode, setSelectedCode] = useState<PaletteCode>(character.paletteCode);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isRetakeLimitOpen, setIsRetakeLimitOpen] = useState(false);
+  const [isCheckingSurveyStatus, setIsCheckingSurveyStatus] = useState(false);
 
   const meta = getCollaborationCharacterMeta(character.characterType);
   const selectedPalette = palettes.palettes.find((palette) => palette.paletteCode === selectedCode);
@@ -77,16 +82,53 @@ function CharacterManagementContent({
     });
   }
 
+  async function handleRetakeClick() {
+    if (isCheckingSurveyStatus) return;
+
+    setIsCheckingSurveyStatus(true);
+
+    try {
+      const surveyStatus = await queryClient.fetchQuery({
+        queryFn: fetchSurveyStatus,
+        queryKey: surveyStatusQueryKey,
+        staleTime: 0,
+      });
+
+      if (surveyStatus.status === "SUBMITTED") {
+        setIsRetakeLimitOpen(true);
+        return;
+      }
+
+      router.push("/collaboration-type?returnTo=/mypage/character-management");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login/email");
+        return;
+      }
+
+      if (error instanceof ApiError && error.code === "SURVEY_409_1") {
+        setIsRetakeLimitOpen(true);
+        return;
+      }
+
+      setIsRetakeLimitOpen(true);
+    } finally {
+      setIsCheckingSurveyStatus(false);
+    }
+  }
+
   return (
     <>
       <div className="flex-1 overflow-y-auto">
         <div className="relative flex flex-col items-center gap-4 pt-6 pb-2">
-          <Link
-            href="/collaboration-type?returnTo=/mypage/character-management"
-            className="absolute top-1 right-4 text-[13px] leading-[1.25] font-semibold text-[#616161] underline"
+          <button
+            type="button"
+            onClick={handleRetakeClick}
+            disabled={isCheckingSurveyStatus}
+            className="absolute top-1 right-4 text-[13px] leading-[1.25] font-semibold text-[#616161] underline disabled:opacity-60"
           >
-            재검사하기
-          </Link>
+            {isCheckingSurveyStatus ? "확인 중" : "재검사하기"}
+          </button>
           <div
             className="flex size-[113px] items-center justify-center overflow-hidden rounded-full border-2 border-[#e8e8e8]"
             style={getPaletteStyle(selectedPalette)}
@@ -149,6 +191,9 @@ function CharacterManagementContent({
           </button>
         </div>
       </div>
+      {isRetakeLimitOpen && (
+        <SurveyRetakeLimitModal onClose={() => setIsRetakeLimitOpen(false)} />
+      )}
     </>
   );
 }
