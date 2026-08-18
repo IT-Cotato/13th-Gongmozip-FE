@@ -6,6 +6,9 @@ import { PwaServiceWorker } from "./PwaServiceWorker";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_FRONTEND_URL ?? "https://gongmozip.site",
+  ),
   applicationName: "Gongmozip",
   title: "Gongmozip",
   description: "Gongmozip frontend web application",
