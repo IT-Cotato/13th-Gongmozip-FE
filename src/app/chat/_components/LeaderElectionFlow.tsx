@@ -45,7 +45,9 @@ import {
   ChatbotTextMessage,
 } from "./leader-election/ChatbotMessage";
 import {
+  ContestCandidateAddDialog,
   ContestCandidateAddListPage,
+  ContestCandidateUnavailableDialog,
   ContestAddedToast,
   ContestRecommendationMessage,
   ContestSharedMessage,
@@ -161,6 +163,11 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [isMidtermToastShown, setIsMidtermToastShown] = useState(false);
   const [isMemberReviewStartOpen, setIsMemberReviewStartOpen] = useState(false);
   const [isContestToastShown, setIsContestToastShown] = useState(false);
+  const [pendingContestAdd, setPendingContestAdd] = useState<{
+    contest: RecommendedContest;
+    contestId: number;
+    variant: "confirm" | "unavailable";
+  } | null>(null);
   const [localContestCandidates, setLocalContestCandidates] = useState<RecommendedContest[]>([]);
   const [contestActionError, setContestActionError] = useState<string | null>(null);
   const [deadlineSubmissionStatus, setDeadlineSubmissionStatus] = useState<
@@ -343,6 +350,30 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
   const openContestAddList = () => {
     router.push("/contests");
+  };
+
+  const openContestSharedCandidateAdd = (contestId: number, contest?: RecommendedContest) => {
+    setContestActionError(null);
+    setPendingContestAdd({
+      contest: contest ?? createPlaceholderContest(contestId),
+      contestId,
+      variant: isContestVoteInProgress ? "confirm" : "unavailable",
+    });
+  };
+
+  const closeContestAddDialog = () => {
+    setPendingContestAdd(null);
+  };
+
+  const confirmContestCandidateAdd = async () => {
+    if (!pendingContestAdd || pendingContestAdd.variant !== "confirm") {
+      return;
+    }
+
+    const { contest, contestId } = pendingContestAdd;
+
+    setPendingContestAdd(null);
+    await addContestCandidateByContestId(contestId, contest);
   };
 
   const addContestCandidateByContestId = async (
@@ -660,6 +691,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     ) ??
     DEFAULT_CONTEST_VOTE_SECONDS;
   const isContestVoteClosed = voteCountdownSeconds <= 0 || hasContestResultMessage;
+  const isContestVoteInProgress =
+    Boolean(latestContestVoteReminderMessage) && !isContestVoteClosed && !hasContestResultMessage;
   const displayedVoteCountdownSeconds = isContestVoteClosed ? 0 : voteCountdownSeconds;
   const leaderVoteCountdownSeconds =
     getRemainingSecondsFromMetadata(
@@ -859,7 +892,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             leaderRecommendation={leaderRecommendationQuery.data}
             key={message.id}
             message={message}
-            onAddContestCandidate={addContestCandidateByContestId}
+            onAddContestCandidate={openContestSharedCandidateAdd}
             onAcceptRecommendation={acceptRecommendedLeader}
             onRemoveContestCandidate={(contest) => {
               void removeContestCandidate(contest);
@@ -980,6 +1013,27 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
                 voteResults={contestVoteStatus?.results}
               />
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {pendingContestAdd ? (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-color-gray-850/60"
+          onClick={closeContestAddDialog}
+        >
+          <div onClick={(event) => event.stopPropagation()}>
+            {pendingContestAdd.variant === "confirm" ? (
+              <ContestCandidateAddDialog
+                contest={pendingContestAdd.contest}
+                onCancel={closeContestAddDialog}
+                onConfirm={() => {
+                  void confirmContestCandidateAdd();
+                }}
+              />
+            ) : (
+              <ContestCandidateUnavailableDialog onClose={closeContestAddDialog} />
+            )}
           </div>
         </div>
       ) : null}
@@ -1868,7 +1922,7 @@ function mapContestSharePreviewToRecommendedContest(
     contestId: Number.isFinite(contestId) ? contestId : undefined,
     category: contest.category,
     dday: contest.dDay,
-    imageSrc: getNextImageSafeSrc(contest.thumbnailUrl),
+    imageSrc: getNextImageSafeSrc(contest.thumbnailUrl ?? undefined),
     organizer: contest.hostName,
     title: contest.title,
     viewCount: "",

@@ -324,6 +324,33 @@ export function ContestCandidateAddDialog({
   );
 }
 
+export function ContestCandidateUnavailableDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <section
+      className={`flex max-h-[400px] w-[350px] flex-col items-center rounded-[16px] bg-white px-4 pt-2 pb-4 ${popoverShadow}`}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full px-1 py-4">
+        <p className="text-center text-[20px] leading-[1.35] font-medium text-color-gray-850">
+          지금은 공모전 후보를
+          <br />
+          추가할 수 있는 단계가 아니예요.
+        </p>
+      </div>
+      <div className="flex h-[60px] w-full px-2 py-1">
+        <button
+          className="flex flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 text-[17px] leading-[1.25] font-semibold text-white"
+          onClick={onClose}
+          type="button"
+        >
+          확인
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
   return (
     <div className="pointer-events-auto absolute bottom-[108px] left-1/2 z-50 flex w-[340px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.6)] py-2 pr-4 pl-5">
