@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusesQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
+import { ContestActionToast } from "./ContestActionToast";
 
 type ContestListProps = {
   contests: ContestSummary[];
@@ -17,6 +18,10 @@ export function ContestList({ contests }: ContestListProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
   const contestScrapMutation = useContestScrapMutation();
+  const [showScrapToast, setShowScrapToast] = useState(false);
+  const [showScrapErrorToast, setShowScrapErrorToast] = useState(false);
+  const scrapToastTimerRef = useRef<number | null>(null);
+  const scrapErrorToastTimerRef = useRef<number | null>(null);
   const contestIds = useMemo(() => contests.map((contest) => contest.id), [contests]);
   const scrapStatusQueries = useContestScrapStatusesQuery(contestIds, {
     enabled: contestIds.length > 0,
@@ -30,6 +35,63 @@ export function ContestList({ contests }: ContestListProps) {
       ),
     [scrapStatusQueries],
   );
+
+  useEffect(() => {
+    return () => {
+      if (scrapToastTimerRef.current !== null) {
+        window.clearTimeout(scrapToastTimerRef.current);
+      }
+
+      if (scrapErrorToastTimerRef.current !== null) {
+        window.clearTimeout(scrapErrorToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleScrapClick = async (contestId: string, isScrapped: boolean) => {
+    if (contestScrapMutation.isPending) {
+      return;
+    }
+
+    const nextIsScrapped = !isScrapped;
+
+    if (scrapToastTimerRef.current !== null) {
+      window.clearTimeout(scrapToastTimerRef.current);
+    }
+
+    if (scrapErrorToastTimerRef.current !== null) {
+      window.clearTimeout(scrapErrorToastTimerRef.current);
+    }
+
+    setShowScrapErrorToast(false);
+
+    try {
+      await contestScrapMutation.mutateAsync({
+        contestId,
+        isScrapped: nextIsScrapped,
+      });
+
+      if (nextIsScrapped) {
+        setShowScrapToast(true);
+        scrapToastTimerRef.current = window.setTimeout(() => {
+          setShowScrapToast(false);
+          scrapToastTimerRef.current = null;
+        }, 2000);
+      } else {
+        setShowScrapToast(false);
+        scrapToastTimerRef.current = null;
+      }
+    } catch {
+      setShowScrapToast(false);
+      scrapToastTimerRef.current = null;
+      setShowScrapErrorToast(true);
+
+      scrapErrorToastTimerRef.current = window.setTimeout(() => {
+        setShowScrapErrorToast(false);
+        scrapErrorToastTimerRef.current = null;
+      }, 2000);
+    }
+  };
 
   useEffect(() => {
     scrapStatusQueries.forEach((query) => {
@@ -54,6 +116,21 @@ export function ContestList({ contests }: ContestListProps) {
 
   return (
     <section aria-label="공모전 목록" className="-mt-0.5">
+      {showScrapToast ? (
+        <ContestActionToast
+          className="fixed bottom-[92px]"
+          href="/contests/scraps"
+          message="이 공모전을 스크랩하였습니다."
+        />
+      ) : null}
+
+      {showScrapErrorToast ? (
+        <ContestActionToast
+          className="fixed bottom-[92px]"
+          message="스크랩 처리에 실패했습니다"
+        />
+      ) : null}
+
       {contests.map((contest) => {
         const isScrapped =
           scrapStatusByContestId.get(contest.id) ??
@@ -111,10 +188,7 @@ export function ContestList({ contests }: ContestListProps) {
                   contestScrapMutation.variables?.contestId === contest.id
                 }
                 onClick={() => {
-                  contestScrapMutation.mutate({
-                    contestId: contest.id,
-                    isScrapped: !isScrapped,
-                  });
+                  void handleScrapClick(contest.id, isScrapped);
                 }}
               >
                 <Image

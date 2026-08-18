@@ -8,6 +8,7 @@ import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestDetail } from "../_types";
+import { ContestActionToast } from "./ContestActionToast";
 import { ShareContestModal } from "./ShareContestModal";
 
 type ContestInfoProps = {
@@ -331,20 +332,41 @@ export function ContestInfo({ contest }: ContestInfoProps) {
 
         <div className="relative mt-8 w-full max-w-[358px]">
           {showShareToast ? (
-            <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              href="/chat"
+              message="채팅방에 공유 완료했습니다."
+            />
           ) : null}
 
           {showShareErrorToast ? (
-            <ContestActionToast message="공유에 실패했습니다. 다시 시도해주세요." />
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              message="공유에 실패했습니다. 다시 시도해주세요."
+            />
           ) : null}
 
           {showScrapToast ? (
-            <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              href="/contests/scraps"
+              message="이 공모전을 스크랩하였습니다."
+            />
           ) : null}
 
-          {showScrapErrorToast ? <ContestActionToast message="스크랩 처리에 실패했습니다" /> : null}
+          {showScrapErrorToast ? (
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              message="스크랩 처리에 실패했습니다"
+            />
+          ) : null}
 
-          {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
+          {showLinkCopiedToast ? (
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              message="링크가 복사되었습니다"
+            />
+          ) : null}
 
           {contest.websiteUrl ? (
             <Link
@@ -462,23 +484,4 @@ function ContestImage({
 
 function isExternalUrl(src: string) {
   return src.startsWith("http://") || src.startsWith("https://");
-}
-
-function ContestActionToast({ href, message }: { href?: string; message: string }) {
-  return (
-    <div
-      role="status"
-      className="absolute bottom-[calc(100%+11px)] left-1/2 z-50 flex w-[350px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.60)] py-2 pr-4 pl-5"
-    >
-      <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">{message}</p>
-      {href ? (
-        <Link
-          href={href}
-          className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
-        >
-          바로가기
-        </Link>
-      ) : null}
-    </div>
-  );
 }
