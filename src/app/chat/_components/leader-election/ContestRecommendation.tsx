@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
 
 import type { ContestVoteResultItem } from "@/queries/useChatQueries";
 import type { ContestSummary } from "@/app/contests/_types";
@@ -24,6 +25,47 @@ function formatCandidateTimer(seconds: number) {
   const restSeconds = (safeSeconds % 60).toString().padStart(2, "0");
 
   return `${hours} : ${minutes} : ${restSeconds}`;
+}
+
+function getContestDetailHref(contest: RecommendedContest) {
+  const contestId = contest.contestId ?? Number(contest.id);
+
+  if (!Number.isFinite(contestId)) {
+    return null;
+  }
+
+  return `/contests/${encodeURIComponent(String(contestId))}`;
+}
+
+function useContestDetailNavigation(contest: RecommendedContest, enabled = true) {
+  const router = useRouter();
+  const href = getContestDetailHref(contest);
+  const isClickable = enabled && href !== null;
+
+  const openContestDetail = () => {
+    if (isClickable && href) {
+      router.push(href);
+    }
+  };
+
+  const openContestDetailByKeyboard = (event: KeyboardEvent<HTMLElement>) => {
+    if (!isClickable || (event.key !== "Enter" && event.key !== " ")) {
+      return;
+    }
+
+    event.preventDefault();
+    openContestDetail();
+  };
+
+  return { isClickable, openContestDetail, openContestDetailByKeyboard };
+}
+
+function stopCardActionPropagation(event: MouseEvent<HTMLButtonElement>) {
+  event.stopPropagation();
+}
+
+function stopCardActionKeyDownPropagation(event: KeyboardEvent<HTMLButtonElement>) {
+  event.stopPropagation();
 }
 
 export function ContestRecommendationMessage({
@@ -167,6 +209,7 @@ export function ContestCandidateAddListPage({
   onAdd: (contest: ContestSummary) => void;
   onBack: () => void;
 }) {
+  const router = useRouter();
   const addedContestIdSet = new Set(addedContestIds);
 
   return (
@@ -199,8 +242,17 @@ export function ContestCandidateAddListPage({
 
             return (
               <article
-                className="flex w-full border-b border-color-gray-250 bg-white py-2 pr-2 pl-4"
+                className="flex w-full cursor-pointer border-b border-color-gray-250 bg-white py-2 pr-2 pl-4"
                 key={contest.id}
+                onClick={() => router.push(`/contests/${encodeURIComponent(contest.id)}`)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    router.push(`/contests/${encodeURIComponent(contest.id)}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-[14px]">
                   <div className="relative h-[113px] w-[85px] shrink-0 overflow-hidden bg-color-gray-250">
@@ -236,7 +288,11 @@ export function ContestCandidateAddListPage({
                   aria-label={`${contest.title} 후보 추가`}
                   className="flex size-[38px] shrink-0 items-center justify-center rounded-[14px] text-[24px] leading-none text-color-gray-650 disabled:text-color-gray-350"
                   disabled={isAdded || isAdding}
-                  onClick={() => onAdd(contest)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onAdd(contest);
+                  }}
+                  onKeyDown={stopCardActionKeyDownPropagation}
                   type="button"
                 >
                   {isAdded ? "✓" : "+"}
@@ -962,11 +1018,7 @@ function ContestListCard({
         ))}
       </div>
 
-      <button
-        className="hidden"
-        onClick={() => undefined}
-        type="button"
-      >
+      <button className="hidden" onClick={() => undefined} type="button">
         전체보기
       </button>
       <button
@@ -983,12 +1035,7 @@ function ContestListCard({
           "투표 종료"
         ) : (
           <>
-            <Image
-              src="/icons/chat/vote_1_1.svg"
-              alt=""
-              width={18}
-              height={18}
-            />
+            <Image src="/icons/chat/vote_1_1.svg" alt="" width={18} height={18} />
             원하는 공모전 투표하러 가기
           </>
         )}
@@ -1036,19 +1083,29 @@ function CompactContestListItem({
   highlight = false,
   muted = false,
   onRemove,
+  openDetailOnClick = true,
   removable = false,
 }: {
   contest: RecommendedContest;
   highlight?: boolean;
   muted?: boolean;
   onRemove?: (contest: RecommendedContest) => void;
+  openDetailOnClick?: boolean;
   removable?: boolean;
 }) {
+  const { isClickable, openContestDetail, openContestDetailByKeyboard } =
+    useContestDetailNavigation(contest, openDetailOnClick);
+
   return (
     <article
+      aria-label={isClickable ? `${contest.title} 상세정보 보기` : undefined}
       className={`relative flex h-[97px] w-full items-center gap-[6px] rounded-[10px] p-2 text-left ${
         muted ? "bg-color-gray-350 opacity-70" : highlight ? "bg-color-orange-50" : "bg-white"
-      }`}
+      } ${isClickable ? "cursor-pointer" : ""}`}
+      onClick={isClickable ? openContestDetail : undefined}
+      onKeyDown={isClickable ? openContestDetailByKeyboard : undefined}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
     >
       <ContestPoster contest={contest} />
       <ContestSummary contest={contest} reserveActionSpace={removable} />
@@ -1056,7 +1113,11 @@ function CompactContestListItem({
         <button
           aria-label={`${contest.title} 후보 삭제`}
           className="absolute top-1/2 right-2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(97,97,97,0.10)] text-[20px] leading-none text-color-gray-850"
-          onClick={() => onRemove(contest)}
+          onClick={(event) => {
+            stopCardActionPropagation(event);
+            onRemove(contest);
+          }}
+          onKeyDown={stopCardActionKeyDownPropagation}
           type="button"
         >
           횞
@@ -1096,7 +1157,11 @@ function VotePageContestRow({
         {isSelected ? <span className="size-2 rounded-full bg-white" /> : null}
       </span>
       <div className="w-[290px]">
-        <CompactContestListItem contest={contest} highlight={isSelected} />
+        <CompactContestListItem
+          contest={contest}
+          highlight={isSelected}
+          openDetailOnClick={false}
+        />
       </div>
     </button>
   );
@@ -1187,8 +1252,20 @@ function ContestSharedCard({
   isAdded: boolean;
   onAdd: () => void;
 }) {
+  const { isClickable, openContestDetail, openContestDetailByKeyboard } =
+    useContestDetailNavigation(contest);
+
   return (
-    <div className="relative h-[97px] w-[304px] overflow-hidden rounded-[10px] bg-color-gray-200 p-2 text-left">
+    <div
+      aria-label={isClickable ? `${contest.title} 상세정보 보기` : undefined}
+      className={`relative h-[97px] w-[304px] overflow-hidden rounded-[10px] bg-color-gray-200 p-2 text-left ${
+        isClickable ? "cursor-pointer" : ""
+      }`}
+      onClick={isClickable ? openContestDetail : undefined}
+      onKeyDown={isClickable ? openContestDetailByKeyboard : undefined}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+    >
       <div className="flex h-[77px] w-full min-w-0 items-center gap-[6px] pr-[38px]">
         <ContestPoster contest={contest} />
         <div
@@ -1226,7 +1303,11 @@ function ContestSharedCard({
         aria-label={`${contest.title} 후보 추가`}
         className="absolute top-2 right-2 flex size-8 items-center justify-center overflow-hidden rounded-[12px] bg-color-coral-900"
         disabled={isAdded}
-        onClick={onAdd}
+        onClick={(event) => {
+          stopCardActionPropagation(event);
+          onAdd();
+        }}
+        onKeyDown={stopCardActionKeyDownPropagation}
         type="button"
       >
         <Image
@@ -1251,8 +1332,20 @@ function FullContestListItem({
   disabled?: boolean;
   onRemove?: (contest: RecommendedContest) => void;
 }) {
+  const { isClickable, openContestDetail, openContestDetailByKeyboard } =
+    useContestDetailNavigation(contest);
+
   return (
-    <article className="flex w-full border-b border-color-gray-250 bg-white py-2 pr-2 pl-4">
+    <article
+      aria-label={isClickable ? `${contest.title} 상세정보 보기` : undefined}
+      className={`flex w-full border-b border-color-gray-250 bg-white py-2 pr-2 pl-4 ${
+        isClickable ? "cursor-pointer" : ""
+      }`}
+      onClick={isClickable ? openContestDetail : undefined}
+      onKeyDown={isClickable ? openContestDetailByKeyboard : undefined}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+    >
       <div className="flex min-w-0 flex-1 items-center gap-[14px]">
         <div className="relative h-[113px] w-[85px] shrink-0 overflow-hidden bg-color-gray-250">
           {contest.imageSrc ? (
@@ -1281,7 +1374,11 @@ function FullContestListItem({
         aria-label={`${contest.title} 후보 삭제`}
         className="flex size-[38px] shrink-0 items-center justify-center rounded-[14px] text-[24px] leading-none text-color-gray-650 disabled:opacity-50"
         disabled={disabled || !onRemove}
-        onClick={() => onRemove?.(contest)}
+        onClick={(event) => {
+          stopCardActionPropagation(event);
+          onRemove?.(contest);
+        }}
+        onKeyDown={stopCardActionKeyDownPropagation}
         type="button"
       >
         ×
