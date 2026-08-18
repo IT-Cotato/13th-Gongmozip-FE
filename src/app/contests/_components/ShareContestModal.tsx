@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import type { ChatRoomAvatarItem } from "@/app/chat/_data/mockMessages";
+import type { ChatRoomAvatarItem } from "@/app/chat/_data/chatTypes";
 import Dialog from "@/components/Dialog";
 import { ApiError } from "@/lib/http";
 import { useChatTeamsQuery, useShareContestToChatsMutation } from "@/queries/useChatQueries";

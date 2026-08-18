@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../_data/mockMessages";
+import type { ChatMessage } from "../_data/chatTypes";
 import { ChatAvatar } from "./ChatAvatar";
 
 type ChatMessageBubbleProps = {

@@ -1,12 +1,14 @@
-import type { ChatMember } from "../../_data/mockMessages";
+import type { ChatMember } from "../../_data/chatTypes";
 
 export type SheetState =
   | "closed"
   | "willingness"
   | "candidateVote"
+  | "leaderComplete"
   | "contestAddList"
   | "contestList"
   | "contestVote"
+  | "contestComplete"
   | "contestResult"
   | "contestDetail";
 export type LeaderChoice = "yes" | "no";

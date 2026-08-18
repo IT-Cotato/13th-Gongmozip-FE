@@ -27,7 +27,7 @@ import {
 } from "@/queries/useChatQueries";
 import { useContestsQuery } from "@/queries/useContestsQuery";
 
-import { type ChatMember, type ChatMessage, type ChatMessageMetadata } from "../_data/mockMessages";
+import { type ChatMember, type ChatMessage, type ChatMessageMetadata } from "../_data/chatTypes";
 import { ChatInputBar } from "./ChatInputBar";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatProfilePreview } from "./ChatProfilePreview";
@@ -45,6 +45,7 @@ import {
   ContestRecommendationMessage,
   ContestSharedMessage,
   ContestVoteDetailSheet,
+  ContestVoteCompleteSheet,
   ContestVoteNoticeBanner,
   ContestVoteResultSheet,
   ContestVoteResultMessage,
@@ -57,7 +58,11 @@ import {
   LeaderElectedMessage,
   LeaderTieMessage,
 } from "./leader-election/LeaderCards";
-import { LeaderCandidateVoteSheet, LeaderWillingnessSheet } from "./leader-election/LeaderSheets";
+import {
+  LeaderCandidateVoteSheet,
+  LeaderVoteResultSheet,
+  LeaderWillingnessSheet,
+} from "./leader-election/LeaderSheets";
 import type {
   LeaderCandidate,
   LeaderChoice,
@@ -65,7 +70,7 @@ import type {
   SheetState,
 } from "./leader-election/types";
 
-const DEFAULT_CONTEST_VOTE_SECONDS = 2 * 60 * 60;
+const DEFAULT_CONTEST_VOTE_SECONDS = 24 * 60 * 60;
 const EMPTY_CHAT_MEMBERS: ChatMember[] = [];
 const LEADER_RECOMMENDATION_ID_KEYS = [
   "aiRecommendedTeamMemberIds",
@@ -262,7 +267,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     try {
       await voteLeaderMutation.mutateAsync({ candidateTeamMemberId });
       setIsLeaderVoteSubmitted(true);
-      setSheetState("closed");
+      setSheetState("leaderComplete");
     } catch (error) {
       setLeaderActionError(getApiErrorMessage(error, "팀장 투표에 실패했습니다."));
     }
@@ -310,26 +315,27 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     setChatFocusToken((token) => token + 1);
   }, []);
 
-  const startContestVote = useCallback((contestCandidateIds?: string[]) => {
-    setIsContestVoteSubmitted(false);
-    setActiveContestCandidateIds(contestCandidateIds?.length ? contestCandidateIds : null);
-    setSelectedContestIds([]);
-    setContestActionError(null);
-    setSheetState("contestVote");
-  }, []);
+  const startContestVote = useCallback(
+    (contestCandidateIds?: string[], options?: { keepSelection?: boolean }) => {
+      setIsContestVoteSubmitted(false);
+      setActiveContestCandidateIds(contestCandidateIds?.length ? contestCandidateIds : null);
+
+      if (!options?.keepSelection) {
+        setSelectedContestIds([]);
+      }
+
+      setContestActionError(null);
+      setSheetState("contestVote");
+    },
+    [],
+  );
 
   const openContestList = () => {
     setSheetState("contestList");
   };
 
   const openContestAddList = () => {
-    if (isCandidateClosed) {
-      setContestActionError("후보 공모전 추가 시간이 종료되었습니다.");
-      return;
-    }
-
-    setContestActionError(null);
-    setSheetState("contestAddList");
+    router.push("/contests");
   };
 
   const addContestCandidateByContestId = async (contestId: number) => {
@@ -398,11 +404,11 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     }
 
     setContestActionError(null);
+    setIsContestVoteSubmitted(true);
+    setSheetState("contestComplete");
 
     try {
       await voteContestCandidatesMutation.mutateAsync(contestCandidateIds);
-      setIsContestVoteSubmitted(true);
-      setSheetState("closed");
     } catch (error) {
       setContestActionError(getApiErrorMessage(error, "공모전 투표에 실패했습니다."));
     }
@@ -523,7 +529,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   };
 
   const isContestOverlay =
-    sheetState === "contestVote" ||
     sheetState === "contestResult" ||
     sheetState === "contestDetail";
   const apiContestCandidates = contestCandidatesQuery.data ?? [];
@@ -566,6 +571,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   );
   const contestVoteStatus = contestVoteStatusQuery.data;
   const contestVoteResult = contestVoteStatus?.result ?? "normal";
+  const hasMyVoted = contestVoteStatus?.myVoted ?? isContestVoteSubmitted;
   const candidateCountdownSeconds =
     getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
@@ -654,6 +660,39 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     );
   }
 
+  if (sheetState === "contestComplete") {
+    return (
+      <ContestVoteCompleteSheet
+        contests={candidateContests}
+        onBack={() => setSheetState("contestList")}
+        onRevote={() =>
+          startContestVote(activeContestCandidateIds ?? undefined, { keepSelection: true })
+        }
+        remainingSeconds={voteCountdownSeconds}
+        selectedContestIds={selectedContestIds}
+      />
+    );
+  }
+
+  if (sheetState === "leaderComplete" && selectedCandidate) {
+    return <LeaderVoteResultSheet leader={selectedCandidate} onDone={() => setSheetState("closed")} />;
+  }
+
+  if (sheetState === "contestVote") {
+    return (
+      <ContestVoteSheet
+        contests={candidateContests}
+        disabled={voteContestCandidatesMutation.isPending || isContestVoteClosed}
+        onBack={() => setSheetState("closed")}
+        onOpenAdd={openContestAddList}
+        onSubmit={submitContestVote}
+        onToggle={toggleContestVote}
+        remainingSeconds={voteCountdownSeconds}
+        selectedContestIds={selectedContestIds}
+      />
+    );
+  }
+
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <ChatTopBar
@@ -666,9 +705,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         <ContestVoteNoticeBanner
           body={latestContestVoteReminderMessage.body}
           isActionDisabled={isContestVoteClosed}
-          isVoteSubmitted={isContestVoteSubmitted}
+          isVoteSubmitted={hasMyVoted}
           onAction={
-            isContestVoteSubmitted
+            hasMyVoted
               ? showContestVoteResult
               : () => startContestVote(latestContestVoteReminderCandidateIds)
           }
@@ -725,6 +764,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             chatMembers={chatMembers}
             candidateRemainingSeconds={candidateCountdownSeconds}
             contestCandidates={apiContestCandidates}
+            hasContestResultMessage={hasContestResultMessage}
             isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
             isContestVoteClosed={isContestVoteClosed}
             isLeaderCandidacySubmitted={isLeaderCandidacySubmitted}
@@ -825,17 +865,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           onClick={closeActiveSheet}
         >
           <div onClick={(event) => event.stopPropagation()}>
-            {sheetState === "contestVote" ? (
-              <ContestVoteSheet
-                contests={candidateContests}
-                disabled={voteContestCandidatesMutation.isPending || isContestVoteClosed}
-                onSubmit={submitContestVote}
-                onToggle={toggleContestVote}
-                remainingSeconds={voteCountdownSeconds}
-                selectedContestIds={selectedContestIds}
-              />
-            ) : null}
-
             {sheetState === "contestResult" ? (
               <ContestVoteResultSheet
                 hasVotes={contestVoteResult !== "noVotes"}
@@ -897,6 +926,7 @@ function ChatMessageRenderer({
   chatMembers,
   candidateRemainingSeconds,
   contestCandidates,
+  hasContestResultMessage,
   isLeaderCandidacySubmitted,
   isLeaderVoteFlowEnded,
   isLeaderRecommendationPending,
@@ -920,6 +950,7 @@ function ChatMessageRenderer({
   chatMembers: LeaderCandidate[];
   candidateRemainingSeconds: number;
   contestCandidates: RecommendedContest[];
+  hasContestResultMessage: boolean;
   isLeaderCandidacySubmitted: boolean;
   isLeaderVoteFlowEnded: boolean;
   isLeaderRecommendationPending: boolean;
@@ -1075,7 +1106,7 @@ function ChatMessageRenderer({
     return (
       <ContestRecommendationMessage
         contests={displayContests}
-        isActionDisabled={isContestCandidateClosed && isContestVoteClosed}
+        isActionDisabled={hasContestResultMessage}
         isCandidateClosed={isContestCandidateClosed}
         onRemove={(contest) => {
           onRemoveContestCandidate(contest);
@@ -1087,7 +1118,8 @@ function ChatMessageRenderer({
             : onOpenContestList
         }
         remainingSeconds={candidateRemainingSeconds}
-        sentAt={message.sentAt}
+        timerLabel="후보 마감까지"
+        title="추천 공모전 리스트"
       />
     );
   }
@@ -1144,7 +1176,8 @@ function ChatMessageRenderer({
         onShowAll={onOpenContestList}
         onStartVote={() => onOpenContestVote(candidateIds)}
         remainingSeconds={voteRemainingSeconds}
-        sentAt={message.sentAt}
+        timerLabel="투표 마감까지"
+        title="공모전 후보 리스트"
       />
     );
   }

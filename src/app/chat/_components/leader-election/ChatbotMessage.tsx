@@ -130,12 +130,16 @@ export function ChatbotSystemNotice({
 }
 
 export function ChatbotUsageGuideMessage({
+  examples,
   onUseChatbot,
   sentAt,
 }: {
+  examples?: string[];
   onUseChatbot?: () => void;
   sentAt?: string;
 } = {}) {
+  const usageExamples = examples ?? [];
+
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -149,8 +153,9 @@ export function ChatbotUsageGuideMessage({
               <span className="w-0.5 rounded-full bg-color-coral-500" />
               <div>
                 <p>저를 사용할 수 있는 예시입니다.</p>
-                <p>@챗봇 우리 역할 분담 추천해줘</p>
-                <p>@챗봇 우리 타임라인 추천해줘</p>
+                {usageExamples.map((example) => (
+                  <p key={example}>{example}</p>
+                ))}
               </div>
             </div>
           </div>
