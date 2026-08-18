@@ -50,7 +50,7 @@ export function BotMessage({
         <button
           className={`mt-1 flex h-9 w-[230px] items-center justify-center rounded-[10px] px-2 text-[13px] leading-[1.25] font-semibold ${
             buttonDisabled
-              ? "bg-color-gray-200 text-color-gray-350"
+              ? "bg-[rgba(97,97,97,0.10)] text-color-gray-350"
               : "bg-color-coral-500 text-white"
           }`}
           disabled={buttonDisabled}
