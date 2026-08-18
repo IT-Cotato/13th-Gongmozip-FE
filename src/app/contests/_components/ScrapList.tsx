@@ -2,14 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useQueries } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
 
-import {
-  contestListDetailQueryKey,
-  fetchContestDetailForList,
-} from "@/queries/useContestDetailQuery";
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
@@ -27,23 +21,6 @@ export function ScrapList({
   const contestScrapMutation = useContestScrapMutation();
   const scrappedContestIds = scrappedContestIdsProp ?? storeScrappedContestIds;
   const scrappedContests = contests.filter((contest) => scrappedContestIds.includes(contest.id));
-  const contestDetailQueries = useQueries({
-    queries: scrappedContests.map((contest) => ({
-      queryKey: contestListDetailQueryKey(contest.id),
-      queryFn: () => fetchContestDetailForList(contest.id),
-      enabled: contest.id.length > 0,
-      staleTime: 1000 * 60,
-    })),
-  });
-  const detailViewCountByContestId = useMemo(
-    () =>
-      new Map(
-        contestDetailQueries.flatMap((query) =>
-          query.data ? [[query.data.id, query.data.viewCount] as const] : [],
-        ),
-      ),
-    [contestDetailQueries],
-  );
 
   if (scrappedContests.length === 0) {
     return (
@@ -91,8 +68,6 @@ export function ScrapList({
 
       <div className="-mx-4 mt-[25px] flex flex-col">
         {scrappedContests.map((contest, index) => {
-          const viewCount = detailViewCountByContestId.get(contest.id) ?? contest.viewCount;
-
           return (
             <article
               key={contest.id}
@@ -131,7 +106,7 @@ export function ScrapList({
                       </span>
                       <span className="flex items-center gap-1 text-xs leading-[135%] font-semibold text-color-gray-350">
                         <Image src="/icons/contests/tabler-eye.svg" alt="" width={16} height={16} />
-                        {viewCount.toLocaleString("ko-KR")}
+                        {contest.viewCount.toLocaleString("ko-KR")}
                       </span>
                     </div>
                   </div>

@@ -34,35 +34,10 @@ type ContestDetailResponse = ContestViewCountFields & {
 };
 
 export const contestDetailQueryKey = (contestId: string) => ["contest", contestId] as const;
-export const contestListDetailQueryKey = (contestId: string) =>
-  ["contest", contestId, "list-detail"] as const;
 
 export async function fetchContestDetail(contestId: string) {
   const data = await apiFetch<ContestDetailResponse>(
     `/api/contests/${encodeURIComponent(contestId)}`,
-  );
-
-  return mapContestDetail(data);
-}
-
-export async function fetchContestDetailForList(contestId: string) {
-  const searchParams = new URLSearchParams({
-    countView: "false",
-    increaseView: "false",
-    incrementView: "false",
-    preview: "true",
-    recordView: "false",
-  });
-  const data = await apiFetch<ContestDetailResponse>(
-    `/api/contests/${encodeURIComponent(contestId)}?${searchParams.toString()}`,
-    {
-      headers: {
-        "X-Count-View": "false",
-        "X-Increase-View": "false",
-        "X-Increment-View": "false",
-        "X-Record-View": "false",
-      },
-    },
   );
 
   return mapContestDetail(data);
