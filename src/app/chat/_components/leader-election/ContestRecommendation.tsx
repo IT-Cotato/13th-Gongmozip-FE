@@ -570,8 +570,8 @@ export function ContestVoteResultMessage({
             </p>
             <MessageMeta sentAt={sentAt} />
           </div>
-          <div className="mt-1 w-[290px] rounded-[10px] bg-color-orange-50">
-            <CompactContestListItem contest={contest} />
+          <div className="mt-1 w-[290px]">
+            <CompactContestListItem contest={contest} highlight />
           </div>
         </div>
       </article>
