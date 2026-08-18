@@ -64,7 +64,7 @@ export function ContestList({ contests }: ContestListProps) {
             key={contest.id}
             className="flex flex-col items-start self-stretch border-b border-color-gray-250 bg-white py-2 pr-2 pl-4"
           >
-            <div className="grid w-full min-h-[113px] grid-cols-[85px_minmax(0,1fr)_24px] gap-x-[14px]">
+            <div className="grid w-full min-h-[113px] grid-cols-[85px_minmax(0,1fr)_38px] gap-x-[14px]">
               <Link
                 href={`/contests/${contest.id}`}
                 aria-label={`${contest.title} 상세정보 보기`}
@@ -107,7 +107,7 @@ export function ContestList({ contests }: ContestListProps) {
                 type="button"
                 aria-label={`${contest.title} 스크랩`}
                 aria-pressed={isScrapped}
-                className="flex justify-center pt-1"
+                className="flex size-[38px] items-center justify-center rounded-[14px]"
                 disabled={
                   contestScrapMutation.isPending &&
                   contestScrapMutation.variables?.contestId === contest.id
@@ -126,9 +126,9 @@ export function ContestList({ contests }: ContestListProps) {
                       : "/icons/contests/bookmark_gray.svg"
                   }
                   alt=""
-                  width={24}
-                  height={24}
-                  className="size-6 shrink-0"
+                  width={20}
+                  height={20}
+                  className="size-5 shrink-0"
                 />
               </button>
             </div>
