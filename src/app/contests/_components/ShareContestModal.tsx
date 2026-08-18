@@ -10,7 +10,7 @@ import { useChatTeamsQuery, useShareContestToChatsMutation } from "@/queries/use
 
 type ShareContestModalProps = {
   contestId: number | string;
-  onShareComplete: () => void;
+  onShareComplete: (sharedRoomId?: string) => void;
   onShareError: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
@@ -82,9 +82,10 @@ export function ShareContestModal({
     }
 
     try {
+      const sharedRoomIds = Array.from(selectedRoomIds);
       const result = await shareContestMutation.mutateAsync({
         contestId,
-        teamIds: Array.from(selectedRoomIds),
+        teamIds: sharedRoomIds,
       });
 
       if (result.failedTeamIds.length > 0) {
@@ -95,7 +96,7 @@ export function ShareContestModal({
       }
 
       handleOpenChange(false);
-      onShareComplete();
+      onShareComplete(sharedRoomIds[0]);
     } catch (error) {
       setShareErrorMessage(
         error instanceof ApiError

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type KeyboardEvent, type MouseEvent } from "react";
 
 import type { ContestVoteResultItem } from "@/queries/useChatQueries";
@@ -27,19 +27,31 @@ function formatCandidateTimer(seconds: number) {
   return `${hours} : ${minutes} : ${restSeconds}`;
 }
 
-function getContestDetailHref(contest: RecommendedContest) {
+function createContestDetailHref(contestId: number | string, returnTo?: string | null) {
+  const href = `/contests/${encodeURIComponent(String(contestId))}`;
+
+  if (!returnTo) {
+    return href;
+  }
+
+  return `${href}?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
+function getContestDetailHref(contest: RecommendedContest, returnTo?: string | null) {
   const contestId = contest.contestId ?? Number(contest.id);
 
   if (!Number.isFinite(contestId)) {
     return null;
   }
 
-  return `/contests/${encodeURIComponent(String(contestId))}`;
+  return createContestDetailHref(contestId, returnTo);
 }
 
 function useContestDetailNavigation(contest: RecommendedContest, enabled = true) {
   const router = useRouter();
-  const href = getContestDetailHref(contest);
+  const pathname = usePathname();
+  const returnTo = pathname.startsWith("/chat/") ? pathname : null;
+  const href = getContestDetailHref(contest, returnTo);
   const isClickable = enabled && href !== null;
 
   const openContestDetail = () => {
@@ -210,6 +222,8 @@ export function ContestCandidateAddListPage({
   onBack: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const returnTo = pathname.startsWith("/chat/") ? pathname : null;
   const addedContestIdSet = new Set(addedContestIds);
 
   return (
@@ -244,11 +258,11 @@ export function ContestCandidateAddListPage({
               <article
                 className="flex w-full cursor-pointer border-b border-color-gray-250 bg-white py-2 pr-2 pl-4"
                 key={contest.id}
-                onClick={() => router.push(`/contests/${encodeURIComponent(contest.id)}`)}
+                onClick={() => router.push(createContestDetailHref(contest.id, returnTo))}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    router.push(`/contests/${encodeURIComponent(contest.id)}`);
+                    router.push(createContestDetailHref(contest.id, returnTo));
                   }
                 }}
                 role="button"

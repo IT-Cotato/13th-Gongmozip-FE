@@ -40,6 +40,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
   const [showShareToast, setShowShareToast] = useState(false);
   const [showShareErrorToast, setShowShareErrorToast] = useState(false);
   const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
+  const [shareToastHref, setShareToastHref] = useState("/chat");
   const [isWebSharePending, setIsWebSharePending] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
   const scrapErrorToastTimerRef = useRef<number | null>(null);
@@ -130,7 +131,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
     }
   };
 
-  const handleShareComplete = () => {
+  const handleShareComplete = (sharedRoomId?: string) => {
     if (shareToastTimerRef.current !== null) {
       window.clearTimeout(shareToastTimerRef.current);
     }
@@ -141,6 +142,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
     }
 
     setShowShareErrorToast(false);
+    setShareToastHref(sharedRoomId ? `/chat/${encodeURIComponent(sharedRoomId)}` : "/chat");
     setShowShareToast(true);
     shareToastTimerRef.current = window.setTimeout(() => {
       setShowShareToast(false);
@@ -337,7 +339,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
         <div className="relative mt-8 w-full max-w-[358px]">
           {showShareToast ? (
-            <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
+            <ContestActionToast href={shareToastHref} message="채팅방에 공유 완료했습니다." />
           ) : null}
 
           {showShareErrorToast ? (
