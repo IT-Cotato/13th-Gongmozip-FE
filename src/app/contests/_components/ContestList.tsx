@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 
-import { contestDetailQueryKey, fetchContestDetail } from "@/queries/useContestDetailQuery";
+import {
+  contestListDetailQueryKey,
+  fetchContestDetailForList,
+} from "@/queries/useContestDetailQuery";
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusesQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
@@ -25,8 +28,8 @@ export function ContestList({ contests }: ContestListProps) {
   });
   const contestDetailQueries = useQueries({
     queries: contestIds.map((contestId) => ({
-      queryKey: contestDetailQueryKey(contestId),
-      queryFn: () => fetchContestDetail(contestId),
+      queryKey: contestListDetailQueryKey(contestId),
+      queryFn: () => fetchContestDetailForList(contestId),
       enabled: contestId.length > 0,
       staleTime: 1000 * 60,
     })),

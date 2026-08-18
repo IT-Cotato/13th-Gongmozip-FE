@@ -6,7 +6,10 @@ import { useQueries } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 
-import { contestDetailQueryKey, fetchContestDetail } from "@/queries/useContestDetailQuery";
+import {
+  contestListDetailQueryKey,
+  fetchContestDetailForList,
+} from "@/queries/useContestDetailQuery";
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
@@ -26,8 +29,8 @@ export function ScrapList({
   const scrappedContests = contests.filter((contest) => scrappedContestIds.includes(contest.id));
   const contestDetailQueries = useQueries({
     queries: scrappedContests.map((contest) => ({
-      queryKey: contestDetailQueryKey(contest.id),
-      queryFn: () => fetchContestDetail(contest.id),
+      queryKey: contestListDetailQueryKey(contest.id),
+      queryFn: () => fetchContestDetailForList(contest.id),
       enabled: contest.id.length > 0,
       staleTime: 1000 * 60,
     })),
