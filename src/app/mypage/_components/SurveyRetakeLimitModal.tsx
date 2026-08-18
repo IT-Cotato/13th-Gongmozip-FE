@@ -10,16 +10,69 @@ export function SurveyRetakeLimitModal({ onClose }: SurveyRetakeLimitModalProps)
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const previouslyFocusedElement = document.activeElement;
+
     dialogRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      );
+      const firstFocusableElement = focusableElements?.[0];
+      const lastFocusableElement = focusableElements?.[focusableElements.length - 1];
+
+      if (!firstFocusableElement || !lastFocusableElement) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      if (!dialogRef.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        if (event.shiftKey) {
+          lastFocusableElement.focus();
+        } else {
+          firstFocusableElement.focus();
+        }
+        return;
+      }
+
+      if (
+        event.shiftKey &&
+        (document.activeElement === dialogRef.current ||
+          document.activeElement === firstFocusableElement)
+      ) {
+        event.preventDefault();
+        lastFocusableElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && document.activeElement === lastFocusableElement) {
+        event.preventDefault();
+        firstFocusableElement.focus();
       }
     }
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+
+      if (
+        previouslyFocusedElement instanceof HTMLElement &&
+        document.contains(previouslyFocusedElement)
+      ) {
+        previouslyFocusedElement.focus();
+      }
+    };
   }, [onClose]);
 
   return (

@@ -183,10 +183,7 @@ export function ContestList({ contests }: ContestListProps) {
                 aria-label={`${contest.title} 스크랩`}
                 aria-pressed={isScrapped}
                 className="flex size-[38px] items-center justify-center rounded-[14px]"
-                disabled={
-                  contestScrapMutation.isPending &&
-                  contestScrapMutation.variables?.contestId === contest.id
-                }
+                disabled={contestScrapMutation.isPending}
                 onClick={() => {
                   void handleScrapClick(contest.id, isScrapped);
                 }}
