@@ -6,7 +6,6 @@ export type SheetState =
   | "candidateVote"
   | "leaderComplete"
   | "contestAddList"
-  | "contestList"
   | "contestVote"
   | "contestComplete"
   | "contestResult"
@@ -26,6 +25,7 @@ export type RecommendedContest = {
   imageSrc?: string;
   isRecommended?: boolean;
   organizer: string;
+  projectEndAt?: string;
   title: string;
   voteDeadlineAt?: string;
   viewCount: string;

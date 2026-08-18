@@ -94,9 +94,11 @@ export function LeaderCandidateVoteSheet({
 export function VoteCompleteSheet({
   isResultReady,
   onShowResult,
+  remainingSeconds,
 }: {
   isResultReady: boolean;
   onShowResult: () => void;
+  remainingSeconds: number;
 }) {
   return (
     <BottomSheet className="h-[475px] justify-between">
@@ -108,7 +110,11 @@ export function VoteCompleteSheet({
         <p className="mt-2 text-center text-[13px] leading-[1.25] font-medium text-color-gray-650/60">
           {isResultReady ? "투표 결과를 확인할 수 있습니다." : "투표 결과를 확인하고 있습니다."}
         </p>
-        <CountdownPill className="mt-3" label="투표 마감까지" time="01 : 24 : 30" />
+        <CountdownPill
+          className="mt-3"
+          label="투표 마감까지"
+          time={formatCountdownTime(remainingSeconds)}
+        />
       </div>
 
       <SheetButton
@@ -276,4 +282,13 @@ function CountdownPill({
       <span className="ml-1">{time}</span>
     </span>
   );
+}
+
+function formatCountdownTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(" : ");
 }

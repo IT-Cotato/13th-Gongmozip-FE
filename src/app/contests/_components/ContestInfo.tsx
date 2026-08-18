@@ -40,6 +40,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
   const [showShareToast, setShowShareToast] = useState(false);
   const [showShareErrorToast, setShowShareErrorToast] = useState(false);
   const [showLinkCopiedToast, setShowLinkCopiedToast] = useState(false);
+  const [shareToastHref, setShareToastHref] = useState("/chat");
   const [isWebSharePending, setIsWebSharePending] = useState(false);
   const scrapToastTimerRef = useRef<number | null>(null);
   const scrapErrorToastTimerRef = useRef<number | null>(null);
@@ -130,7 +131,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
     }
   };
 
-  const handleShareComplete = () => {
+  const handleShareComplete = (sharedRoomId?: string) => {
     if (shareToastTimerRef.current !== null) {
       window.clearTimeout(shareToastTimerRef.current);
     }
@@ -141,6 +142,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
     }
 
     setShowShareErrorToast(false);
+    setShareToastHref(sharedRoomId ? `/chat/${encodeURIComponent(sharedRoomId)}` : "/chat");
     setShowShareToast(true);
     shareToastTimerRef.current = window.setTimeout(() => {
       setShowShareToast(false);
@@ -201,6 +203,9 @@ export function ContestInfo({ contest }: ContestInfoProps) {
     document.body.removeChild(textarea);
   };
 
+  const getContestShareText = () =>
+    [contest.category, contest.title, contest.organizer].filter((value) => value.trim().length > 0).join("\n");
+
   const handleWebShareClick = async () => {
     if (isWebSharePending) {
       return;
@@ -209,7 +214,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
     const shareUrl = window.location.href;
     const shareData: ShareData = {
       title: contest.title,
-      text: contest.description || `${contest.organizer} ${contest.category} 공모전`,
+      text: getContestShareText(),
       url: shareUrl,
     };
 
@@ -334,7 +339,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
           {showShareToast ? (
             <ContestActionToast
               className="absolute bottom-[calc(100%+11px)]"
-              href="/chat"
+              href={shareToastHref}
               message="채팅방에 공유 완료했습니다."
             />
           ) : null}

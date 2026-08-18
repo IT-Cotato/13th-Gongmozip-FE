@@ -4,6 +4,8 @@ export type ChatMessage = {
   senderName: string;
   body: string;
   sentAt: string;
+  sentAtDateKey?: string;
+  sentAtDateLabel?: string;
   direction: "incoming" | "outgoing";
   senderType?: ChatSenderType;
   messageType?: ChatMessageType;
@@ -25,6 +27,7 @@ export type ChatMessageType =
   | "LEADER_VOTE_CARD"
   | "LEADER_RESULT_CARD"
   | "CONTEST_RECOMMEND_CARD"
+  | "CONTEST_SHARE_CARD"
   | "CONTEST_CANDIDATE_CARD"
   | "CONTEST_VOTE_CARD"
   | "CONTEST_RESULT_CARD"
@@ -54,6 +57,7 @@ export type ChatRoomAvatarItem = {
 
 export type ChatMember = {
   id: string;
+  memberId?: string;
   profileId?: number;
   name: string;
   isMe?: boolean;
