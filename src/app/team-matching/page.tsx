@@ -501,7 +501,7 @@ export default function TeamMatchingPage() {
         </div>
 
         <div
-          className="flex w-[390px] max-w-full shrink-0 flex-col items-start gap-2.5 p-4"
+          className="mx-auto flex w-[390px] max-w-full shrink-0 flex-col items-start gap-2.5 p-4"
           style={{
             background:
               "var(--Semantic-Background-ButtonBackground, linear-gradient(0deg, #FFF 38.46%, rgba(255, 255, 255, 0.00) 100%))",
