@@ -10,13 +10,13 @@ import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
 import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
 import { SurveyRetakeLimitModal } from "./_components/SurveyRetakeLimitModal";
+import { useSurveyRetakeNavigation } from "./_hooks/useSurveyRetakeNavigation";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { useLogoutMutation } from "@/queries/useLogoutMutation";
-import { fetchSurveyStatus, surveyStatusQueryKey } from "@/queries/useSurveyStatusQuery";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ApiError } from "@/lib/http";
 
@@ -59,7 +59,11 @@ export default function MyPage() {
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isRetakeLimitOpen, setIsRetakeLimitOpen] = useState(false);
-  const [isCheckingSurveyStatus, setIsCheckingSurveyStatus] = useState(false);
+  const { handleSurveyRetakeClick, isCheckingSurveyStatus, surveyStatusError } =
+    useSurveyRetakeNavigation({
+      onRetakeLimited: () => setIsRetakeLimitOpen(true),
+      returnTo: "/mypage",
+    });
   const isUnauthorized =
     summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
@@ -85,41 +89,6 @@ export default function MyPage() {
       return;
     }
     setIsTestPromptOpen(true);
-  }
-
-  async function handleCollaborationTypeTestClick() {
-    if (isCheckingSurveyStatus) return;
-
-    setIsCheckingSurveyStatus(true);
-
-    try {
-      const surveyStatus = await queryClient.fetchQuery({
-        queryFn: fetchSurveyStatus,
-        queryKey: surveyStatusQueryKey,
-        staleTime: 0,
-      });
-
-      if (surveyStatus.status === "SUBMITTED") {
-        setIsRetakeLimitOpen(true);
-        return;
-      }
-
-      router.push("/collaboration-type?returnTo=/mypage");
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        router.push("/login/email");
-        return;
-      }
-
-      if (error instanceof ApiError && error.code === "SURVEY_409_1") {
-        setIsRetakeLimitOpen(true);
-        return;
-      }
-
-      setIsRetakeLimitOpen(true);
-    } finally {
-      setIsCheckingSurveyStatus(false);
-    }
   }
 
   function refetch() {
@@ -267,7 +236,7 @@ export default function MyPage() {
                     </span>
                     <button
                       type="button"
-                      onClick={handleCollaborationTypeTestClick}
+                      onClick={handleSurveyRetakeClick}
                       disabled={isCheckingSurveyStatus}
                       className="flex items-center text-[13px] font-semibold text-[#616161] underline disabled:opacity-60"
                     >
@@ -275,6 +244,11 @@ export default function MyPage() {
                       <img src="/icons/common/tabler_chevron-right.svg" alt="" className="size-5" />
                     </button>
                   </div>
+                  {surveyStatusError && (
+                    <p role="alert" className="text-xs leading-[1.35] text-[#BB5260]">
+                      {surveyStatusError}
+                    </p>
+                  )}
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
                     {profileQuery.data?.name ? `${profileQuery.data.name}님,` : "반가워요,"}
                     <br />
@@ -370,7 +344,7 @@ export default function MyPage() {
           onClose={() => setIsTestPromptOpen(false)}
           onStartTest={() => {
             setIsTestPromptOpen(false);
-            void handleCollaborationTypeTestClick();
+            void handleSurveyRetakeClick();
           }}
         />
       )}
