@@ -2,12 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
 
-import { COLLABORATION_DISTANCE_QUERY_KEY } from "./useCollaborationDistanceQuery";
-import { matchingEligibilityQueryKey } from "./useMatchingEligibilityQuery";
 import {
-  MYPAGE_SUMMARY_QUERY_KEY_PREFIX,
-  type MypageSummary,
-} from "./useMypageSummaryQuery";
+  COLLABORATION_DISTANCE_QUERY_KEY,
+  type CollaborationDistance,
+} from "./useCollaborationDistanceQuery";
+import { matchingEligibilityQueryKey } from "./useMatchingEligibilityQuery";
+import { MYPAGE_SUMMARY_QUERY_KEY_PREFIX, type MypageSummary } from "./useMypageSummaryQuery";
 import { todayMatchingResultQueryKey } from "./useTodayMatchingResultQuery";
 import {
   todayMatchingApplicationQueryKey,
@@ -40,8 +40,7 @@ export function useWithdrawMatchingApplicationMutation() {
     mutationFn: withdrawMatchingApplication,
     onSuccess: (data) => {
       const currentCollaborationDistance = data.currentCollaborationDistance;
-      const shouldUpdateCollaborationDistance =
-        data.withdrawalType === "PENALIZED_PASS" && data.collaborationPenalty > 0;
+      const shouldUpdateCollaborationDistance = Number.isFinite(currentCollaborationDistance);
 
       queryClient.setQueryData<TodayMatchingApplication>(
         todayMatchingApplicationQueryKey,
@@ -64,6 +63,20 @@ export function useWithdrawMatchingApplicationMutation() {
       );
 
       if (shouldUpdateCollaborationDistance) {
+        queryClient.setQueryData<CollaborationDistance>(
+          COLLABORATION_DISTANCE_QUERY_KEY,
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  collaborationPoint: currentCollaborationDistance,
+                  gaugePercent:
+                    current.maxCollaborationPoint > 0
+                      ? (currentCollaborationDistance / current.maxCollaborationPoint) * 100
+                      : 0,
+                }
+              : current,
+        );
         queryClient.setQueriesData<MypageSummary>(
           { queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX },
           (current) =>
@@ -82,8 +95,14 @@ export function useWithdrawMatchingApplicationMutation() {
                 }
               : current,
         );
-        void queryClient.invalidateQueries({ queryKey: COLLABORATION_DISTANCE_QUERY_KEY });
-        void queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
+        void queryClient.invalidateQueries({
+          queryKey: COLLABORATION_DISTANCE_QUERY_KEY,
+          refetchType: "all",
+        });
+        void queryClient.invalidateQueries({
+          queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX,
+          refetchType: "all",
+        });
       }
 
       void queryClient.invalidateQueries({ queryKey: matchingEligibilityQueryKey });

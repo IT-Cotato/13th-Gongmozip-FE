@@ -115,7 +115,11 @@ export default function MyPage() {
       { label: "회원정보 수정", href: "/mypage/edit-profile" },
       canChangePassword
         ? { label: "비밀번호 변경", href: "/mypage/change-password" }
-        : { label: "비밀번호 변경", disabled: true, hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined },
+        : {
+            label: "비밀번호 변경",
+            disabled: true,
+            hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined,
+          },
     ],
   };
   const menuSections: MenuSection[] = [
@@ -247,6 +251,7 @@ export default function MyPage() {
                     협업거리
                   </p>
                   <CollaborativeDistance
+                    current={data.collaborationDistance.current}
                     max={data.collaborationDistance.max}
                     progress={data.collaborationDistance.progress}
                   />
@@ -372,7 +377,15 @@ function MenuRow({ label, href, disabled, hint, onClick }: MenuItem) {
   );
 }
 
-function CollaborativeDistance({ max, progress }: { max: number; progress: number }) {
+function CollaborativeDistance({
+  current,
+  max,
+  progress,
+}: {
+  current: number;
+  max: number;
+  progress: number;
+}) {
   const stepCount = Math.floor(max / COLLABORATIVE_DISTANCE_STEP);
   const milestones = Array.from(
     { length: stepCount + 1 },
@@ -381,7 +394,8 @@ function CollaborativeDistance({ max, progress }: { max: number; progress: numbe
   if (milestones[milestones.length - 1] !== max) {
     milestones.push(max);
   }
-  const filledPercent = Math.min(100, Math.max(0, progress));
+  const calculatedProgress = max > 0 ? (current / max) * 100 : progress;
+  const filledPercent = Math.min(100, Math.max(0, calculatedProgress));
 
   return (
     <div className="flex w-full flex-col items-center gap-1">
