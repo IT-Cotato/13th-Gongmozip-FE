@@ -16,8 +16,19 @@ export const metadata: Metadata = {
     title: "Gongmozip",
   },
   icons: {
-    icon: "/icons/icon.svg",
-    apple: "/icons/icon.svg",
+    icon: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
+  openGraph: {
+    title: "Gongmozip",
+    description: "Gongmozip frontend web application",
+    images: ["/images/logo.png"],
+  },
+  twitter: {
+    card: "summary",
+    title: "Gongmozip",
+    description: "Gongmozip frontend web application",
+    images: ["/images/logo.png"],
   },
 };
 
