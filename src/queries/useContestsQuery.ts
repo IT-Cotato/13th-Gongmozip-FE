@@ -240,13 +240,13 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
   };
 }
 
-export function getContestViewCount(contest: ContestViewCountFields) {
+export function getContestViewCount(contest: ContestViewCountFields): number {
   const count = getContestViewCountFromRecord(contest as Record<string, unknown>);
 
   return count ?? 0;
 }
 
-function parseCount(value: number | string | null | undefined) {
+function parseCount(value: number | string | null | undefined): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : undefined;
   }
@@ -260,7 +260,7 @@ function parseCount(value: number | string | null | undefined) {
   return Number.isFinite(parsedValue) ? parsedValue : undefined;
 }
 
-function getContestViewCountFromRecord(record: Record<string, unknown>) {
+function getContestViewCountFromRecord(record: Record<string, unknown>): number | undefined {
   for (const key of contestViewCountKeys) {
     const count = parseCount(record[key] as number | string | null | undefined);
 
