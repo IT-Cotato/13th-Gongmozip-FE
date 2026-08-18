@@ -275,9 +275,6 @@ export function ContestSharedMessage({
           <span className="text-color-gray-650">{sentAt ?? "오후 8:28"}</span>
           <span className="text-color-coral-500">1</span>
         </div>
-        <p className="rounded-[16px] rounded-tr-none bg-color-coral-50 px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-          이거 어때요?
-        </p>
       </div>
     </article>
   );
