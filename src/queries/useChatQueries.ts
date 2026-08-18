@@ -34,7 +34,16 @@ export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
 export type ChatMessageResponse = UnknownRecord;
 export type ContestCandidateResponse = UnknownRecord;
-export type ContestVoteStatusResponse = UnknownRecord;
+export type ContestVoteStatusResponse = {
+  participatedVoterCount: number;
+  requiredVoterCount: number;
+  results?: Array<Record<string, unknown>>;
+  result?: string;
+  tie?: boolean;
+  hasVotes?: boolean;
+  myVoted?: boolean;
+  [key: string]: unknown;
+};
 export type ReviewTargetResponse = UnknownRecord;
 export type LeaderRecommendationStatus =
   | "PENDING"
@@ -83,6 +92,8 @@ export type ContestVoteStatus = {
   hasVotes: boolean;
   isTie: boolean;
   participantCount: number;
+  participatedVoterCount: number;
+  requiredVoterCount: number;
   myVoted: boolean;
   results: ContestVoteResultItem[];
 };
@@ -1265,9 +1276,11 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
   const results = Array.isArray(resultsValue)
     ? resultsValue.filter(isRecord).map(mapContestVoteResultItem)
     : [];
-  const participantCount =
-    getNumber(status, ["participantCount", "voterCount", "totalVoteCount", "totalVotes"]) ??
+  const participatedVoterCount =
+    getNumber(status, ["participatedVoterCount", "participantCount", "voterCount"]) ??
     results.reduce((sum, result) => sum + result.voteCount, 0);
+  const requiredVoterCount =
+    getNumber(status, ["requiredVoterCount", "totalVoteCount", "totalVotes"]) ?? participatedVoterCount;
   const myVoted = getBoolean(status, ["myVoted", "hasVoted", "isVoted"]) ?? false;
   const explicitStatus = getString(status, ["result", "status", "voteStatus"])?.toUpperCase();
   const isTie = getBoolean(status, ["tie", "isTie"]) ?? explicitStatus === "TIE";
@@ -1275,13 +1288,15 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     getBoolean(status, ["hasVotes"]) ??
     (explicitStatus === "NO_VOTES" || explicitStatus === "NO_VOTE"
       ? false
-      : participantCount > 0 || results.some((result) => result.voteCount > 0));
+      : participatedVoterCount > 0 || results.some((result) => result.voteCount > 0));
 
   return {
     result: !hasVotes ? "noVotes" : isTie ? "tie" : "normal",
     hasVotes,
     isTie,
-    participantCount,
+    participantCount: participatedVoterCount,
+    participatedVoterCount,
+    requiredVoterCount,
     myVoted,
     results,
   };

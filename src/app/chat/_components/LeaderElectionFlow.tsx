@@ -429,12 +429,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       return;
     }
 
-    setContestActionError(null);
-    setIsContestVoteSubmitted(true);
-    setSheetState("contestComplete");
-
     try {
+      setContestActionError(null);
       await voteContestCandidatesMutation.mutateAsync(contestCandidateIds);
+      await contestVoteStatusQuery.refetch();
+      setIsContestVoteSubmitted(true);
+      setSheetState("contestComplete");
     } catch (error) {
       setContestActionError(getApiErrorMessage(error, "공모전 투표에 실패했습니다."));
     }
@@ -618,8 +618,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       [],
       now,
     ) ??
-    getRemainingSeconds(contestCandidateDeadlineAt ?? undefined, now) ??
     getRemainingSecondsFromContests(contestCandidates, "voteDeadlineAt", now) ??
+    getRemainingSeconds(contestCandidateDeadlineAt ?? undefined, now) ??
     getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
       [],
@@ -627,7 +627,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       now,
     ) ??
     DEFAULT_CONTEST_VOTE_SECONDS;
-  const isContestVoteClosed = voteCountdownSeconds <= 0;
+  const isContestVoteClosed = voteCountdownSeconds <= 0 || hasContestResultMessage;
+  const displayedVoteCountdownSeconds = isContestVoteClosed ? 0 : voteCountdownSeconds;
   const leaderVoteCountdownSeconds =
     getRemainingSecondsFromMetadata(
       latestLeaderVoteMessage?.metadata,
@@ -721,8 +722,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         onRevote={() =>
           startContestVote(activeContestCandidateIds ?? undefined, { keepSelection: true })
         }
-        remainingSeconds={voteCountdownSeconds}
+        participantCount={contestVoteStatus?.participantCount}
+        remainingSeconds={displayedVoteCountdownSeconds}
         selectedContestIds={selectedContestIds}
+        voteResults={contestVoteStatus?.results}
       />
     );
   }
@@ -732,11 +735,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       <ContestVoteSheet
         contests={candidateContests}
         disabled={voteContestCandidatesMutation.isPending || isContestVoteClosed}
+        isRevote={hasMyVoted}
         onBack={() => setSheetState("closed")}
         onOpenAdd={openContestAddList}
         onSubmit={submitContestVote}
         onToggle={toggleContestVote}
-        remainingSeconds={voteCountdownSeconds}
+        remainingSeconds={displayedVoteCountdownSeconds}
         selectedContestIds={selectedContestIds}
       />
     );
@@ -836,7 +840,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             onRequestLeaderRecommendation={requestLeaderRecommendation}
             onRequestRevote={requestRevote}
             onUseChatbot={insertChatbotMention}
-            voteRemainingSeconds={voteCountdownSeconds}
+            voteRemainingSeconds={displayedVoteCountdownSeconds}
           />
         ))}
 

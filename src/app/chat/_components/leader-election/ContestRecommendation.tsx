@@ -218,7 +218,7 @@ export function ContestCandidateAddListPage({
                     <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
                       {contest.category}
                     </span>
-                    <strong className="mt-1 block text-[17px] leading-[1.35] font-bold text-color-gray-850 [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">
+                    <strong className="mt-1 block max-w-full truncate text-[17px] leading-[1.35] font-bold text-color-gray-850">
                       {contest.title}
                     </strong>
                     <span className="mt-1 block truncate text-[13px] leading-[1.25] font-medium text-color-gray-650">
@@ -575,6 +575,7 @@ export function ContestVoteResultMessage({
 export function ContestVoteSheet({
   contests,
   disabled = false,
+  isRevote = false,
   onBack,
   onOpenAdd,
   onSubmit,
@@ -584,6 +585,7 @@ export function ContestVoteSheet({
 }: {
   contests: RecommendedContest[];
   disabled?: boolean;
+  isRevote?: boolean;
   onBack: () => void;
   onOpenAdd: () => void;
   onSubmit: () => void;
@@ -591,6 +593,8 @@ export function ContestVoteSheet({
   remainingSeconds?: number;
   selectedContestIds: string[];
 }) {
+  const timerLabel = remainingSeconds <= 0 ? "투표 종료" : "투표 마감까지";
+
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
       <header className="flex h-[47px] shrink-0 items-center justify-between px-4">
@@ -617,7 +621,7 @@ export function ContestVoteSheet({
 
       <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
         <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-          투표 마감까지
+          {timerLabel}
         </span>
         <LargeCountdown remainingSeconds={remainingSeconds} />
       </section>
@@ -672,7 +676,7 @@ export function ContestVoteSheet({
           onClick={onSubmit}
           type="button"
         >
-          투표하기
+          {isRevote ? "다시 투표하기" : "투표하기"}
         </button>
       </div>
     </main>
@@ -683,16 +687,27 @@ export function ContestVoteCompleteSheet({
   contests,
   onBack,
   onRevote,
+  participantCount,
   remainingSeconds = fallbackVoteRemainingSeconds,
   selectedContestIds,
+  voteResults,
 }: {
   contests: RecommendedContest[];
   onBack: () => void;
   onRevote: () => void;
+  participantCount?: number;
   remainingSeconds?: number;
   selectedContestIds: string[];
+  voteResults?: ContestVoteResultItem[];
 }) {
+  const timerLabel = remainingSeconds <= 0 ? "투표 종료" : "투표 마감까지";
   const selectedContestIdSet = new Set(selectedContestIds);
+  const hasSuppliedVoteResults = voteResults !== undefined;
+  const voteResultByContestId = createVoteResultMap(voteResults);
+  const participantLabel =
+    participantCount === undefined
+      ? "0명 참여"
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
@@ -719,7 +734,7 @@ export function ContestVoteCompleteSheet({
 
       <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
         <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-          투표 마감까지
+          {timerLabel}
         </span>
         <LargeCountdown remainingSeconds={remainingSeconds} />
       </section>
@@ -735,20 +750,29 @@ export function ContestVoteCompleteSheet({
 
       <section className="mx-4 mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-color-gray-250 bg-white px-5 py-5">
         <p className="text-center text-[13px] leading-[1.25] font-semibold text-color-gray-500">
-          2명 참여
+          {participantLabel}
         </p>
 
         <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           {contests.map((contest) => {
             const isSelected = selectedContestIdSet.has(contest.id);
+            const voteResult = getVoteResultForContest(voteResultByContestId, contest);
 
             return (
               <CompleteVoteContestRow
                 contest={contest}
-                countLabel={isSelected ? "1명" : "0명"}
+                countLabel={getVoteResultCountLabel(
+                  voteResult,
+                  isSelected ? 0 : contests.length,
+                  hasSuppliedVoteResults,
+                )}
                 isSelected={isSelected}
                 key={contest.id}
-                percent={isSelected ? 28 : 0}
+                percent={getVoteResultPercent(
+                  voteResult,
+                  participantCount,
+                  !hasSuppliedVoteResults && isSelected ? 28 : 0,
+                )}
               />
             );
           })}
@@ -841,7 +865,7 @@ export function ContestVoteDetailSheet({
           <span className="text-[13px] leading-[1.25] font-medium text-color-gray-500">
             {participantLabel}
           </span>
-          <SmallTimer compact label="투표 마감까지" />
+          <SmallTimer compact label="투표 종료" remainingSeconds={0} />
         </div>
 
         <div className="flex w-[338px] flex-col items-center">
@@ -855,7 +879,11 @@ export function ContestVoteDetailSheet({
                   contest={contest}
                   isWinner={voteResult?.isWinner ?? (!hasSuppliedVoteResults && index === 0)}
                   key={contest.id}
-                  percent={voteResult?.percent ?? (!hasSuppliedVoteResults && index < 2 ? 28 : 0)}
+                  percent={getVoteResultPercent(
+                    voteResult,
+                    participantCount,
+                    !hasSuppliedVoteResults && index < 2 ? 28 : 0,
+                  )}
                 />
               );
             })}
@@ -956,10 +984,13 @@ function ContestCardHeader({
   timerLabel: string;
   title: string;
 }) {
+  const displayLabel = isEnded ? "투표 종료" : timerLabel;
+  const displayRemainingSeconds = isEnded ? 0 : remainingSeconds;
+
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="sr-only">
-        {title} {timerLabel}
+        {title} {displayLabel}
       </span>
       <div className="flex min-w-0 shrink-0 items-center gap-[7px] text-[13px] leading-[1.25] font-semibold text-color-coral-900">
         <Image src="/icons/chat/tabler_list.svg" alt="" width={24} height={24} />
@@ -970,7 +1001,7 @@ function ContestCardHeader({
           isEnded ? "bg-white/80 text-color-gray-650" : "bg-color-coral-50 text-color-coral-700"
         }`}
       >
-        투표 마감까지 {formatCandidateTimer(remainingSeconds)}
+        {displayLabel} {formatCandidateTimer(displayRemainingSeconds)}
       </span>
     </div>
   );
@@ -1179,7 +1210,7 @@ function FullContestListItem({
           <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
             {contest.category}
           </span>
-          <strong className="mt-1 block text-[17px] leading-[1.35] font-bold text-color-gray-850 [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">
+          <strong className="mt-1 block max-w-full truncate text-[17px] leading-[1.35] font-bold text-color-gray-850">
             {contest.title}
           </strong>
           <span className="mt-1 block truncate text-[13px] leading-[1.25] font-medium text-color-gray-650">
@@ -1222,7 +1253,7 @@ function ContestSummary({
       <span className="block truncate text-[12px] leading-[1.35] font-semibold text-color-coral-700">
         {contest.category}
       </span>
-      <strong className="block truncate text-[12px] leading-[1.35] font-semibold text-color-gray-850">
+      <strong className="block w-full max-w-full truncate text-[12px] leading-[1.35] font-semibold text-color-gray-850">
         {contest.title}
       </strong>
       <span className="block truncate text-[12px] leading-[1.35] text-color-gray-650">
@@ -1358,6 +1389,26 @@ function getVoteResultCountLabel(
   }
 
   return fallbackIndex < 2 ? "1명" : "0명";
+}
+
+function getVoteResultPercent(
+  result: ContestVoteResultItem | undefined,
+  participantCount: number | undefined,
+  fallbackPercent: number,
+) {
+  if (!result) {
+    return fallbackPercent;
+  }
+
+  if (result.percent > 0) {
+    return Math.min(100, result.percent);
+  }
+
+  if (participantCount && participantCount > 0) {
+    return Math.min(100, Math.round((result.voteCount / participantCount) * 100));
+  }
+
+  return result.voteCount > 0 ? 100 : 0;
 }
 
 function ContestPopup({
