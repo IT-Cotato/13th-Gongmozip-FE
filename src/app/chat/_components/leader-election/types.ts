@@ -25,6 +25,7 @@ export type RecommendedContest = {
   imageSrc?: string;
   isRecommended?: boolean;
   organizer: string;
+  projectEndAt?: string;
   title: string;
   voteDeadlineAt?: string;
   viewCount: string;
