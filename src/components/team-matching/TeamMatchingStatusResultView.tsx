@@ -319,23 +319,26 @@ export default function TeamMatchingStatusResultView({
     todayMatchingResult.applicationId > 0;
   const matchedMembers = getMatchedMembers(todayMatchingResult.members);
 
-  async function handlePassClick() {
+  function handlePassClick() {
     if (!canPass) {
       return;
     }
 
     const applicationId = String(todayMatchingResult.applicationId);
-    let expectedPenalty: number | null = null;
-
-    try {
-      const todayApplication = await fetchTodayMatchingApplication();
-      expectedPenalty = todayApplication.withdrawal.expectedPenalty;
-      queryClient.setQueryData(todayMatchingApplicationQueryKey, todayApplication);
-    } catch {
-      // 패널티 사전 조회가 실패해도 패스 확인 화면에서는 기본값으로 안내할 수 있다.
-    }
-    setPendingProposal(applicationId, expectedPenalty);
+    setPendingProposal(applicationId, null);
     router.push("/team-matching/status/pass/leave");
+
+    void fetchTodayMatchingApplication()
+      .then((todayApplication) => {
+        queryClient.setQueryData(todayMatchingApplicationQueryKey, todayApplication);
+
+        if (useTeamMatchingProposalStore.getState().pendingProposalId === applicationId) {
+          setPendingProposal(applicationId, todayApplication.withdrawal.expectedPenalty);
+        }
+      })
+      .catch(() => {
+        // 패널티 사전 조회가 실패해도 패스 확인 화면에서는 기본값으로 안내할 수 있다.
+      });
   }
 
   function handleAcceptClick() {
