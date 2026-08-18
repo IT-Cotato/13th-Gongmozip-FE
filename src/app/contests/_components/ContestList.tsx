@@ -2,10 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useQueries } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 
-import { contestDetailQueryKey, fetchContestDetail } from "@/queries/useContestDetailQuery";
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusesQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
@@ -23,14 +21,6 @@ export function ContestList({ contests }: ContestListProps) {
   const scrapStatusQueries = useContestScrapStatusesQuery(contestIds, {
     enabled: contestIds.length > 0,
   });
-  const contestDetailQueries = useQueries({
-    queries: contestIds.map((contestId) => ({
-      queryKey: contestDetailQueryKey(contestId),
-      queryFn: () => fetchContestDetail(contestId),
-      enabled: contestId.length > 0,
-      staleTime: 1000 * 60,
-    })),
-  });
   const scrapStatusByContestId = useMemo(
     () =>
       new Map(
@@ -39,15 +29,6 @@ export function ContestList({ contests }: ContestListProps) {
         ),
       ),
     [scrapStatusQueries],
-  );
-  const detailViewCountByContestId = useMemo(
-    () =>
-      new Map(
-        contestDetailQueries.flatMap((query) =>
-          query.data ? [[query.data.id, query.data.viewCount] as const] : [],
-        ),
-      ),
-    [contestDetailQueries],
   );
 
   useEffect(() => {
@@ -77,7 +58,6 @@ export function ContestList({ contests }: ContestListProps) {
         const isScrapped =
           scrapStatusByContestId.get(contest.id) ??
           (scrappedContestIds.includes(contest.id) || contest.isScrapped);
-        const viewCount = detailViewCountByContestId.get(contest.id) ?? contest.viewCount;
 
         return (
           <article
@@ -117,7 +97,7 @@ export function ContestList({ contests }: ContestListProps) {
                     </span>
                     <span className="flex items-center gap-1 text-xs leading-[135%] font-semibold text-color-gray-350">
                       <Image src="/icons/contests/tabler-eye.svg" alt="" width={16} height={16} />
-                      {viewCount.toLocaleString("ko-KR")}
+                      {contest.viewCount.toLocaleString("ko-KR")}
                     </span>
                   </div>
                 </div>
