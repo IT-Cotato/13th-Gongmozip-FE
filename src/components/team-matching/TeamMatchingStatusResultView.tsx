@@ -330,7 +330,10 @@ export default function TeamMatchingStatusResultView({
 
     void fetchTodayMatchingApplication()
       .then((todayApplication) => {
-        if (useTeamMatchingProposalStore.getState().pendingProposalId !== applicationId) {
+        if (
+          useTeamMatchingProposalStore.getState().pendingProposalId !== applicationId ||
+          String(todayApplication.applicationId) !== applicationId
+        ) {
           return;
         }
 
