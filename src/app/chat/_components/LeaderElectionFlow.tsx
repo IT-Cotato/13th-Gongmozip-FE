@@ -352,6 +352,21 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     router.push("/contests");
   };
 
+  const openContestCandidateShortcut = () => {
+    setContestActionError(null);
+
+    if (isContestVoteInProgress) {
+      startContestVote(candidateContests.map((contest) => contest.id));
+      return;
+    }
+
+    setPendingContestAdd({
+      contest: createPlaceholderContest(0),
+      contestId: 0,
+      variant: "unavailable",
+    });
+  };
+
   const openContestSharedCandidateAdd = (contestId: number, contest?: RecommendedContest) => {
     setContestActionError(null);
     setPendingContestAdd({
@@ -906,6 +921,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
                   void removeContestCandidate(contest);
                 }}
                 onOpenContestVote={startContestVote}
+                onOpenContestCandidateShortcut={openContestCandidateShortcut}
                 onOpenCandidateVote={openCandidateVote}
                 onOpenMemberProfile={setProfileMember}
                 onOpenWillingness={() => {
@@ -1106,6 +1122,7 @@ function ChatMessageRenderer({
   onAcceptRecommendation,
   onRemoveContestCandidate,
   onOpenCandidateVote,
+  onOpenContestCandidateShortcut,
   onOpenContestVote,
   onOpenMemberProfile,
   onOpenWillingness,
@@ -1130,6 +1147,7 @@ function ChatMessageRenderer({
   onAcceptRecommendation: () => void;
   onRemoveContestCandidate: (contest: RecommendedContest) => void;
   onOpenCandidateVote: (candidateIds?: string[]) => void;
+  onOpenContestCandidateShortcut: () => void;
   onOpenContestVote: (contestCandidateIds?: string[]) => void;
   onOpenMemberProfile: (member: ChatMember) => void;
   onOpenWillingness: () => void;
@@ -1191,7 +1209,10 @@ function ChatMessageRenderer({
       leaderRecommendation,
     );
     const isVoteActionCompleted =
-      hasLeaderResultMessage || isLeaderVoteFlowEnded || isLeaderVoteSubmitted || isLeaderActionCompleted(message);
+      hasLeaderResultMessage ||
+      isLeaderVoteFlowEnded ||
+      isLeaderVoteSubmitted ||
+      isLeaderActionCompleted(message);
     const aiRecommendedTeamMemberId =
       getMetadataNumber(message.metadata, "aiRecommendedTeamMemberId") ??
       leaderRecommendation?.recommendedMemberId ??
@@ -1317,6 +1338,12 @@ function ChatMessageRenderer({
         metadata={message.metadata}
         sentAt={message.sentAt}
       />
+    );
+  }
+
+  if (isContestCandidateAddedLog(message)) {
+    return (
+      <ContestCandidateAddedLog body={message.body} onShortcut={onOpenContestCandidateShortcut} />
     );
   }
 
@@ -1466,6 +1493,19 @@ function getMetadataStringByKeys(metadata: ChatMessageMetadata | undefined, keys
   }
 
   return undefined;
+}
+
+function isContestCandidateAddedLog(message: ChatMessage) {
+  const messageType = message.messageType ?? "";
+
+  return (
+    messageType === "CONTEST_CANDIDATE_CARD" ||
+    messageType === "CONTEST_CANDIDATE_ADDED" ||
+    messageType === "CONTEST_CANDIDATE_ADDED_LOG" ||
+    (message.senderType === "SYSTEM" &&
+      message.body.includes("공모전을 후보") &&
+      message.body.includes("추가"))
+  );
 }
 
 function isLeaderActionCompleted(message: ChatMessage) {
@@ -1774,7 +1814,9 @@ function getLeaderResultMember(message: ChatMessage | undefined, members: ChatMe
     getMetadataString(metadata, "nickname") ??
     getMetadataString(metadata, "name");
 
-  const leaderByName = leaderName ? members.find((member) => member.name === leaderName) : undefined;
+  const leaderByName = leaderName
+    ? members.find((member) => member.name === leaderName)
+    : undefined;
 
   if (leaderByName) {
     return leaderByName;
@@ -2047,6 +2089,23 @@ function SystemChatMessage({ body }: { body: string }) {
       <p className="max-w-[280px] rounded-full bg-color-gray-150 px-3 py-1.5 text-center text-[12px] leading-[1.35] font-medium text-color-gray-650">
         {body}
       </p>
+    </div>
+  );
+}
+
+function ContestCandidateAddedLog({ body, onShortcut }: { body: string; onShortcut: () => void }) {
+  return (
+    <div className="flex w-full justify-center">
+      <div className="flex max-w-[358px] items-center gap-4 rounded-full bg-[rgba(97,97,97,0.10)] px-2 py-1 text-center text-[12px] leading-[1.35] font-semibold whitespace-nowrap text-color-gray-650">
+        <span className="min-w-0 truncate">{body}</span>
+        <button
+          className="shrink-0 underline underline-offset-2"
+          onClick={onShortcut}
+          type="button"
+        >
+          바로가기
+        </button>
+      </div>
     </div>
   );
 }
