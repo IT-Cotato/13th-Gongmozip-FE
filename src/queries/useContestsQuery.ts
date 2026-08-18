@@ -144,13 +144,26 @@ export const contestCategoryApiValues: Record<ContestCategory, ContestApiCategor
 
 export const contestCategoryLabels: Record<string, ContestCategory> = {
   IT_AI_TECH: "IT/AI/기술",
+  MARKETING: "마케팅/광고/브랜딩",
+  Marketing: "마케팅/광고/브랜딩",
   MARKETING_AD_BRANDING: "마케팅/광고/브랜딩",
+  idea_planning: "기획/아이디어",
   IDEA_PLANNING: "기획/아이디어",
   PLANNING_IDEA: "기획/아이디어",
   ART_DESIGN: "미술/디자인",
   DATA_ANALYSIS: "데이터 분석",
   PHOTO_VIDEO: "사진/영상",
 };
+
+export function getContestCategoryLabel(category: string) {
+  const normalizedCategory = category
+    .trim()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_")
+    .toUpperCase();
+
+  return contestCategoryLabels[category] ?? contestCategoryLabels[normalizedCategory] ?? category;
+}
 
 export const contestsQueryKey = (params: ContestsQueryParams) => ["contests", params] as const;
 export const infiniteContestsQueryKey = (params: ContestsQueryParams) =>
@@ -219,7 +232,7 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
     id: String(contest.contestId),
     title: contest.title,
     organizer: contest.hostName,
-    category: contestCategoryLabels[contest.category] ?? contest.category,
+    category: getContestCategoryLabel(contest.category),
     dDay: formatDday(contest.daysRemaining),
     viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",

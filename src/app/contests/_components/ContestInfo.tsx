@@ -12,7 +12,6 @@ import { ShareContestModal } from "./ShareContestModal";
 
 type ContestInfoProps = {
   contest: ContestDetail;
-  posterIndex: number;
 };
 
 const detailRows = [
@@ -29,7 +28,7 @@ const detailRows = [
 const websiteLinkClassName =
   "flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand";
 
-export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
+export function ContestInfo({ contest }: ContestInfoProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
   const { data: scrapStatus } = useContestScrapStatusQuery(contest.id);
@@ -250,9 +249,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
               height={222}
             />
           ) : (
-            <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
-              이미지 {posterIndex}
-            </div>
+            <div aria-hidden="true" className="h-[222px] w-[159px] bg-white" />
           )}
         </div>
       </div>
@@ -431,12 +428,36 @@ function ContestImage({
   src: string;
   width: number;
 }) {
-  if (isExternalUrl(src)) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} width={width} height={height} className={className} />;
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <div aria-hidden="true" className="bg-white" style={{ width, height }} />;
   }
 
-  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
+  if (isExternalUrl(src)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className={className}
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      className={className}
+      onError={() => setHasError(true)}
+    />
+  );
 }
 
 function isExternalUrl(src: string) {

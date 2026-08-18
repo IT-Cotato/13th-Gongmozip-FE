@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { contestCategoryLabels } from "./useContestsQuery";
+import { getContestCategoryLabel } from "./useContestsQuery";
 
 export type RecommendedContest = {
   id: string;
@@ -74,7 +74,7 @@ function mapRecommendedContest(row: ApiRecord): RecommendedContest | null {
     title: getString(contest, "title", "contestTitle", "name") ?? "제목 없음",
     organizer:
       getString(contest, "hostName", "organizer", "organizerName", "host", "organization") ?? "",
-    category: contestCategoryLabels[category] ?? category,
+    category: getContestCategoryLabel(category),
     period:
       getString(contest, "period", "applicationPeriod") ??
       formatPeriod(
