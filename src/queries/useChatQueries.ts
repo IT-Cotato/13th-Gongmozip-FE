@@ -31,6 +31,59 @@ const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL ?? API_BASE_URL).replac
 const HAS_TIMEZONE_REGEX = /(Z|[+-]\d{2}:?\d{2})$/;
 const CHAT_TIME_ZONE = "Asia/Seoul";
 const KOREA_TIME_ZONE_OFFSET = "+09:00";
+const DIRECT_TEAM_MEMBER_ID_KEYS = [
+  "senderTeamMemberId",
+  "teamMemberId",
+  "teamMemberNo",
+  "writerTeamMemberId",
+  "createdByTeamMemberId",
+  "authorTeamMemberId",
+  "sharedByTeamMemberId",
+  "shareTeamMemberId",
+];
+const DIRECT_MEMBER_ID_KEYS = [
+  "senderMemberId",
+  "memberId",
+  "writerMemberId",
+  "createdByMemberId",
+  "authorMemberId",
+  "sharedByMemberId",
+  "shareMemberId",
+];
+const METADATA_TEAM_MEMBER_ID_KEYS = [
+  "senderTeamMemberId",
+  "writerTeamMemberId",
+  "createdByTeamMemberId",
+  "authorTeamMemberId",
+  "sharedByTeamMemberId",
+  "shareTeamMemberId",
+];
+const METADATA_MEMBER_ID_KEYS = [
+  "senderMemberId",
+  "writerMemberId",
+  "createdByMemberId",
+  "authorMemberId",
+  "sharedByMemberId",
+  "shareMemberId",
+];
+const DIRECT_SENDER_ID_KEYS = [
+  "senderId",
+  "writerId",
+  "createdBy",
+  "createdById",
+  "authorId",
+  "sharedBy",
+  "sharedById",
+];
+const METADATA_SENDER_ID_KEYS = [
+  "senderId",
+  "writerId",
+  "createdBy",
+  "createdById",
+  "authorId",
+  "sharedBy",
+  "sharedById",
+];
 
 export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
@@ -1137,6 +1190,10 @@ function mapChatMember(
 
   return {
     id,
+    memberId:
+      getValue(member, ["memberId"]) === undefined
+        ? undefined
+        : String(getValue(member, ["memberId"])),
     profileId: getNumber(member, ["profileId"]),
     name,
     isMe: me,
@@ -1153,21 +1210,25 @@ function mapChatMember(
 
 function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): ChatMessage {
   const sentAtValue = getString(message, ["createdAt", "sentAt", "timestamp"]);
-  const senderId = getValue(message, [
-    "senderTeamMemberId",
-    "teamMemberId",
-    "senderId",
-    "memberId",
-  ]);
-  const sender =
-    senderId === undefined ? undefined : members.find((member) => member.id === String(senderId));
+  const metadata = getMessageMetadata(message);
   const messageType = getMessageType(message);
+  const isContestShareCard = messageType === "CONTEST_SHARE_CARD";
+  const sender = resolveChatMessageSender(message, members, metadata, isContestShareCard);
+  const senderId = sender?.id ?? getRawMessageSenderId(message, metadata, isContestShareCard);
   const senderType = getSenderType(message);
-  const isChatbotMessage = senderType === "CHATBOT";
-  const isSystemMessage = senderType === "SYSTEM" || isSystemMessageType(messageType);
-  const isMine = getBoolean(message, ["me", "isMe", "mine", "isMine"]) ?? sender?.isMe ?? false;
+  const isChatbotMessage = senderType === "CHATBOT" && !isContestShareCard;
+  const isSystemMessage =
+    !isContestShareCard && (senderType === "SYSTEM" || isSystemMessageType(messageType));
+  const isMine =
+    getBoolean(message, ["me", "isMe", "mine", "isMine"]) ??
+    sender?.isMe ??
+    isCurrentMemberSender(message, members, metadata, isContestShareCard);
   const senderName =
+    (isContestShareCard ? sender?.name : undefined) ??
     getString(message, ["senderName", "senderNickname", "nickname", "memberName"]) ??
+    (metadata
+      ? getString(metadata, ["senderName", "senderNickname", "nickname", "memberName"])
+      : undefined) ??
     sender?.name ??
     (isChatbotMessage ? "\uCC57\uBD07" : isSystemMessage ? "\uC2DC\uC2A4\uD15C" : "\uD300\uC6D0");
 
@@ -1184,7 +1245,7 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     direction: isMine ? "outgoing" : "incoming",
     senderType,
     messageType,
-    metadata: getMessageMetadata(message),
+    metadata,
     avatarTone: isChatbotMessage || isSystemMessage ? "robot" : (sender?.avatarTone ?? "green"),
     avatarSrc:
       isChatbotMessage || isSystemMessage
@@ -1193,6 +1254,152 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
           getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ??
           undefined),
   };
+}
+
+function resolveChatMessageSender(
+  message: ChatMessageResponse,
+  members: ChatMember[],
+  metadata: ChatMessageMetadata | undefined,
+  includeMetadataSender: boolean,
+) {
+  const teamMemberId = getMessageSenderValue(
+    message,
+    metadata,
+    DIRECT_TEAM_MEMBER_ID_KEYS,
+    METADATA_TEAM_MEMBER_ID_KEYS,
+    includeMetadataSender,
+  );
+
+  if (teamMemberId !== undefined) {
+    const sender = members.find((member) => member.id === String(teamMemberId));
+
+    if (sender) {
+      return sender;
+    }
+  }
+
+  const memberId = getMessageSenderValue(
+    message,
+    metadata,
+    DIRECT_MEMBER_ID_KEYS,
+    METADATA_MEMBER_ID_KEYS,
+    includeMetadataSender,
+  );
+
+  if (memberId !== undefined) {
+    const sender = members.find((member) => member.memberId === String(memberId));
+
+    if (sender) {
+      return sender;
+    }
+  }
+
+  const senderId = getMessageSenderValue(
+    message,
+    metadata,
+    DIRECT_SENDER_ID_KEYS,
+    METADATA_SENDER_ID_KEYS,
+    includeMetadataSender,
+  );
+
+  if (senderId !== undefined) {
+    const normalizedSenderId = String(senderId);
+    const sender =
+      members.find((member) => member.id === normalizedSenderId) ??
+      members.find((member) => member.memberId === normalizedSenderId);
+
+    if (sender) {
+      return sender;
+    }
+  }
+
+  const senderName =
+    getString(message, ["senderName", "senderNickname", "nickname", "memberName"]) ??
+    (metadata
+      ? getString(metadata, ["senderName", "senderNickname", "nickname", "memberName"])
+      : undefined);
+
+  return senderName ? members.find((member) => member.name === senderName) : undefined;
+}
+
+function getRawMessageSenderId(
+  message: ChatMessageResponse,
+  metadata: ChatMessageMetadata | undefined,
+  includeMetadataSender: boolean,
+) {
+  return getMessageSenderValue(
+    message,
+    metadata,
+    [...DIRECT_TEAM_MEMBER_ID_KEYS, ...DIRECT_SENDER_ID_KEYS, ...DIRECT_MEMBER_ID_KEYS],
+    [...METADATA_TEAM_MEMBER_ID_KEYS, ...METADATA_SENDER_ID_KEYS, ...METADATA_MEMBER_ID_KEYS],
+    includeMetadataSender,
+  );
+}
+
+function getMessageSenderValue(
+  message: ChatMessageResponse,
+  metadata: ChatMessageMetadata | undefined,
+  directKeys: string[],
+  metadataKeys: string[],
+  includeMetadataSender: boolean,
+) {
+  return (
+    getValue(message, directKeys) ??
+    (includeMetadataSender && metadata ? getValue(metadata, metadataKeys) : undefined)
+  );
+}
+
+function isCurrentMemberSender(
+  message: ChatMessageResponse,
+  members: ChatMember[],
+  metadata: ChatMessageMetadata | undefined,
+  includeMetadataSender: boolean,
+) {
+  const currentMember = members.find((member) => member.isMe);
+
+  if (!currentMember) {
+    return false;
+  }
+
+  const teamMemberId = getMessageSenderValue(
+    message,
+    metadata,
+    DIRECT_TEAM_MEMBER_ID_KEYS,
+    METADATA_TEAM_MEMBER_ID_KEYS,
+    includeMetadataSender,
+  );
+
+  if (teamMemberId !== undefined && currentMember.id === String(teamMemberId)) {
+    return true;
+  }
+
+  const memberId = getMessageSenderValue(
+    message,
+    metadata,
+    DIRECT_MEMBER_ID_KEYS,
+    METADATA_MEMBER_ID_KEYS,
+    includeMetadataSender,
+  );
+
+  if (
+    memberId !== undefined &&
+    (currentMember.memberId === String(memberId) || currentMember.id === String(memberId))
+  ) {
+    return true;
+  }
+
+  const senderId = getMessageSenderValue(
+    message,
+    metadata,
+    DIRECT_SENDER_ID_KEYS,
+    METADATA_SENDER_ID_KEYS,
+    includeMetadataSender,
+  );
+
+  return (
+    senderId !== undefined &&
+    (currentMember.id === String(senderId) || currentMember.memberId === String(senderId))
+  );
 }
 
 function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedContest {

@@ -57,6 +57,7 @@ export type ChatRoomAvatarItem = {
 
 export type ChatMember = {
   id: string;
+  memberId?: string;
   profileId?: number;
   name: string;
   isMe?: boolean;
