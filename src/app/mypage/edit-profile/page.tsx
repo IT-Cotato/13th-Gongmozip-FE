@@ -29,8 +29,8 @@ function isValidCalendarDate(year: number, month: number, day: number) {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
-function toDigits(isoDate: string) {
-  return isoDate.replace(/\D/g, "").slice(0, 8);
+function toDigits(isoDate: string | null) {
+  return (isoDate ?? "").replace(/\D/g, "").slice(0, 8);
 }
 
 function RadioOption({

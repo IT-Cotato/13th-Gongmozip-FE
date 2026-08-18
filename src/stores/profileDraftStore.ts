@@ -32,10 +32,14 @@ type ProfileDraftState = {
   certificates: Certificate[];
   // Non-null while the wizard is editing an existing profile rather than creating a new one.
   editingProfileId: number | null;
+  // 닉네임은 1단계에서 입력하지만 실제 중복 검증은 3단계(자격증) 제출 시점에야 일어나므로,
+  // 에러를 1단계로 들고 돌아가 닉네임 입력 필드 옆에 보여주기 위한 필드.
+  nicknameError: string | null;
   setBasicInfo: (info: ProfileBasicInfo) => void;
   setProjects: (updater: (prev: ProjectExperienceInput[]) => ProjectExperienceInput[]) => void;
   setCertificates: (updater: (prev: Certificate[]) => Certificate[]) => void;
   setEditingProfileId: (profileId: number | null) => void;
+  setNicknameError: (message: string | null) => void;
   resetProfileDraft: () => void;
 };
 
@@ -46,10 +50,18 @@ export const useProfileDraftStore = create<ProfileDraftState>()((set) => ({
   projects: [],
   certificates: [],
   editingProfileId: null,
+  nicknameError: null,
   setBasicInfo: (info) => set({ basicInfo: info }),
   setProjects: (updater) => set((state) => ({ projects: updater(state.projects) })),
   setCertificates: (updater) => set((state) => ({ certificates: updater(state.certificates) })),
   setEditingProfileId: (profileId) => set({ editingProfileId: profileId }),
+  setNicknameError: (message) => set({ nicknameError: message }),
   resetProfileDraft: () =>
-    set({ basicInfo: INITIAL_BASIC_INFO, projects: [], certificates: [], editingProfileId: null }),
+    set({
+      basicInfo: INITIAL_BASIC_INFO,
+      projects: [],
+      certificates: [],
+      editingProfileId: null,
+      nicknameError: null,
+    }),
 }));

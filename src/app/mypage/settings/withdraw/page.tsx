@@ -3,8 +3,13 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDownIcon, ChevronLeftIcon } from "./_components/icons";
-import { WithdrawReasonSheet } from "./_components/WithdrawReasonSheet";
+import { WithdrawReasonSheet, type WithdrawReasonOption } from "./_components/WithdrawReasonSheet";
+import { ApiError } from "@/lib/http";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useWithdrawMemberMutation } from "@/queries/useWithdrawMemberMutation";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -35,17 +40,47 @@ function ConsentCheckbox({ checked, onToggle }: { checked: boolean; onToggle: ()
 
 export default function WithdrawPage() {
   const router = useRouter();
-  // TODO(backend): 비밀번호 검증 API 연동 전까지 목업으로 임시 표시
+  const queryClient = useQueryClient();
+  const profileQuery = useMemberProfileQuery();
+  const withdrawMutation = useWithdrawMemberMutation();
+
   const [password, setPassword] = useState("");
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState<WithdrawReasonOption | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [isReasonSheetOpen, setIsReasonSheetOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const isFormValid = password.trim().length > 0 && reason.length > 0 && agreed;
+  // 이메일 가입 회원만 비밀번호 검증이 필요하다. 프로필 조회가 아직 로딩 중일 때는
+  // 소셜로그인 여부를 알 수 없으므로, 원래 폼처럼 비밀번호 입력을 요구해 둔다.
+  const requiresPassword = !(profileQuery.isSuccess && profileQuery.data.snsLinked);
+  const isFormValid =
+    (!requiresPassword || password.trim().length > 0) && reason !== null && agreed;
 
   function handleWithdraw() {
-    if (!isFormValid) return;
-    // TODO(backend): 회원 탈퇴 API 연동
+    if (!isFormValid || reason === null || withdrawMutation.isPending) return;
+
+    setSubmitError(null);
+    withdrawMutation.mutate(
+      {
+        ...(requiresPassword ? { password } : {}),
+        reason: reason.code,
+      },
+      {
+        onSuccess: () => {
+          // /mypage/settings/withdraw가 아직 마운트된 상태에서 캐시를 지우면 이 페이지의
+          // 쿼리들이 즉시 재요청되고 401을 받아 라우팅이 충돌할 수 있다. 먼저 화면을
+          // 벗어난 뒤에 토큰/캐시를 정리한다.
+          router.replace("/login");
+          useAuthStore.getState().clearAccessToken();
+          queryClient.clear();
+        },
+        onError: (error) => {
+          setSubmitError(
+            error instanceof ApiError ? error.message : "회원 탈퇴에 실패했습니다. 다시 시도해주세요.",
+          );
+        },
+      },
+    );
   }
 
   return (
@@ -97,19 +132,24 @@ export default function WithdrawPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 p-4">
-          <div className="flex items-center px-1 text-[17px] leading-[1.25]">
-            <span className="text-[#1F1F1F]">비밀번호 입력</span>
-            <span className="text-[#FF7658]">*</span>
+        {requiresPassword && (
+          <div className="flex flex-col gap-1 p-4">
+            <div className="flex items-center px-1 text-[17px] leading-[1.25]">
+              <span className="text-[#1F1F1F]">비밀번호 입력</span>
+              <span className="text-[#FF7658]">*</span>
+            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setSubmitError(null);
+              }}
+              placeholder="현재 비밀번호를 입력해 주세요."
+              className={INPUT_CLASS}
+            />
           </div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="현재 비밀번호를 입력해 주세요."
-            className={INPUT_CLASS}
-          />
-        </div>
+        )}
 
         <div className="flex flex-col gap-1 p-4">
           <div className="flex items-center px-1 text-[17px] leading-[1.25]">
@@ -122,7 +162,7 @@ export default function WithdrawPage() {
               reason ? "text-[#1F1F1F]" : "text-[#949494]"
             }`}
           >
-            <span className="truncate">{reason || "사유를 선택해주세요."}</span>
+            <span className="truncate">{reason?.label ?? "사유를 선택해주세요."}</span>
             <ChevronDownIcon className="shrink-0" />
           </button>
         </div>
@@ -136,17 +176,22 @@ export default function WithdrawPage() {
       </div>
 
       <div className="sticky bottom-0 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        {submitError && (
+          <p role="alert" className="mb-2 text-center text-xs leading-[1.35] text-[#BB5260]">
+            {submitError}
+          </p>
+        )}
         <button
           type="button"
-          disabled={!isFormValid}
+          disabled={!isFormValid || withdrawMutation.isPending}
           onClick={handleWithdraw}
           className={`h-[51px] w-full rounded-[14px] px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-            isFormValid
+            isFormValid && !withdrawMutation.isPending
               ? "bg-[#FF7658] text-white"
               : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
           }`}
         >
-          회원 탈퇴
+          {withdrawMutation.isPending ? "탈퇴 처리 중..." : "회원 탈퇴"}
         </button>
       </div>
 

@@ -19,7 +19,9 @@ export default function CertificatesPage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const draftProjects = useProfileDraftStore((state) => state.projects);
   const draftCertificates = useProfileDraftStore((state) => state.certificates);
+  const setDraftCertificates = useProfileDraftStore((state) => state.setCertificates);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
   const updateProfileMutation = useUpdateProfileWithDetailsMutation();
@@ -64,11 +66,19 @@ export default function CertificatesPage() {
     setSubmitError(null);
 
     const onError = (error: unknown) => {
-      setSubmitError(
-        error instanceof ApiError
-          ? error.message
-          : "프로필 등록에 실패했습니다. 다시 시도해주세요.",
-      );
+      const message =
+        error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.";
+
+      // 닉네임은 1단계 입력 항목이지만 실제 중복 검증은 이 화면(3단계) 제출 시점에야
+      // 일어난다. 그대로 여기 띄우면 자격증 문제로 오해하기 쉬우므로 1단계로 돌려보내
+      // 닉네임 입력창 옆에 에러를 보여준다.
+      if (message.includes("닉네임")) {
+        useProfileDraftStore.getState().setNicknameError(message);
+        router.replace("/mypage/profile-management/new");
+        return;
+      }
+
+      setSubmitError(message);
     };
 
     if (editingProfileId !== null) {
@@ -82,7 +92,7 @@ export default function CertificatesPage() {
         {
           onSuccess: () => {
             resetProfileDraft();
-            router.push(`/mypage/profile-management/${editingProfileId}`);
+            router.replace(`/mypage/profile-management/${editingProfileId}`);
           },
           onError,
         },
@@ -93,9 +103,14 @@ export default function CertificatesPage() {
     createProfileMutation.mutate(
       { basicInfo: draftBasicInfo, projects: draftProjects, certificates },
       {
-        onSuccess: () => {
-          resetProfileDraft();
-          router.push("/mypage/profile-management/new/complete");
+        onSuccess: (data) => {
+          // 완료 화면에서 "프로젝트 경험/자격증 추가"로 같은 프로필에 이어서 더
+          // 담을 수 있으므로, 여기서 초안을 지우지 않고 방금 만든 프로필 ID만
+          // 기억해 둔다 - 그래야 다음 제출이 새 프로필을 또 만들지 않고 이
+          // 프로필을 수정하는 쪽으로 간다. 초안은 진짜로 나갈 때(완료하기/이탈)
+          // 지운다.
+          setEditingProfileId(data.profileId);
+          router.replace("/mypage/profile-management/new/complete");
         },
         onError,
       },
@@ -107,7 +122,10 @@ export default function CertificatesPage() {
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            setDraftCertificates(() => certificates);
+            router.replace("/mypage/profile-management/new/experience");
+          }}
           aria-label="이전"
           className="absolute left-4 flex h-6 w-6 items-center justify-center"
         >
@@ -168,7 +186,10 @@ export default function CertificatesPage() {
         <div className="flex gap-2.5">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => {
+              setDraftCertificates(() => certificates);
+              router.replace("/mypage/profile-management/new/experience");
+            }}
             disabled={isSubmitting}
             className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
           >
@@ -201,12 +222,12 @@ export default function CertificatesPage() {
 
       <ExitProfileWriteModal
         onExit={() => {
-          const exitDestination =
-            editingProfileId !== null
-              ? `/mypage/profile-management/${editingProfileId}`
-              : "/mypage/profile-management";
+          // 1~3단계는 서로 push가 아닌 replace로만 이동하므로 스택에는 마법사 진입
+          // 시점에 쌓인 엔트리 하나뿐이다. replace로 나가면 그 위에 엔트리가 하나
+          // 더 쌓여 뒤로가기 시 마법사로 되돌아오므로, back()으로 진입 화면(목록/
+          // 미리보기)으로 정확히 되돌아간다.
           resetProfileDraft();
-          router.push(exitDestination);
+          router.back();
         }}
         onOpenChange={setIsExitModalOpen}
         open={isExitModalOpen}

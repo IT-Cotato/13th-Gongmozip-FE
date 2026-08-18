@@ -1,11 +1,10 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon } from "./_components/icons";
-import { getCollaborationCharacterMeta } from "../_lib/collaborationCharacter";
+import { getCollaborationCharacterMeta, getPaletteStyle } from "../_lib/collaborationCharacter";
 import {
   useCurrentCharacterQuery,
   type CurrentCharacter,
@@ -18,16 +17,6 @@ import {
 } from "@/queries/useCharacterPalettesQuery";
 import { useUpdateCharacterPaletteMutation } from "@/queries/useUpdateCharacterPaletteMutation";
 import { ApiError } from "@/lib/http";
-
-function paletteStyle(palette: Palette | undefined): CSSProperties {
-  if (!palette) return { backgroundColor: "#EFEFEF" };
-  if (palette.style === "GRADIENT" && palette.secondaryHex) {
-    return {
-      backgroundImage: `linear-gradient(45deg, ${palette.primaryHex}, ${palette.secondaryHex})`,
-    };
-  }
-  return { backgroundColor: palette.primaryHex };
-}
 
 function PaletteSwatch({
   palette,
@@ -47,7 +36,7 @@ function PaletteSwatch({
       className={`aspect-square w-full max-w-[100px] rounded-full ${
         selected ? "ring-[3px] ring-offset-2 ring-[#1F1F1F]" : ""
       }`}
-      style={paletteStyle(palette)}
+      style={getPaletteStyle(palette)}
     />
   );
 }
@@ -100,7 +89,7 @@ function CharacterManagementContent({
           </Link>
           <div
             className="flex size-[113px] items-center justify-center overflow-hidden rounded-full border-2 border-[#e8e8e8]"
-            style={paletteStyle(selectedPalette)}
+            style={getPaletteStyle(selectedPalette)}
           >
             {meta.imageSrc && (
               <img src={meta.imageSrc} alt={meta.label} className="size-[90%] object-contain" />

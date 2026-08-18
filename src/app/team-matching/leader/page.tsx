@@ -6,13 +6,11 @@ import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepL
 import type { MatchingLeaderPreference } from "@/queries/useTodayMatchingApplicationQuery";
 import { useTeamMatchingApplicationStore } from "@/stores/teamMatchingApplicationStore";
 
-
 const leaderOptions: { label: string; value: MatchingLeaderPreference }[] = [
   { label: "네, 팀장으로 참여할게요", value: "WANTS" },
   { label: "아니요, 팀원으로 참여할게요", value: "DOES_NOT_WANT" },
   { label: "필요하면 맡을 수 있어요", value: "NEUTRAL" },
 ];
-
 
 export default function TeamMatchingLeaderPage() {
   const storedLeaderPreference = useTeamMatchingApplicationStore((state) => state.leaderPreference);
@@ -51,7 +49,12 @@ export default function TeamMatchingLeaderPage() {
   };
 
   return (
-    <TeamMatchingStepLayout actionHref="/team-matching/notice" actionLabel="다음" currentStep={4}>
+    <TeamMatchingStepLayout
+      actionHref="/team-matching/notice"
+      actionLabel="다음"
+      currentStep={4}
+      previousHref="/team-matching/contest-field"
+    >
       <section>
         <h2 className="-mt-px font-[Roboto] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
           팀장 여부를 선택해주세요.

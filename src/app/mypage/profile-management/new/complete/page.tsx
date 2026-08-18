@@ -3,9 +3,11 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon, PlusIcon } from "../../_components/icons";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
 
 export default function ProfileCompletePage() {
   const router = useRouter();
+  const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
 
   return (
     <div className="relative isolate flex h-full w-full flex-col overflow-hidden bg-white">
@@ -61,7 +63,7 @@ export default function ProfileCompletePage() {
         <div className="flex flex-col gap-2 px-4 pt-4 pb-6">
           <button
             type="button"
-            onClick={() => router.push("/mypage/profile-management/new/experience")}
+            onClick={() => router.replace("/mypage/profile-management/new/experience")}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-[rgba(97,97,97,0.1)] text-[17px] leading-[1.25] font-semibold text-[#616161]"
           >
             <PlusIcon />
@@ -69,7 +71,7 @@ export default function ProfileCompletePage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/mypage/profile-management/new/certificates")}
+            onClick={() => router.replace("/mypage/profile-management/new/certificates")}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-[rgba(97,97,97,0.1)] text-[17px] leading-[1.25] font-semibold text-[#616161]"
           >
             <PlusIcon />
@@ -81,14 +83,24 @@ export default function ProfileCompletePage() {
       <div className="sticky bottom-0 flex gap-2.5 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            // 이 화면에 온 시점에 프로필은 이미 생성돼 있다. "이전"은 더 추가하지
+            // 않고 나가는 동작이므로, 다음에 "새 프로필 작성"을 열었을 때 이
+            // 초안(프로필 ID 포함)이 남아있어 수정 모드로 잘못 열리지 않도록
+            // 초기화한다.
+            resetProfileDraft();
+            router.back();
+          }}
           className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161]"
         >
           이전
         </button>
         <button
           type="button"
-          onClick={() => router.push("/mypage")}
+          onClick={() => {
+            resetProfileDraft();
+            router.replace("/mypage");
+          }}
           className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
         >
           완료하기
