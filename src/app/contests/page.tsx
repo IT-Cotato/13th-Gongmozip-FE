@@ -15,14 +15,14 @@ export default function ContestsPage() {
         <Link
           href="/contests/scraps"
           aria-label="스크랩한 공모전"
-          className="flex size-8 items-center justify-center"
+          className="flex size-[38px] items-center justify-center rounded-[14px]"
         >
           <Image
             src="/icons/contests/Button/_Asset/tabler_bookmark-filled.svg"
             alt=""
-            width={24}
-            height={24}
-            className="size-6 shrink-0"
+            width={20}
+            height={20}
+            className="size-5 shrink-0"
           />
         </Link>
       </header>

@@ -8,7 +8,7 @@ type SurveyStatusResponse = {
   status: SurveyStatus;
 };
 
-function getSurveyStatus() {
+export function fetchSurveyStatus() {
   return apiFetch<SurveyStatusResponse>("/api/survey/status");
 }
 
@@ -16,7 +16,7 @@ export const surveyStatusQueryKey = ["survey", "status"] as const;
 
 export function useSurveyStatusQuery() {
   return useQuery({
-    queryFn: getSurveyStatus,
+    queryFn: fetchSurveyStatus,
     queryKey: surveyStatusQueryKey,
     retry: (failureCount, error) => {
       if (error instanceof ApiError && error.status === 401) return false;

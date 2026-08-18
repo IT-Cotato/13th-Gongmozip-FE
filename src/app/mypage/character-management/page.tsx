@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ChevronLeftIcon } from "./_components/icons";
+import { SurveyRetakeLimitModal } from "../_components/SurveyRetakeLimitModal";
+import { useSurveyRetakeNavigation } from "../_hooks/useSurveyRetakeNavigation";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "../_lib/collaborationCharacter";
 import {
   useCurrentCharacterQuery,
@@ -52,6 +53,12 @@ function CharacterManagementContent({
   const updatePaletteMutation = useUpdateCharacterPaletteMutation();
   const [selectedCode, setSelectedCode] = useState<PaletteCode>(character.paletteCode);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isRetakeLimitOpen, setIsRetakeLimitOpen] = useState(false);
+  const { handleSurveyRetakeClick, isCheckingSurveyStatus, surveyStatusError } =
+    useSurveyRetakeNavigation({
+      onRetakeLimited: () => setIsRetakeLimitOpen(true),
+      returnTo: "/mypage/character-management",
+    });
 
   const meta = getCollaborationCharacterMeta(character.characterType);
   const selectedPalette = palettes.palettes.find((palette) => palette.paletteCode === selectedCode);
@@ -81,12 +88,22 @@ function CharacterManagementContent({
     <>
       <div className="flex-1 overflow-y-auto">
         <div className="relative flex flex-col items-center gap-4 pt-6 pb-2">
-          <Link
-            href="/collaboration-type?returnTo=/mypage/character-management"
-            className="absolute top-1 right-4 text-[13px] leading-[1.25] font-semibold text-[#616161] underline"
+          <button
+            type="button"
+            onClick={handleSurveyRetakeClick}
+            disabled={isCheckingSurveyStatus}
+            className="absolute top-1 right-4 text-[13px] leading-[1.25] font-semibold text-[#616161] underline disabled:opacity-60"
           >
-            재검사하기
-          </Link>
+            {isCheckingSurveyStatus ? "확인 중" : "재검사하기"}
+          </button>
+          {surveyStatusError && (
+            <p
+              role="alert"
+              className="w-full px-4 text-right text-xs leading-[1.35] text-[#BB5260]"
+            >
+              {surveyStatusError}
+            </p>
+          )}
           <div
             className="flex size-[113px] items-center justify-center overflow-hidden rounded-full border-2 border-[#e8e8e8]"
             style={getPaletteStyle(selectedPalette)}
@@ -149,6 +166,9 @@ function CharacterManagementContent({
           </button>
         </div>
       </div>
+      {isRetakeLimitOpen && (
+        <SurveyRetakeLimitModal onClose={() => setIsRetakeLimitOpen(false)} />
+      )}
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { PassIllustration } from "@/components/team-matching/TeamMatchingPassView";
 import { ApiError } from "@/lib/http";
+import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
 import { useWithdrawMatchingApplicationMutation } from "@/queries/useWithdrawMatchingApplicationMutation";
 import {
   TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
@@ -42,14 +43,29 @@ function PassLeaveNoticeCard() {
   );
 }
 
+function getDisplayPenalty(expectedPenalty: number | null | undefined) {
+  return expectedPenalty && expectedPenalty > 0
+    ? expectedPenalty
+    : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
+}
+
 export default function TeamMatchingPassLeaveConfirmView() {
   const router = useRouter();
   const passProposal = useTeamMatchingProposalStore((state) => state.passProposal);
+  const pendingExpectedPenalty = useTeamMatchingProposalStore(
+    (state) => state.pendingExpectedPenalty,
+  );
   const pendingProposalId = useTeamMatchingProposalStore((state) => state.pendingProposalId);
+  const { data: todayApplication } = useTodayMatchingApplicationQuery({
+    refetchOnMount: "always",
+  });
   const withdrawMutation = useWithdrawMatchingApplicationMutation();
   const applicationId =
     pendingProposalId && /^[1-9]\d*$/.test(pendingProposalId) ? Number(pendingProposalId) : null;
   const canPass = applicationId !== null && Number.isSafeInteger(applicationId);
+  const expectedPenalty = getDisplayPenalty(
+    pendingExpectedPenalty ?? todayApplication?.withdrawal.expectedPenalty,
+  );
   const errorMessage = withdrawMutation.error
     ? withdrawMutation.error instanceof ApiError
       ? withdrawMutation.error.message
@@ -85,10 +101,7 @@ export default function TeamMatchingPassLeaveConfirmView() {
         <PassIllustration className="mt-[-26px]" />
 
         <section className="relative z-30 mx-auto mt-[38px] w-[300px] text-center font-[Pretendard] text-[13px] font-normal not-italic leading-[150%] text-[#616161]">
-          <p>
-            매칭을 패스하는 경우 협업 거리가 {TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS}m씩
-            줄어들어요.
-          </p>
+          <p>매칭을 패스하는 경우 협업 거리가 {expectedPenalty}m 줄어들어요.</p>
           <p className="mt-1">다시 한번 생각해보시겠어요?</p>
         </section>
 

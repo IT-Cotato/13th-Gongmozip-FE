@@ -9,6 +9,8 @@ import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/ico
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
 import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
+import { SurveyRetakeLimitModal } from "./_components/SurveyRetakeLimitModal";
+import { useSurveyRetakeNavigation } from "./_hooks/useSurveyRetakeNavigation";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
@@ -56,6 +58,12 @@ export default function MyPage() {
   const isError = summaryQuery.isError;
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isRetakeLimitOpen, setIsRetakeLimitOpen] = useState(false);
+  const { handleSurveyRetakeClick, isCheckingSurveyStatus, surveyStatusError } =
+    useSurveyRetakeNavigation({
+      onRetakeLimited: () => setIsRetakeLimitOpen(true),
+      returnTo: "/mypage",
+    });
   const isUnauthorized =
     summaryQuery.error instanceof ApiError && summaryQuery.error.status === 401;
 
@@ -115,7 +123,11 @@ export default function MyPage() {
       { label: "회원정보 수정", href: "/mypage/edit-profile" },
       canChangePassword
         ? { label: "비밀번호 변경", href: "/mypage/change-password" }
-        : { label: "비밀번호 변경", disabled: true, hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined },
+        : {
+            label: "비밀번호 변경",
+            disabled: true,
+            hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined,
+          },
     ],
   };
   const menuSections: MenuSection[] = [
@@ -222,14 +234,21 @@ export default function MyPage() {
                     >
                       {collaborationType?.label ?? "검사 전"}
                     </span>
-                    <Link
-                      href="/collaboration-type?returnTo=/mypage"
-                      className="flex items-center text-[13px] font-semibold text-[#616161] underline"
+                    <button
+                      type="button"
+                      onClick={handleSurveyRetakeClick}
+                      disabled={isCheckingSurveyStatus}
+                      className="flex items-center text-[13px] font-semibold text-[#616161] underline disabled:opacity-60"
                     >
-                      협업 유형 검사
+                      {isCheckingSurveyStatus ? "확인 중" : "협업 유형 검사"}
                       <img src="/icons/common/tabler_chevron-right.svg" alt="" className="size-5" />
-                    </Link>
+                    </button>
                   </div>
+                  {surveyStatusError && (
+                    <p role="alert" className="text-xs leading-[1.35] text-[#BB5260]">
+                      {surveyStatusError}
+                    </p>
+                  )}
                   <p className="text-[22px] leading-[1.35] font-bold text-[#1F1F1F]">
                     {profileQuery.data?.name ? `${profileQuery.data.name}님,` : "반가워요,"}
                     <br />
@@ -247,6 +266,7 @@ export default function MyPage() {
                     협업거리
                   </p>
                   <CollaborativeDistance
+                    current={data.collaborationDistance.current}
                     max={data.collaborationDistance.max}
                     progress={data.collaborationDistance.progress}
                   />
@@ -322,7 +342,10 @@ export default function MyPage() {
       {isTestPromptOpen && (
         <CollaborationTypeTestPromptModal
           onClose={() => setIsTestPromptOpen(false)}
-          onStartTest={() => router.push("/collaboration-type?returnTo=/mypage")}
+          onStartTest={() => {
+            setIsTestPromptOpen(false);
+            void handleSurveyRetakeClick();
+          }}
         />
       )}
       {isLogoutConfirmOpen && (
@@ -331,6 +354,9 @@ export default function MyPage() {
           onConfirm={handleConfirmLogout}
           isLoggingOut={logoutMutation.isPending}
         />
+      )}
+      {isRetakeLimitOpen && (
+        <SurveyRetakeLimitModal onClose={() => setIsRetakeLimitOpen(false)} />
       )}
     </div>
   );
@@ -372,7 +398,15 @@ function MenuRow({ label, href, disabled, hint, onClick }: MenuItem) {
   );
 }
 
-function CollaborativeDistance({ max, progress }: { max: number; progress: number }) {
+function CollaborativeDistance({
+  current,
+  max,
+  progress,
+}: {
+  current: number;
+  max: number;
+  progress: number;
+}) {
   const stepCount = Math.floor(max / COLLABORATIVE_DISTANCE_STEP);
   const milestones = Array.from(
     { length: stepCount + 1 },
@@ -381,7 +415,8 @@ function CollaborativeDistance({ max, progress }: { max: number; progress: numbe
   if (milestones[milestones.length - 1] !== max) {
     milestones.push(max);
   }
-  const filledPercent = Math.min(100, Math.max(0, progress));
+  const calculatedProgress = max > 0 ? (current / max) * 100 : progress;
+  const filledPercent = Math.min(100, Math.max(0, calculatedProgress));
 
   return (
     <div className="flex w-full flex-col items-center gap-1">

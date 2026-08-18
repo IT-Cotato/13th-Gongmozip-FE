@@ -8,11 +8,11 @@ import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStatusQuery } from "@/queries/useContestScrapStatusQuery";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestDetail } from "../_types";
+import { ContestActionToast } from "./ContestActionToast";
 import { ShareContestModal } from "./ShareContestModal";
 
 type ContestInfoProps = {
   contest: ContestDetail;
-  posterIndex: number;
 };
 
 const detailRows = [
@@ -29,7 +29,7 @@ const detailRows = [
 const websiteLinkClassName =
   "flex h-7 w-full items-center justify-center gap-1 rounded-[10px] border border-semantic-line-brand px-1.5 py-[7px] text-center text-[13px] leading-[125%] font-semibold text-semantic-label-brand";
 
-export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
+export function ContestInfo({ contest }: ContestInfoProps) {
   const scrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const setScrapStatus = useContestScrapStore((state) => state.setScrapStatus);
   const { data: scrapStatus } = useContestScrapStatusQuery(contest.id);
@@ -250,9 +250,7 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
               height={222}
             />
           ) : (
-            <div className="flex h-[222px] w-[159px] items-center justify-center gap-2.5 bg-color-gray-300 text-sm font-semibold text-color-gray-650">
-              이미지 {posterIndex}
-            </div>
+            <div aria-hidden="true" className="h-[222px] w-[159px] bg-white" />
           )}
         </div>
       </div>
@@ -334,20 +332,41 @@ export function ContestInfo({ contest, posterIndex }: ContestInfoProps) {
 
         <div className="relative mt-8 w-full max-w-[358px]">
           {showShareToast ? (
-            <ContestActionToast href="/chat" message="채팅방에 공유 완료했습니다." />
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              href="/chat"
+              message="채팅방에 공유 완료했습니다."
+            />
           ) : null}
 
           {showShareErrorToast ? (
-            <ContestActionToast message="공유에 실패했습니다. 다시 시도해주세요." />
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              message="공유에 실패했습니다. 다시 시도해주세요."
+            />
           ) : null}
 
           {showScrapToast ? (
-            <ContestActionToast href="/contests/scraps" message="이 공모전을 스크랩하였습니다." />
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              href="/contests/scraps"
+              message="이 공모전을 스크랩하였습니다."
+            />
           ) : null}
 
-          {showScrapErrorToast ? <ContestActionToast message="스크랩 처리에 실패했습니다" /> : null}
+          {showScrapErrorToast ? (
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              message="스크랩 처리에 실패했습니다"
+            />
+          ) : null}
 
-          {showLinkCopiedToast ? <ContestActionToast message="링크가 복사되었습니다" /> : null}
+          {showLinkCopiedToast ? (
+            <ContestActionToast
+              className="absolute bottom-[calc(100%+11px)]"
+              message="링크가 복사되었습니다"
+            />
+          ) : null}
 
           {contest.websiteUrl ? (
             <Link
@@ -431,33 +450,44 @@ function ContestImage({
   src: string;
   width: number;
 }) {
-  if (isExternalUrl(src)) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} width={width} height={height} className={className} />;
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div
+        aria-hidden="true"
+        className={`${className} bg-white`}
+        style={{ aspectRatio: `${width} / ${height}` }}
+      />
+    );
   }
 
-  return <Image src={src} alt={alt} width={width} height={height} className={className} />;
+  if (isExternalUrl(src)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className={className}
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      className={className}
+      onError={() => setHasError(true)}
+    />
+  );
 }
 
 function isExternalUrl(src: string) {
   return src.startsWith("http://") || src.startsWith("https://");
-}
-
-function ContestActionToast({ href, message }: { href?: string; message: string }) {
-  return (
-    <div
-      role="status"
-      className="absolute bottom-[calc(100%+11px)] left-1/2 z-50 flex w-[350px] -translate-x-1/2 items-baseline gap-4 rounded-full bg-[rgba(17,17,17,0.60)] py-2 pr-4 pl-5"
-    >
-      <p className="min-w-0 flex-1 text-[15px] leading-[125%] font-medium text-white">{message}</p>
-      {href ? (
-        <Link
-          href={href}
-          className="shrink-0 text-center text-[13px] leading-[125%] font-semibold text-white underline"
-        >
-          바로가기
-        </Link>
-      ) : null}
-    </div>
-  );
 }
