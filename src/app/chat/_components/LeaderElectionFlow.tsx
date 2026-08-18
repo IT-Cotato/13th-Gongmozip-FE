@@ -619,6 +619,11 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         .find((message) => message.messageType === "CONTEST_VOTE_REMINDER_CARD"),
     [serverMessages],
   );
+  const latestContestVoteMessage = useMemo(
+    () =>
+      [...serverMessages].reverse().find((message) => message.messageType === "CONTEST_VOTE_CARD"),
+    [serverMessages],
+  );
   const latestProgressCheckMessage = useMemo(
     () =>
       [...serverMessages]
@@ -691,6 +696,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const hasMyVoted = contestVoteStatus?.myVoted ?? isContestVoteSubmitted;
   const voteCountdownSeconds =
     getRemainingSecondsFromMetadata(
+      latestContestVoteMessage?.metadata,
+      ["voteDeadlineAt", "voteEndsAt", "voteClosedAt", "deadlineAt", "expiresAt"],
+      [],
+      now,
+    ) ??
+    getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
       ["voteDeadlineAt", "voteEndsAt", "voteClosedAt", "deadlineAt", "expiresAt"],
       [],
@@ -706,8 +717,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     ) ??
     DEFAULT_CONTEST_VOTE_SECONDS;
   const isContestVoteClosed = voteCountdownSeconds <= 0 || hasContestResultMessage;
-  const isContestVoteInProgress =
-    Boolean(latestContestVoteReminderMessage) && !isContestVoteClosed && !hasContestResultMessage;
+  const isContestVoteInProgress = !isContestVoteClosed;
   const displayedVoteCountdownSeconds = isContestVoteClosed ? 0 : voteCountdownSeconds;
   const leaderVoteCountdownSeconds =
     getRemainingSecondsFromMetadata(
