@@ -677,7 +677,8 @@ export function ContestVoteSheet({
   remainingSeconds?: number;
   selectedContestIds: string[];
 }) {
-  const timerLabel = remainingSeconds <= 0 ? "투표 종료" : "투표 마감까지";
+  const isVoteEnded = remainingSeconds <= 0 || disabled;
+  const timerLabel = isVoteEnded ? "투표 종료" : "투표 마감까지";
 
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
@@ -703,12 +704,11 @@ export function ContestVoteSheet({
         </button>
       </header>
 
-      <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
-        <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-          {timerLabel}
-        </span>
-        <LargeCountdown remainingSeconds={remainingSeconds} />
-      </section>
+      <VoteTimerPanel
+        isEnded={isVoteEnded}
+        label={timerLabel}
+        remainingSeconds={remainingSeconds}
+      />
 
       <section className="mt-6 shrink-0 px-4 text-center">
         <h2 className="text-[17px] leading-[1.35] font-semibold text-color-gray-850">
@@ -756,11 +756,11 @@ export function ContestVoteSheet({
       <div className="shrink-0 bg-white px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
         <button
           className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white outline-none disabled:bg-color-gray-200 disabled:text-color-gray-350 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          disabled={disabled || contests.length === 0 || selectedContestIds.length === 0}
+          disabled={isVoteEnded || contests.length === 0 || selectedContestIds.length === 0}
           onClick={onSubmit}
           type="button"
         >
-          {isRevote ? "다시 투표하기" : "투표하기"}
+          {isVoteEnded ? "투표 종료" : isRevote ? "다시 투표하기" : "투표하기"}
         </button>
       </div>
     </main>
@@ -784,7 +784,8 @@ export function ContestVoteCompleteSheet({
   selectedContestIds: string[];
   voteResults?: ContestVoteResultItem[];
 }) {
-  const timerLabel = remainingSeconds <= 0 ? "투표 종료" : "투표 마감까지";
+  const isVoteEnded = remainingSeconds <= 0;
+  const timerLabel = isVoteEnded ? "투표 종료" : "투표 마감까지";
   const selectedContestIdSet = new Set(selectedContestIds);
   const hasSuppliedVoteResults = voteResults !== undefined;
   const voteResultByContestId = createVoteResultMap(voteResults);
@@ -816,12 +817,11 @@ export function ContestVoteCompleteSheet({
         </button>
       </header>
 
-      <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
-        <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-          {timerLabel}
-        </span>
-        <LargeCountdown remainingSeconds={remainingSeconds} />
-      </section>
+      <VoteTimerPanel
+        isEnded={isVoteEnded}
+        label={timerLabel}
+        remainingSeconds={remainingSeconds}
+      />
 
       <section className="mt-6 shrink-0 px-4 text-center">
         <h2 className="text-[17px] leading-[1.35] font-semibold text-color-gray-850">
@@ -865,11 +865,12 @@ export function ContestVoteCompleteSheet({
 
       <div className="shrink-0 bg-white px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
         <button
-          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[rgba(97,97,97,0.10)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-color-gray-650 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[rgba(97,97,97,0.10)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-color-gray-650 outline-none disabled:bg-color-gray-200 disabled:text-color-gray-350 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          disabled={isVoteEnded}
           onClick={onRevote}
           type="button"
         >
-          다시 투표하기
+          {isVoteEnded ? "투표 종료" : "다시 투표하기"}
         </button>
       </div>
     </main>
@@ -1505,6 +1506,31 @@ function SmallTimer({
     <span className="flex shrink-0 items-center rounded-[16px] bg-color-coral-50 px-2 py-1 text-[12px] leading-[1.35] font-semibold text-color-coral-700">
       {label} {formatCandidateTimer(remainingSeconds)}
     </span>
+  );
+}
+
+function VoteTimerPanel({
+  isEnded,
+  label,
+  remainingSeconds,
+}: {
+  isEnded: boolean;
+  label: string;
+  remainingSeconds: number;
+}) {
+  return (
+    <section className="relative mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 overflow-hidden rounded-[16px] bg-color-khaki-50 p-4">
+      <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
+        {label}
+      </span>
+      <LargeCountdown remainingSeconds={isEnded ? 0 : remainingSeconds} />
+      {isEnded ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-[16px] bg-[rgba(217,217,217,0.55)] backdrop-blur-[0.25px]"
+        />
+      ) : null}
+    </section>
   );
 }
 
