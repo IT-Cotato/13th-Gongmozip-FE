@@ -1040,7 +1040,7 @@ function ContestListCard({
           "투표 종료"
         ) : (
           <>
-            <Image src="/icons/chat/vote_1.svg" alt="" width={18} height={18} />
+            <Image src="/icons/chat/vote_2_1.svg" alt="" width={18} height={18} />
             원하는 공모전 투표하러 가기
           </>
         )}
