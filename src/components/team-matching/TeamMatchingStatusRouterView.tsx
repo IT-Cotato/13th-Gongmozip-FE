@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import TeamMatchingAcceptWaitingView from "@/components/team-matching/TeamMatchingAcceptWaitingView";
 import TeamMatchingCompleteView from "@/components/team-matching/TeamMatchingCompleteView";
@@ -104,20 +104,20 @@ function ConfirmedMatchingStatusView({
   const markCompletionAsSeen = useTeamMatchingCompletionStore(
     (state) => state.markCompletionAsSeen,
   );
-  const visibleCompletionIdRef = useRef<string | null>(null);
+  const [visibleCompletionId, setVisibleCompletionId] = useState<string | null>(null);
   const completionId = getMatchingCompletionId(todayMatchingResult);
   const hasSeenCurrentCompletion = completionId ? hasSeenCompletion(completionId) : false;
   const shouldShowCompletion =
     Boolean(completionId) &&
     hasHydrated &&
-    (!hasSeenCurrentCompletion || visibleCompletionIdRef.current === completionId);
+    (!hasSeenCurrentCompletion || visibleCompletionId === completionId);
 
   useEffect(() => {
     if (!completionId || !hasHydrated || hasSeenCompletion(completionId)) {
       return;
     }
 
-    visibleCompletionIdRef.current = completionId;
+    setVisibleCompletionId(completionId);
     markCompletionAsSeen(completionId);
   }, [completionId, hasHydrated, hasSeenCompletion, markCompletionAsSeen]);
 
@@ -148,7 +148,12 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
     }
 
     if (todayMatchingResult.myResponseStatus === "ACCEPTED") {
-      return <TeamMatchingAcceptWaitingView todayMatchingResult={todayMatchingResult} />;
+      return (
+        <TeamMatchingAcceptWaitingView
+          showCancelAction={false}
+          todayMatchingResult={todayMatchingResult}
+        />
+      );
     }
 
     if (todayMatchingResult.myResponseStatus === "PASSED") {
@@ -161,7 +166,7 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
   switch (todayMatchingResult.resultStatus) {
     case "NOT_PUBLISHED":
     case "PROCESSING":
-      return <TeamMatchingPoolView />;
+      return <TeamMatchingPoolView showCancelAction={false} />;
     case "UNMATCHED":
       return <TeamMatchingUnmatchedView />;
     case "WITHDRAWN":
