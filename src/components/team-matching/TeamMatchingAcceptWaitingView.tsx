@@ -21,6 +21,7 @@ import {
 } from "@/queries/useTodayMatchingResultQuery";
 
 type TeamMatchingAcceptWaitingViewProps = {
+  showCancelAction?: boolean;
   todayApplication?: TodayMatchingApplication;
   todayMatchingResult?: TodayMatchingResult;
 };
@@ -42,6 +43,7 @@ function getCompletedResponseCount(
 }
 
 export default function TeamMatchingAcceptWaitingView({
+  showCancelAction = true,
   todayApplication,
   todayMatchingResult,
 }: TeamMatchingAcceptWaitingViewProps) {
@@ -108,18 +110,20 @@ export default function TeamMatchingAcceptWaitingView({
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
-          {canWithdraw ? (
-            <Link
-              className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
-              href="/team-matching/cancel"
-            >
-              매칭신청취소
-            </Link>
-          ) : (
-            <span className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#949494]">
-              매칭신청취소 불가
-            </span>
-          )}
+          {showCancelAction ? (
+            canWithdraw ? (
+              <Link
+                className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
+                href="/team-matching/cancel"
+              >
+                매칭신청취소
+              </Link>
+            ) : (
+              <span className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#949494]">
+                매칭신청취소 불가
+              </span>
+            )
+          ) : null}
         </section>
 
         <div className="mt-[51px]">
