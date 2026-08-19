@@ -17,6 +17,7 @@ import {
 const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
 
 type TeamMatchingPoolViewProps = {
+  showCancelAction?: boolean;
   showCancelModal?: boolean;
   todayApplication?: TodayMatchingApplication;
 };
@@ -220,6 +221,7 @@ function MatchingProgressBar({
 }
 
 export default function TeamMatchingPoolView({
+  showCancelAction = true,
   showCancelModal = false,
   todayApplication,
 }: TeamMatchingPoolViewProps) {
@@ -269,7 +271,7 @@ export default function TeamMatchingPoolView({
             <br />
             매칭이 완료되면 알림으로 알려드립니다.
           </p>
-          {!isMatchingResultCountdownActive && canWithdraw ? (
+          {showCancelAction && !isMatchingResultCountdownActive && canWithdraw ? (
             <Link
               className="mt-2 inline-flex text-center font-[Roboto] text-[13px] font-semibold leading-[125%] text-[#616161] underline"
               href="/team-matching/cancel"
