@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import TeamMatchingAcceptWaitingView from "@/components/team-matching/TeamMatchingAcceptWaitingView";
 import TeamMatchingCompleteView from "@/components/team-matching/TeamMatchingCompleteView";
@@ -104,7 +104,13 @@ function ConfirmedMatchingStatusView({
   const markCompletionAsSeen = useTeamMatchingCompletionStore(
     (state) => state.markCompletionAsSeen,
   );
-  const [visibleCompletionId, setVisibleCompletionId] = useState<string | null>(null);
+  const preserveVisibleCompletion = useTeamMatchingCompletionStore(
+    (state) => state.preserveVisibleCompletion,
+  );
+  const clearVisibleCompletion = useTeamMatchingCompletionStore(
+    (state) => state.clearVisibleCompletion,
+  );
+  const visibleCompletionId = useTeamMatchingCompletionStore((state) => state.visibleCompletionId);
   const completionId = getMatchingCompletionId(todayMatchingResult);
   const hasSeenCurrentCompletion = completionId ? hasSeenCompletion(completionId) : false;
   const shouldShowCompletion =
@@ -117,9 +123,20 @@ function ConfirmedMatchingStatusView({
       return;
     }
 
-    setVisibleCompletionId(completionId);
+    preserveVisibleCompletion(completionId);
     markCompletionAsSeen(completionId);
-  }, [completionId, hasHydrated, hasSeenCompletion, markCompletionAsSeen]);
+
+    return () => {
+      clearVisibleCompletion(completionId);
+    };
+  }, [
+    clearVisibleCompletion,
+    completionId,
+    hasHydrated,
+    hasSeenCompletion,
+    markCompletionAsSeen,
+    preserveVisibleCompletion,
+  ]);
 
   if (!hasHydrated) {
     return (
