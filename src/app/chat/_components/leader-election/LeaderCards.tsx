@@ -10,6 +10,7 @@ const avatarToneClass: Record<ChatMember["avatarTone"], string> = {
   blue: "bg-color-blue-50",
   coral: "bg-color-coral-100",
 };
+const LEADER_PROFILE_CARD_WIDTH = 210;
 
 export function LeaderCandidatePreviewCard({
   leaders,
@@ -19,7 +20,7 @@ export function LeaderCandidatePreviewCard({
   title?: string;
 }) {
   return (
-    <div className="mt-1 flex min-h-[170px] w-[230px] flex-col items-center rounded-[8px] border border-color-gray-200 bg-white px-5 py-5">
+    <div className="mt-1 flex min-h-[170px] w-full max-w-[230px] flex-col items-center rounded-[8px] border border-color-gray-200 bg-white px-5 py-5">
       <div className="flex items-center gap-1 text-[13px] leading-[1.35] font-bold text-color-coral-500">
         <Image src="/icons/chat/medal.svg" alt="" width={18} height={18} />
         <span>{title}</span>
@@ -73,7 +74,7 @@ export function LeaderNoticeMessage({
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+          <p className="w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {body}
           </p>
           <MessageMeta sentAt={sentAt} />
@@ -105,7 +106,7 @@ export function LeaderElectedMessage({
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+          <p className="w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {message}
           </p>
           <MessageMeta sentAt={sentAt} />
@@ -144,7 +145,7 @@ export function LeaderTieMessage({
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+          <p className="w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {`투표 결과 동률이 발생했습니다.
 ${reason} 추천을 수락하시겠어요?`}
           </p>
@@ -179,11 +180,14 @@ export function LeaderProfileCard({
   leader: LeaderCandidate;
   onOpenProfile?: () => void;
 }) {
+  const leaderName = leader.name.trim() || "팀장";
+
   return (
     <button
-      className="mt-1 flex h-[68px] w-[220px] items-center gap-4 rounded-[14px] bg-color-orange-50 p-2 text-left disabled:cursor-default"
+      className="mt-1 flex h-[68px] w-[210px] shrink-0 items-center gap-4 overflow-hidden rounded-[14px] bg-color-orange-50 p-2 text-left disabled:cursor-default"
       disabled={!onOpenProfile}
       onClick={onOpenProfile}
+      style={{ width: LEADER_PROFILE_CARD_WIDTH }}
       type="button"
     >
       <span className="relative flex w-[66px] shrink-0 items-start">
@@ -192,11 +196,19 @@ export function LeaderProfileCard({
         </span>
         <MemberAvatar member={leader} sizeClassName="size-[52px]" />
       </span>
-      <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.25] font-semibold text-color-coral-500">
-        {leader.name}
-      </span>
-      <span className="text-[20px] leading-none text-color-coral-500" aria-hidden="true">
-        ›
+      <span className="flex min-w-0 flex-1 items-center justify-between">
+        <span className="min-w-0 truncate text-[13px] leading-[1.25] font-semibold text-color-coral-500">
+          {leaderName}
+        </span>
+        <span className="flex size-8 shrink-0 items-center justify-center text-color-coral-500" aria-hidden="true">
+          <span
+            className="block size-4 bg-current"
+            style={{
+              mask: "url('/icons/common/tabler_chevron-right.svg') center / contain no-repeat",
+              WebkitMask: "url('/icons/common/tabler_chevron-right.svg') center / contain no-repeat",
+            }}
+          />
+        </span>
       </span>
     </button>
   );
@@ -209,6 +221,8 @@ export function MemberAvatar({
   member: LeaderCandidate;
   sizeClassName: string;
 }) {
+  const memberName = member.name.trim() || "팀장";
+
   return (
     <span
       className={`relative shrink-0 overflow-hidden rounded-full border-2 border-white ${avatarToneClass[member.avatarTone]} ${sizeClassName}`}
@@ -217,7 +231,7 @@ export function MemberAvatar({
         <Image src={member.avatarSrc} alt="" fill sizes="122px" className="object-cover" />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-[17px] font-semibold text-color-gray-750">
-          {member.name.slice(0, 1)}
+          {memberName.slice(0, 1)}
         </span>
       )}
     </span>

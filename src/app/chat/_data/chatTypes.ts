@@ -4,6 +4,7 @@ export type ChatMessage = {
   senderName: string;
   body: string;
   sentAt: string;
+  sentAtValue?: string;
   sentAtDateKey?: string;
   sentAtDateLabel?: string;
   direction: "incoming" | "outgoing";

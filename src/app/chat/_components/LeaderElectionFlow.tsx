@@ -80,6 +80,7 @@ import type {
 
 const DEFAULT_CONTEST_VOTE_SECONDS = 24 * 60 * 60;
 const DEFAULT_LEADER_VOTE_SECONDS = 8 * 60 * 60;
+const LEADER_CANDIDACY_SECONDS = 3 * 60 * 60;
 const EMPTY_CHAT_MEMBERS: ChatMember[] = [];
 const EMPTY_CONTEST_CANDIDATES: RecommendedContest[] = [];
 const LEADER_RECOMMENDATION_ID_KEYS = [
@@ -105,6 +106,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const teamsQuery = useChatTeamsQuery();
   const chatMembers = membersQuery.data?.chatMembers ?? EMPTY_CHAT_MEMBERS;
   const contestCandidateDeadlineAt = membersQuery.data?.contestCandidateDeadlineAt;
+  const leaderCandidacyDeadlineAt = membersQuery.data?.leaderCandidacyDeadlineAt;
   const leaderSelectionDeadlineAt = membersQuery.data?.leaderSelectionDeadlineAt;
   const leaderVoteDeadlineAt = membersQuery.data?.leaderVoteDeadlineAt;
   const roomFromList = useMemo(
@@ -642,6 +644,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       [...serverMessages].reverse().find((message) => message.messageType === "LEADER_VOTE_CARD"),
     [serverMessages],
   );
+  const latestLeaderNominationMessage = useMemo(
+    () =>
+      [...serverMessages]
+        .reverse()
+        .find((message) => message.messageType === "LEADER_NOMINATION_CARD"),
+    [serverMessages],
+  );
   const latestLeaderResultMessage = useMemo(
     () =>
       [...serverMessages].reverse().find((message) => message.messageType === "LEADER_RESULT_CARD"),
@@ -729,6 +738,28 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     projectRemainingSeconds !== undefined && projectRemainingSeconds <= 0;
   const canShowProjectSubmissionReminder =
     !hasConfirmedCompletedMemberReviews;
+  const leaderCandidacyCountdownSeconds =
+    getRemainingSecondsFromCardStart(
+      latestLeaderNominationMessage?.sentAtValue,
+      LEADER_CANDIDACY_SECONDS,
+      now,
+    ) ??
+    getRemainingSecondsFromMetadata(
+      latestLeaderNominationMessage?.metadata,
+      [
+        "leaderCandidacyDeadlineAt",
+        "leaderCandidacyEndsAt",
+        "leaderCandidacyClosedAt",
+        "nominationDeadlineAt",
+        "nominationEndsAt",
+        "deadlineAt",
+        "expiresAt",
+      ],
+      [],
+      now,
+    ) ??
+    getRemainingSeconds(leaderCandidacyDeadlineAt ?? undefined, now) ??
+    LEADER_CANDIDACY_SECONDS;
   const leaderVoteCountdownSeconds =
     getRemainingSecondsFromMetadata(
       latestLeaderVoteMessage?.metadata,
@@ -928,6 +959,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
                 shareContestsById={shareContestsById}
                 hasContestResultMessage={hasContestResultMessage}
                 hasLeaderResultMessage={hasLeaderResultMessage}
+                hasLeaderVoteMessage={Boolean(latestLeaderVoteMessage)}
                 isLeaderRecommendationPending={createLeaderRecommendationMutation.isPending}
                 isContestVoteClosed={isContestVoteClosed}
                 isLeaderCandidacySubmitted={isLeaderCandidacySubmitted}
@@ -1001,6 +1033,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
             {sheetState === "willingness" ? (
               <LeaderWillingnessSheet
                 disabled={updateLeaderCandidacyMutation.isPending}
+                remainingSeconds={leaderCandidacyCountdownSeconds}
                 selectedChoice={leaderChoice}
                 onSelect={setLeaderChoice}
                 onSubmit={submitWillingness}
@@ -1011,6 +1044,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
               <LeaderCandidateVoteSheet
                 candidates={safeCandidates}
                 disabled={voteLeaderMutation.isPending || !selectedCandidate}
+                remainingSeconds={leaderVoteCountdownSeconds}
                 selectedCandidateId={selectedCandidate?.id ?? ""}
                 onSelect={setSelectedCandidateId}
                 onSubmit={finishLeaderVote}
@@ -1131,6 +1165,7 @@ function ChatMessageRenderer({
   shareContestsById,
   hasContestResultMessage,
   hasLeaderResultMessage,
+  hasLeaderVoteMessage,
   isLeaderCandidacySubmitted,
   isLeaderVoteFlowEnded,
   isLeaderRecommendationPending,
@@ -1156,6 +1191,7 @@ function ChatMessageRenderer({
   shareContestsById: Map<number, RecommendedContest>;
   hasContestResultMessage: boolean;
   hasLeaderResultMessage: boolean;
+  hasLeaderVoteMessage: boolean;
   isLeaderCandidacySubmitted: boolean;
   isLeaderVoteFlowEnded: boolean;
   isLeaderRecommendationPending: boolean;
@@ -1192,13 +1228,11 @@ function ChatMessageRenderer({
     ]);
     const recommendationStatus = leaderRecommendation?.status;
     const shouldRequestRecommendation = !leaderRecommendation || recommendationStatus === "FAILED";
-    const buttonLabel = shouldRequestRecommendation
-      ? recommendationStatus === "FAILED"
-        ? "AI 추천 다시 생성하기"
-        : "AI 추천 생성하기"
-      : "팀장 여부 투표하기";
     const isNominationActionCompleted =
-      isLeaderVoteFlowEnded || isLeaderCandidacySubmitted || isLeaderActionCompleted(message);
+      hasLeaderVoteMessage ||
+      isLeaderVoteFlowEnded ||
+      isLeaderCandidacySubmitted ||
+      isLeaderCandidacyActionCompleted(message);
 
     return (
       <BotMessage
@@ -1209,7 +1243,7 @@ function ChatMessageRenderer({
           recommendationStatus === "PROCESSING" ||
           isNominationActionCompleted
         }
-        buttonLabel={isLeaderRecommendationPending ? "AI 추천 생성 중" : buttonLabel}
+        buttonLabel="팀장 여부 투표하기"
         onButtonClick={
           shouldRequestRecommendation ? onRequestLeaderRecommendation : onOpenWillingness
         }
@@ -1263,12 +1297,7 @@ function ChatMessageRenderer({
         buttonLabel="팀장 투표하기"
         onButtonClick={() => onOpenCandidateVote(candidateIds)}
         sentAt={message.sentAt}
-      >
-        <LeaderCandidatePreviewCard
-          leaders={getMembersByMetadataIds(chatMembers, candidateIds)}
-          title="팀장 후보"
-        />
-      </BotMessage>
+      />
     );
   }
 
@@ -1644,6 +1673,18 @@ function isLeaderActionCompleted(message: ChatMessage) {
   );
 }
 
+function isLeaderCandidacyActionCompleted(message: ChatMessage) {
+  const metadataCompleted =
+    getMetadataBoolean(message.metadata, "leaderCandidacySubmitted") ??
+    getMetadataBoolean(message.metadata, "isLeaderCandidacySubmitted") ??
+    getMetadataBoolean(message.metadata, "candidacySubmitted") ??
+    getMetadataBoolean(message.metadata, "isCandidacySubmitted") ??
+    getMetadataBoolean(message.metadata, "leaderCandidacyCompleted") ??
+    getMetadataBoolean(message.metadata, "isLeaderCandidacyCompleted");
+
+  return metadataCompleted ?? isLeaderActionCompleted(message);
+}
+
 function isLeaderTieMessage(message: ChatMessage) {
   const messageType = message.messageType?.toUpperCase();
 
@@ -1928,7 +1969,30 @@ function getLeaderResultMember(message: ChatMessage | undefined, members: ChatMe
 
   return members.find(
     (member) => !member.isChatbot && member.name.length > 0 && body.includes(member.name),
-  );
+  ) ?? createFallbackLeaderMember(message, leaderTeamMemberId, leaderName);
+}
+
+function createFallbackLeaderMember(
+  message: ChatMessage | undefined,
+  leaderTeamMemberId: number | undefined,
+  leaderName: string | undefined,
+): ChatMember | undefined {
+  const fallbackName = leaderName ?? getLeaderNameFromMessageBody(message?.body);
+
+  if (!fallbackName) {
+    return undefined;
+  }
+
+  return {
+    id: leaderTeamMemberId ? String(leaderTeamMemberId) : `leader-result-${fallbackName}`,
+    name: fallbackName,
+    isLeader: true,
+    avatarTone: "green",
+  };
+}
+
+function getLeaderNameFromMessageBody(body: string | undefined) {
+  return body?.match(/([^\s,]+)님이/)?.[1];
 }
 
 function getMembersByMetadataIds(members: LeaderCandidate[], ids: Array<number | string>) {
@@ -2190,6 +2254,24 @@ function getRemainingSeconds(deadlineAt: string | undefined, now: number) {
   }
 
   return Math.max(0, Math.ceil((deadlineTime - now) / 1000));
+}
+
+function getRemainingSecondsFromCardStart(
+  startedAt: string | undefined,
+  durationSeconds: number,
+  now: number,
+) {
+  if (!startedAt) {
+    return undefined;
+  }
+
+  const startedTime = new Date(startedAt).getTime();
+
+  if (!Number.isFinite(startedTime)) {
+    return undefined;
+  }
+
+  return Math.max(0, Math.ceil((startedTime + durationSeconds * 1000 - now) / 1000));
 }
 
 function getProjectEndRemainingSeconds(projectEndedAt: string | undefined, now: number) {

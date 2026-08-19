@@ -1240,6 +1240,7 @@ function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): Ch
     senderName,
     body: getString(message, ["content", "body", "message"]) ?? "",
     sentAt: formatMessageTime(sentAtValue),
+    sentAtValue,
     sentAtDateKey: formatMessageDateKey(sentAtValue),
     sentAtDateLabel: formatMessageDateLabel(sentAtValue),
     direction: isMine ? "outgoing" : "incoming",
