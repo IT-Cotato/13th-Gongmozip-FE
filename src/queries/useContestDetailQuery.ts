@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ContestDetail } from "@/app/contests/_types";
 import { apiFetch } from "@/lib/http";
 import {
-  contestCategoryLabels,
+  getContestCategoryLabel,
   getContestViewCount,
   type ContestStatus,
   type ContestViewCountFields,
@@ -56,7 +56,7 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     id: String(contest.contestId),
     title: contest.title,
     organizer: contest.hostName,
-    category: contestCategoryLabels[contest.category] ?? contest.category,
+    category: getContestCategoryLabel(contest.category),
     dDay: formatDday(contest.daysRemaining),
     viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",

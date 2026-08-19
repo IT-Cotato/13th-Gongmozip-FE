@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
 import {
   TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS,
   useTeamMatchingProposalStore,
@@ -54,16 +55,16 @@ export function PassIllustration({ className = "mt-px" }: PassIllustrationProps)
   );
 }
 
-function AiMatchingNoticeCard() {
+export function AiMatchingNoticeCard() {
   return (
-    <section className="mx-auto mt-[22px] flex w-[359px] max-w-full flex-col items-start rounded-[14px] bg-[#F9F8F4] px-4 pb-2 pt-4 text-[#616161]">
+    <section className="relative z-40 mx-auto mt-[22px] flex h-[149px] w-[359px] max-w-full flex-col items-start rounded-[14px] bg-[#F9F8F4] px-4 pt-4 pb-4 text-[#616161]">
       <h2 className="font-[Pretendard] text-[15px] font-medium not-italic leading-[125%] text-[#1F1F1F]">
         AI 분석 매칭
       </h2>
-      <div className="mt-2 h-px w-full bg-[#DFDFDF]" />
-      <div className="mt-[17px] font-[Pretendard] text-[13px] font-normal not-italic leading-[135%] text-[#616161]">
+      <div className="mt-[13px] h-px w-full bg-[#DFDFDF]" />
+      <div className="mt-3 font-[Pretendard] text-[13px] font-normal not-italic leading-[135%] text-[#616161]">
         <p>오후 4시 매칭결과 발표</p>
-        <p className="mt-4">
+        <p className="mt-5">
           개인 프로필과 성격 유형검사 결과를 반영하여
           <br />
           최적의 팀을 구성합니다.
@@ -73,12 +74,26 @@ function AiMatchingNoticeCard() {
   );
 }
 
+function getDisplayPenalty(penalty: number | null | undefined) {
+  return penalty && penalty > 0 ? penalty : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
+}
+
 export default function TeamMatchingPassView() {
   const lastResult = useTeamMatchingProposalStore((state) => state.lastResult);
+  const pendingExpectedPenalty = useTeamMatchingProposalStore(
+    (state) => state.pendingExpectedPenalty,
+  );
+  const { data: todayApplication } = useTodayMatchingApplicationQuery();
+  const hasCurrentPassResult =
+    lastResult?.status === "passed" &&
+    todayApplication !== undefined &&
+    String(todayApplication.applicationId) === lastResult.proposalId;
   const distanceReductionMeters =
-    lastResult?.status === "passed"
-      ? (lastResult.distanceReductionMeters ?? TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS)
-      : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
+    hasCurrentPassResult
+      ? getDisplayPenalty(
+          lastResult.distanceReductionMeters ?? todayApplication?.withdrawal.expectedPenalty,
+        )
+      : getDisplayPenalty(pendingExpectedPenalty ?? todayApplication?.withdrawal.expectedPenalty);
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">

@@ -10,6 +10,7 @@ import TeamMatchingPassView from "@/components/team-matching/TeamMatchingPassVie
 import TeamMatchingPoolView from "@/components/team-matching/TeamMatchingPoolView";
 import TeamMatchingStatusEmptyView from "@/components/team-matching/TeamMatchingStatusEmptyView";
 import TeamMatchingStatusResultView from "@/components/team-matching/TeamMatchingStatusResultView";
+import TeamMatchingUnmatchedView from "@/components/team-matching/TeamMatchingUnmatchedView";
 import { ApiError } from "@/lib/http";
 import {
   type TodayMatchingResult,
@@ -162,14 +163,7 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
     case "PROCESSING":
       return <TeamMatchingPoolView />;
     case "UNMATCHED":
-      return (
-        <StatusFeedbackView
-          actionHref="/team-matching"
-          actionLabel="홈으로"
-          message="오늘은 조건에 맞는 팀을 찾지 못했어요.\n다음 매칭에서 더 잘 맞는 팀원을 찾아볼게요."
-          title="아쉽게도 매칭되지 않았어요"
-        />
-      );
+      return <TeamMatchingUnmatchedView />;
     case "WITHDRAWN":
       return <TeamMatchingPassView />;
     default:

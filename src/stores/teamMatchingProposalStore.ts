@@ -16,9 +16,11 @@ export type TeamMatchingProposalResult = {
 
 type TeamMatchingProposalState = {
   lastResult: TeamMatchingProposalResult | null;
+  pendingExpectedPenalty: number | null;
   pendingProposalId: string | null;
   acceptProposal: (proposalId: string) => void;
   passProposal: (proposalId: string, distanceReductionMeters?: number) => void;
+  setPendingProposal: (proposalId: string, expectedPenalty?: number | null) => void;
   setPendingProposalId: (proposalId: string) => void;
 };
 
@@ -26,6 +28,7 @@ export const useTeamMatchingProposalStore = create<TeamMatchingProposalState>()(
   persist(
     (set) => ({
       lastResult: null,
+      pendingExpectedPenalty: null,
       pendingProposalId: null,
       acceptProposal: (proposalId) =>
         set({
@@ -34,6 +37,7 @@ export const useTeamMatchingProposalStore = create<TeamMatchingProposalState>()(
             proposalId,
             status: "accepted",
           },
+          pendingExpectedPenalty: null,
           pendingProposalId: null,
         }),
       passProposal: (proposalId, distanceReductionMeters) =>
@@ -45,7 +49,13 @@ export const useTeamMatchingProposalStore = create<TeamMatchingProposalState>()(
             proposalId,
             status: "passed",
           },
+          pendingExpectedPenalty: null,
           pendingProposalId: null,
+        }),
+      setPendingProposal: (proposalId, expectedPenalty) =>
+        set({
+          pendingExpectedPenalty: expectedPenalty && expectedPenalty > 0 ? expectedPenalty : null,
+          pendingProposalId: proposalId,
         }),
       setPendingProposalId: (proposalId) => set({ pendingProposalId: proposalId }),
     }),

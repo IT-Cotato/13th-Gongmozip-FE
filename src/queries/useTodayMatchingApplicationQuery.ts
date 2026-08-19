@@ -40,12 +40,7 @@ export type MatchingGroupStatus =
   | "IN_PROGRESS"
   | "COMPLETED";
 
-export type MatchingGroupMemberStatus =
-  | "PENDING"
-  | "ACCEPTED"
-  | "PASSED"
-  | "EXPIRED"
-  | "REJECTED";
+export type MatchingGroupMemberStatus = "PENDING" | "ACCEPTED" | "PASSED" | "EXPIRED" | "REJECTED";
 
 export type MatchingAiStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
@@ -78,15 +73,18 @@ export const todayMatchingApplicationQueryKey = [
   "today",
 ] as const;
 
-function fetchTodayMatchingApplication() {
+export function fetchTodayMatchingApplication() {
   return apiFetch<TodayMatchingApplication>("/api/matching/applications/me/today");
 }
 
-export function useTodayMatchingApplicationQuery(options: { enabled?: boolean } = {}) {
+export function useTodayMatchingApplicationQuery(
+  options: { enabled?: boolean; refetchOnMount?: boolean | "always" } = {},
+) {
   return useQuery({
     enabled: options.enabled ?? true,
     queryFn: fetchTodayMatchingApplication,
     queryKey: todayMatchingApplicationQueryKey,
+    refetchOnMount: options.refetchOnMount,
     retry: (failureCount, error) => {
       if (error instanceof ApiError && error.status === 401) {
         return false;

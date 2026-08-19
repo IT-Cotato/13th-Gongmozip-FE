@@ -63,7 +63,7 @@ export function ChatProfilePreview({
       return;
     }
 
-    if (isBeforeProjectEnd(projectEndedAt)) {
+    if (!isAfterProjectEnd(projectEndedAt)) {
       setIsReviewUnavailableToastShown(true);
       return;
     }
@@ -146,9 +146,9 @@ function PrivateProfileMessage() {
   );
 }
 
-function isBeforeProjectEnd(projectEndedAt: string | null | undefined) {
+function isAfterProjectEnd(projectEndedAt: string | null | undefined) {
   if (!projectEndedAt) {
-    return true;
+    return false;
   }
 
   const dateOnlyMatch = projectEndedAt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -157,12 +157,13 @@ function isBeforeProjectEnd(projectEndedAt: string | null | undefined) {
     const [, year, month, day] = dateOnlyMatch;
     const endOfDay = new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999);
 
-    return Date.now() <= endOfDay.getTime();
+    return Date.now() > endOfDay.getTime();
   }
 
   const endDate = new Date(projectEndedAt);
+  const endTime = endDate.getTime();
 
-  return Number.isFinite(endDate.getTime()) && Date.now() < endDate.getTime();
+  return Number.isFinite(endTime) && Date.now() >= endTime;
 }
 
 function ProfileBody({ member, profile }: { member: ProfilePreviewMember; profile: PublicProfile }) {

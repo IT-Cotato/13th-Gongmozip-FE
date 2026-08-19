@@ -20,6 +20,7 @@ export type ChatMessageType =
   | "TEXT"
   | "SYSTEM"
   | "BOT"
+  | "CHATBOT_GUIDE_CARD"
   | "LEADER_NOMINATION_CARD"
   | "LEADER_VOTE_CARD"
   | "LEADER_RESULT_CARD"
