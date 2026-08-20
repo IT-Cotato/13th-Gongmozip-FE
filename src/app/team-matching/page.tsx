@@ -267,10 +267,12 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
 function FixedApplyButton({
   disabled,
   href,
+  isLoginLink,
   label,
 }: {
   disabled?: boolean;
   href: string;
+  isLoginLink?: boolean;
   label: string;
 }) {
   const className = disabled
@@ -282,6 +284,14 @@ function FixedApplyButton({
       <button className={className} disabled type="button">
         {label}
       </button>
+    );
+  }
+
+  if (isLoginLink) {
+    return (
+      <Link className={className} href={href}>
+        {label}
+      </Link>
     );
   }
 
@@ -310,12 +320,13 @@ export default function TeamMatchingPage() {
     ? getTeamMatchingPrimaryReason(eligibility.reasons)
     : undefined;
   const canOpenApplyDestination = hasTeamMatchingActionableBlockingReason(eligibility);
-  const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const isEligibilityUnauthorized = error instanceof ApiError && error.status === 401;
   const isTodayApplicationUnauthorized =
     todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
+  const isUnauthorized = isEligibilityUnauthorized || isTodayApplicationUnauthorized;
   const isApplyStatePending = isLoading || isTodayApplicationLoading;
   const hasApplyStateError =
-    (isError && !isUnauthorized) ||
+    (isError && !isEligibilityUnauthorized) ||
     (isTodayApplicationError && !isTodayApplicationUnauthorized);
   const isApplicationClosedTime = useIsMatchingApplicationClosedTime();
   const applyLabel = isApplyStatePending
@@ -460,6 +471,7 @@ export default function TeamMatchingPage() {
                 (!canOpenApplyDestination && !isApplicationClosedTime))
             }
             href={isUnauthorized ? "/login" : (applyHref ?? "/team-matching")}
+            isLoginLink={isUnauthorized}
             label={isUnauthorized ? "로그인하기" : applyLabel}
           />
         </div>
