@@ -13,6 +13,9 @@ import {
 } from "@/queries/useSurveyResultQuery";
 import { useSurveyQuestionsQuery } from "@/queries/useSurveyQuestionsQuery";
 import { useSubmitSurveyMutation } from "@/queries/useSubmitSurveyMutation";
+import { surveyStatusQueryKey } from "@/queries/useSurveyStatusQuery";
+import { currentCharacterQueryKey } from "@/queries/useCurrentCharacterQuery";
+import { MYPAGE_SUMMARY_QUERY_KEY_PREFIX } from "@/queries/useMypageSummaryQuery";
 import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
 
 import CollaborationResultPendingLeaveModal from "../_components/CollaborationResultPendingLeaveModal";
@@ -166,6 +169,16 @@ export default function CollaborationTypeResultLoadingPage() {
 
     setSubmitState({ status: "submitting" });
 
+    // 검사 제출이 성공하면 마이페이지 등에서 쓰는 캐릭터/요약/검사상태 캐시가 그대로
+    // 남아있어, 결과 화면에서 나가도 새로고침 전까지는 이전(검사 전) 상태가 계속
+    // 보인다 - 로컬 스토어(submittedCharacterType)만 갱신하는 것으로는 부족하므로
+    // 관련 쿼리를 함께 무효화해 다음 렌더에서 바로 최신 값을 받아오게 한다.
+    function invalidateCharacterRelatedQueries() {
+      queryClient.invalidateQueries({ queryKey: currentCharacterQueryKey });
+      queryClient.invalidateQueries({ queryKey: MYPAGE_SUMMARY_QUERY_KEY_PREFIX });
+      queryClient.invalidateQueries({ queryKey: surveyStatusQueryKey });
+    }
+
     request
       .then((result) => {
         if (!isCurrent) return;
@@ -174,6 +187,7 @@ export default function CollaborationTypeResultLoadingPage() {
         setSubmittedCharacterType(result.characterType);
         setSubmitState({ status: "success" });
         resetResponses();
+        invalidateCharacterRelatedQueries();
       })
       .catch((error: unknown) => {
         if (!isCurrent) return;
@@ -198,6 +212,7 @@ export default function CollaborationTypeResultLoadingPage() {
               setResultHref(`/collaboration-type/results/${result.characterType}`);
               setSubmittedCharacterType(result.characterType);
               setSubmitState({ status: "existing" });
+              invalidateCharacterRelatedQueries();
             })
             .catch(() => {
               if (!isCurrent) return;

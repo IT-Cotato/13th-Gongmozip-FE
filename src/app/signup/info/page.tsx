@@ -27,10 +27,11 @@ function toUiGender(gender: string): Gender {
 export default function SignupInfoPage() {
   const router = useRouter();
   const { data: profile, isLoading, isError, refetch } = useMemberProfileQuery();
-  // 이 화면은 방금 소셜 간편가입으로 새로 들어와 이름/생년월일이 비어 있는
-  // 회원만을 위한 것이다. 이미 가입을 마친 회원(일반 회원 포함)이 URL로
-  // 직접 들어오면 기존 정보를 덮어쓸 수 있으므로 홈으로 돌려보낸다.
-  const isEligible = profile ? profile.snsLinked && (!profile.name || !profile.birthDate) : null;
+  // 이 화면은 방금 소셜 간편가입으로 새로 들어와 성별/생년월일이 비어 있는
+  // 회원만을 위한 것이다(이름은 SNS 제공자로부터 자동으로 채워져 내려온다).
+  // 이미 가입을 마친 회원(일반 회원 포함)이 URL로 직접 들어오면 기존 정보를
+  // 덮어쓸 수 있으므로 홈으로 돌려보낸다.
+  const isEligible = profile ? profile.snsLinked && (!profile.gender || !profile.birthDate) : null;
 
   useEffect(() => {
     if (isEligible === false) {
@@ -103,7 +104,7 @@ function SignupInfoForm({ profile }: { profile: MemberProfile }) {
     setSubmitError(null);
     updateProfileMutation.mutate(
       {
-        name: profile.name ?? "",
+        name: profile.name,
         gender: gender === "male" ? "MALE" : "FEMALE",
         birthDate: `${birthdate.slice(0, 4)}-${birthdate.slice(4, 6)}-${birthdate.slice(6, 8)}`,
       },
