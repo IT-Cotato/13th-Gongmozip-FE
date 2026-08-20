@@ -27,6 +27,7 @@ export function ChatInputBar({
 }: ChatInputBarProps) {
   const [internalMessage, setInternalMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previousFocusTokenRef = useRef(focusToken);
   const isControlled = value !== undefined;
   const message = isControlled ? value : internalMessage;
   const canSend = message.trim().length > 0 && !disabled;
@@ -50,10 +51,11 @@ export function ChatInputBar({
   }, [message]);
 
   useEffect(() => {
-    if (focusToken === undefined) {
+    if (focusToken === undefined || previousFocusTokenRef.current === focusToken) {
       return;
     }
 
+    previousFocusTokenRef.current = focusToken;
     textareaRef.current?.focus({ preventScroll: true });
   }, [focusToken]);
 

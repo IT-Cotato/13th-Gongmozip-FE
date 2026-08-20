@@ -974,7 +974,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   return (
     <main
       data-chat-room-shell
-      className="relative flex h-full w-full flex-col overflow-y-auto bg-white text-color-gray-850"
+      className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850"
     >
       <ChatTopBar
         memberCount={chatMembers.filter((member) => !member.isChatbot).length}
@@ -1024,7 +1024,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
       <section
         aria-label="팀장 선출 채팅"
-        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[29px] pb-6"
+        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[29px] pb-[96px]"
         ref={messageListRef}
         onScroll={handleMessageListScroll}
       >
@@ -1110,7 +1110,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         ) : null}
       </section>
 
-      <div className="sticky bottom-0 z-20 flex shrink-0 flex-col gap-px bg-white">
+      <div className="absolute right-0 bottom-0 left-0 z-20 flex flex-col gap-px bg-white">
         {isMidtermToastShown ? (
           <div className="pointer-events-none absolute right-[24px] bottom-[calc(100%+18px)] left-[24px] z-50 flex h-8 items-center justify-center rounded-full bg-[rgba(17,17,17,0.6)] px-5 py-2">
             <p className="text-center text-[13px] leading-[1.25] font-medium text-white">
