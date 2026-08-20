@@ -159,15 +159,23 @@ export function ChatbotSystemNotice({
 }
 
 export function ChatbotUsageGuideMessage({
+  body,
   examples,
   onUseChatbot,
   sentAt,
 }: {
+  body?: string;
   examples?: string[];
   onUseChatbot?: () => void;
   sentAt?: string;
 } = {}) {
   const usageExamples = examples ?? [];
+  const bodyLines = (body ?? "활용 예시")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const title = stripMarkdownBold(bodyLines[0] ?? "활용 예시");
+  const description = bodyLines.slice(1).join("\n") || "저를 사용할 수 있는 예시입니다.";
 
   return (
     <article className="flex w-full items-start gap-2">
@@ -177,14 +185,18 @@ export function ChatbotUsageGuideMessage({
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
           <div className="w-[230px] rounded-[16px] rounded-tl-none bg-color-gray-150 px-3 py-2 text-[13px] leading-[1.5] text-color-coral-900">
-            <p className="font-semibold text-color-coral-700">활용 예시</p>
+            <p className="font-semibold text-color-coral-700">{title}</p>
             <div className="mt-1 flex gap-2.5 py-1">
               <span className="w-0.5 rounded-full bg-color-coral-500" />
               <div>
-                <p>저를 사용할 수 있는 예시입니다.</p>
-                {usageExamples.map((example) => (
-                  <p key={example}>{example}</p>
-                ))}
+                {description ? <p className="whitespace-pre-line">{description}</p> : null}
+                {usageExamples.length > 0 ? (
+                  <div className="mt-1 space-y-0.5">
+                    {usageExamples.map((example) => (
+                      <p key={example}>{formatChatbotExample(example)}</p>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -200,6 +212,14 @@ export function ChatbotUsageGuideMessage({
       </div>
     </article>
   );
+}
+
+function stripMarkdownBold(value: string) {
+  return value.replace(/^\*\*(.*)\*\*$/, "$1");
+}
+
+function formatChatbotExample(example: string) {
+  return example.startsWith("@챗봇 ") ? example : `@챗봇 ${example}`;
 }
 
 export function ChatbotAvatar() {
