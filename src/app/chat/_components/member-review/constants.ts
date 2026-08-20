@@ -1,16 +1,4 @@
-import { MOCK_CHAT_MEMBERS } from "../../_data/mockMessages";
-import type { ReviewMember, ReviewQuestion } from "./types";
-
-export const mockReviewMembers: ReviewMember[] = MOCK_CHAT_MEMBERS.filter(
-  (member) => !member.isMe && !member.isChatbot,
-).map(({ avatarSrc, avatarTone, id, isMe, name }) => ({
-  avatarSrc,
-  avatarTone,
-  id,
-  isLeader: id === "minjeong",
-  isMe,
-  name,
-}));
+import type { ReviewQuestion } from "./types";
 
 export const memberReviewQuestions: ReviewQuestion[] = [
   {
@@ -40,6 +28,6 @@ export const memberReviewStrengths = [
   "문제해결을 잘하는 팀원",
   "믿음직한 팀원",
   "적극적인 팀원",
-  "믿음직한 팀원",
+  "책임감 있는 팀원",
   "배려심 있는 팀원",
 ];

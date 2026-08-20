@@ -7,7 +7,9 @@ import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { ContestVoteResultItem } from "@/queries/useChatQueries";
 import type { ContestSummary } from "@/app/contests/_types";
 
-import { ChatbotAvatar, ChatbotUsageGuideMessage, MessageMeta } from "./ChatbotMessage";
+import type { ChatMessage } from "../../_data/chatTypes";
+import { ChatAvatar } from "../ChatAvatar";
+import { ChatbotAvatar, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
 
 const fallbackVoteRemainingSeconds = 2 * 60 * 60;
@@ -317,21 +319,67 @@ export function ContestCandidateAddListPage({
 }
 
 export function ContestSharedMessage({
+  avatarSrc,
+  avatarTone = "green",
   contest,
+  direction,
   isAdded,
   onAdd,
+  onOpenProfile,
+  senderName,
   sentAt,
+  unreadLabel,
 }: {
+  avatarSrc?: string;
+  avatarTone?: ChatMessage["avatarTone"];
   contest: RecommendedContest;
+  direction: ChatMessage["direction"];
   isAdded: boolean;
   onAdd: () => void;
+  onOpenProfile?: () => void;
+  senderName: string;
   sentAt?: string;
+  unreadLabel?: string;
 }) {
+  if (direction === "incoming") {
+    return (
+      <article className="flex w-full items-start gap-2">
+        <button
+          type="button"
+          className="shrink-0 text-left disabled:cursor-default"
+          disabled={!onOpenProfile}
+          onClick={onOpenProfile}
+          aria-label={`${senderName} 프로필 보기`}
+        >
+          <ChatAvatar name={senderName} tone={avatarTone} src={avatarSrc} />
+        </button>
+        <div className="flex w-[304px] shrink-0 flex-col items-start gap-1">
+          <button
+            type="button"
+            className="text-[12px] leading-[1.35] font-medium whitespace-nowrap text-color-gray-750 disabled:cursor-default"
+            disabled={!onOpenProfile}
+            onClick={onOpenProfile}
+          >
+            {senderName}
+          </button>
+          <ContestSharedCard contest={contest} isAdded={isAdded} onAdd={onAdd} />
+          <div className="flex items-end gap-2 text-[12px] leading-[1.35] whitespace-nowrap">
+            <span className="text-color-gray-650">{sentAt}</span>
+            {unreadLabel ? <span className="text-color-coral-500">{unreadLabel}</span> : null}
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="flex w-full justify-end">
       <div className="flex max-w-[304px] flex-col items-end gap-1">
         <ContestSharedCard contest={contest} isAdded={isAdded} onAdd={onAdd} />
-        <MessageMeta sentAt={sentAt} />
+        <div className="flex items-end gap-2 text-[12px] leading-[1.35]">
+          <span className="text-color-gray-650">{sentAt ?? "오후 8:28"}</span>
+          {unreadLabel ? <span className="text-color-coral-500">{unreadLabel}</span> : null}
+        </div>
         <p className="rounded-[16px] rounded-tr-none bg-color-coral-50 px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
           이거 어때요?
         </p>
@@ -428,12 +476,12 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 export function ContestVoteNoticeBanner({
   body,
   isActionDisabled = false,
-  isVoteSubmitted,
+  isVoteSubmitted = false,
   onAction,
 }: {
   body?: string;
   isActionDisabled?: boolean;
-  isVoteSubmitted: boolean;
+  isVoteSubmitted?: boolean;
   onAction: () => void;
 }) {
   const isButtonDisabled = isActionDisabled;
@@ -469,7 +517,46 @@ export function ContestVoteNoticeBanner({
           onClick={onAction}
           type="button"
         >
-          {isVoteSubmitted ? "다시 투표하기" : "투표하기"}
+          투표 현황 확인하기
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function LeaderVoteNoticeBanner({
+  body,
+  isActionDisabled = false,
+  onAction,
+}: {
+  body?: string;
+  isActionDisabled?: boolean;
+  onAction: () => void;
+}) {
+  return (
+    <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="whitespace-pre-line text-center text-[15px] leading-[1.35] text-color-gray-750">
+          {body ?? "팀장 투표 완료하셨나요? 투표마감까지 얼마 안 남았어요!"}
+        </p>
+        <button
+          className="mt-2 flex h-9 w-full items-center justify-center rounded-[10px] bg-color-gray-650 text-[13px] leading-[1.25] font-semibold text-white disabled:border disabled:border-[rgba(97,97,97,0.10)] disabled:bg-[rgba(97,97,97,0.06)] disabled:text-color-gray-350 disabled:shadow-none"
+          disabled={isActionDisabled}
+          onClick={onAction}
+          type="button"
+        >
+          투표하기
         </button>
       </div>
     </section>
@@ -610,52 +697,30 @@ export function ProgressCheckBanner({
 
 export function ContestVoteResultMessage({
   contest,
-  onUseChatbot,
   sentAt,
 }: {
   contest: RecommendedContest;
-  onUseChatbot?: () => void;
   sentAt?: string;
 }) {
   return (
-    <>
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
+    <article className="flex w-full items-start gap-2">
+      <ChatbotAvatar />
 
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
-            </p>
-            <MessageMeta sentAt={sentAt} />
-          </div>
-          <div className="mt-1 w-[290px]">
-            <CompactContestListItem contest={contest} highlight />
-          </div>
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+        <div className="flex w-full items-end gap-2">
+          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+            {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
+          </p>
+          <MessageMeta sentAt={sentAt} />
         </div>
-      </article>
-
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
-
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {`언제든 저의 도움이 필요하면
-태그해주세요.`}
-            </p>
-            <MessageMeta sentAt={sentAt} />
-          </div>
+        <div className="mt-1 w-[290px]">
+          <CompactContestListItem contest={contest} highlight />
         </div>
-      </article>
-
-      <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={sentAt} />
-    </>
+      </div>
+    </article>
   );
 }
-
 export function ContestVoteSheet({
   contests,
   disabled = false,
@@ -664,6 +729,7 @@ export function ContestVoteSheet({
   onOpenAdd,
   onSubmit,
   onToggle,
+  participantCount,
   remainingSeconds = fallbackVoteRemainingSeconds,
   selectedContestIds,
 }: {
@@ -674,10 +740,16 @@ export function ContestVoteSheet({
   onOpenAdd: () => void;
   onSubmit: () => void;
   onToggle: (contestId: string) => void;
+  participantCount?: number;
   remainingSeconds?: number;
   selectedContestIds: string[];
 }) {
-  const timerLabel = remainingSeconds <= 0 ? "투표 종료" : "투표 마감까지";
+  const isVoteEnded = remainingSeconds <= 0 || disabled;
+  const timerLabel = isVoteEnded ? "투표 종료" : "투표 마감까지";
+  const participantLabel =
+    participantCount === undefined
+      ? "0명 참여"
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
@@ -703,12 +775,11 @@ export function ContestVoteSheet({
         </button>
       </header>
 
-      <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
-        <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-          {timerLabel}
-        </span>
-        <LargeCountdown remainingSeconds={remainingSeconds} />
-      </section>
+      <VoteTimerPanel
+        isEnded={isVoteEnded}
+        label={timerLabel}
+        remainingSeconds={remainingSeconds}
+      />
 
       <section className="mt-6 shrink-0 px-4 text-center">
         <h2 className="text-[17px] leading-[1.35] font-semibold text-color-gray-850">
@@ -721,7 +792,7 @@ export function ContestVoteSheet({
 
       <section className="mx-4 mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-color-gray-250 bg-white px-5 py-5">
         <p className="text-center text-[13px] leading-[1.25] font-semibold text-color-gray-500">
-          2명 참여중..
+          {participantLabel}
         </p>
 
         <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
@@ -756,11 +827,11 @@ export function ContestVoteSheet({
       <div className="shrink-0 bg-white px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
         <button
           className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white outline-none disabled:bg-color-gray-200 disabled:text-color-gray-350 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          disabled={disabled || contests.length === 0 || selectedContestIds.length === 0}
+          disabled={isVoteEnded || contests.length === 0 || selectedContestIds.length === 0}
           onClick={onSubmit}
           type="button"
         >
-          {isRevote ? "다시 투표하기" : "투표하기"}
+          {isVoteEnded ? "투표 종료" : isRevote ? "다시 투표하기" : "투표하기"}
         </button>
       </div>
     </main>
@@ -770,6 +841,7 @@ export function ContestVoteSheet({
 export function ContestVoteCompleteSheet({
   contests,
   onBack,
+  onOpenAdd,
   onRevote,
   participantCount,
   remainingSeconds = fallbackVoteRemainingSeconds,
@@ -778,13 +850,15 @@ export function ContestVoteCompleteSheet({
 }: {
   contests: RecommendedContest[];
   onBack: () => void;
+  onOpenAdd: () => void;
   onRevote: () => void;
   participantCount?: number;
   remainingSeconds?: number;
   selectedContestIds: string[];
   voteResults?: ContestVoteResultItem[];
 }) {
-  const timerLabel = remainingSeconds <= 0 ? "투표 종료" : "투표 마감까지";
+  const isVoteEnded = remainingSeconds <= 0;
+  const timerLabel = isVoteEnded ? "투표 종료" : "투표 마감까지";
   const selectedContestIdSet = new Set(selectedContestIds);
   const hasSuppliedVoteResults = voteResults !== undefined;
   const voteResultByContestId = createVoteResultMap(voteResults);
@@ -810,18 +884,18 @@ export function ContestVoteCompleteSheet({
         <button
           aria-label="후보 공모전 추가"
           className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          onClick={onOpenAdd}
           type="button"
         >
           +
         </button>
       </header>
 
-      <section className="mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 rounded-[16px] bg-color-khaki-50 p-4">
-        <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-          {timerLabel}
-        </span>
-        <LargeCountdown remainingSeconds={remainingSeconds} />
-      </section>
+      <VoteTimerPanel
+        isEnded={isVoteEnded}
+        label={timerLabel}
+        remainingSeconds={remainingSeconds}
+      />
 
       <section className="mt-6 shrink-0 px-4 text-center">
         <h2 className="text-[17px] leading-[1.35] font-semibold text-color-gray-850">
@@ -865,11 +939,12 @@ export function ContestVoteCompleteSheet({
 
       <div className="shrink-0 bg-white px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
         <button
-          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[rgba(97,97,97,0.10)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-color-gray-650 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="flex h-[51px] w-full items-center justify-center rounded-[14px] bg-[rgba(97,97,97,0.10)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-color-gray-650 outline-none disabled:bg-color-gray-200 disabled:text-color-gray-350 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          disabled={isVoteEnded}
           onClick={onRevote}
           type="button"
         >
-          다시 투표하기
+          {isVoteEnded ? "투표 종료" : "다시 투표하기"}
         </button>
       </div>
     </main>
@@ -1039,7 +1114,7 @@ function ContestListCard({
           "투표 종료"
         ) : (
           <>
-            <Image src="/icons/chat/vote_1_1.svg" alt="" width={18} height={18} />
+            <Image src="/icons/chat/vote_2_1.svg" alt="" width={18} height={18} />
             원하는 공모전 투표하러 가기
           </>
         )}
@@ -1505,6 +1580,31 @@ function SmallTimer({
     <span className="flex shrink-0 items-center rounded-[16px] bg-color-coral-50 px-2 py-1 text-[12px] leading-[1.35] font-semibold text-color-coral-700">
       {label} {formatCandidateTimer(remainingSeconds)}
     </span>
+  );
+}
+
+function VoteTimerPanel({
+  isEnded,
+  label,
+  remainingSeconds,
+}: {
+  isEnded: boolean;
+  label: string;
+  remainingSeconds: number;
+}) {
+  return (
+    <section className="relative mx-4 mt-2 flex shrink-0 flex-col items-center gap-2 overflow-hidden rounded-[16px] bg-color-khaki-50 p-4">
+      <span className="rounded-[10px] bg-color-coral-900 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
+        {label}
+      </span>
+      <LargeCountdown remainingSeconds={isEnded ? 0 : remainingSeconds} />
+      {isEnded ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-[16px] bg-[rgba(217,217,217,0.55)] backdrop-blur-[0.25px]"
+        />
+      ) : null}
+    </section>
   );
 }
 

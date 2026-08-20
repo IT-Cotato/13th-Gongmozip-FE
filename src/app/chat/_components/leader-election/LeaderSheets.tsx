@@ -7,11 +7,13 @@ export function LeaderWillingnessSheet({
   disabled = false,
   onSelect,
   onSubmit,
+  remainingSeconds,
   selectedChoice,
 }: {
   disabled?: boolean;
   onSelect: (choice: LeaderChoice) => void;
   onSubmit: () => void;
+  remainingSeconds?: number;
   selectedChoice: LeaderChoice;
 }) {
   return (
@@ -23,7 +25,12 @@ export function LeaderWillingnessSheet({
             팀장 여부 투표
           </h2>
         </div>
-        <CountdownPill label="공모전 마감까지" time="03 : 00 : 00" />
+        {remainingSeconds !== undefined ? (
+          <CountdownPill
+            label="후보 등록 마감까지"
+            time={formatCountdownTime(remainingSeconds)}
+          />
+        ) : null}
       </div>
 
       <div className="mt-4 flex h-[60px] gap-2 px-4">
@@ -49,12 +56,14 @@ export function LeaderCandidateVoteSheet({
   disabled = false,
   onSelect,
   onSubmit,
+  remainingSeconds,
   selectedCandidateId,
 }: {
   candidates: LeaderCandidate[];
   disabled?: boolean;
   onSelect: (candidateId: string) => void;
   onSubmit: () => void;
+  remainingSeconds: number;
   selectedCandidateId: string;
 }) {
   return (
@@ -64,7 +73,7 @@ export function LeaderCandidateVoteSheet({
           <MedalIcon size="small" />
           <h2 className="text-[20px] leading-[1.35] font-bold text-color-gray-850">팀장 투표</h2>
         </div>
-        <CountdownPill label="후보 등록 마감까지" time="01 : 24 : 30" />
+        <CountdownPill label="투표 마감까지" time={formatCountdownTime(remainingSeconds)} />
       </div>
 
       <p className="mt-2 px-6 text-[13px] leading-[1.35] text-color-gray-650">
