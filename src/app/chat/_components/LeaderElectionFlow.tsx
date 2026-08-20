@@ -68,6 +68,7 @@ import {
   ContestVoteResultSheet,
   ContestVoteResultMessage,
   ContestVoteSheet,
+  LeaderVoteNoticeBanner,
   ProgressCheckBanner,
   ProjectSubmissionReminderBanner,
 } from "./leader-election/ContestRecommendation";
@@ -850,6 +851,20 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     chatMembers,
     leaderVoteCountdownSeconds,
   );
+  const leaderRecommendationStatus = leaderRecommendationQuery.data?.status;
+  const isLeaderNominationActionCompleted = latestLeaderNominationMessage
+    ? Boolean(latestLeaderVoteMessage) ||
+      (hasLeaderResultMessage && isLeaderVoteResultReady) ||
+      isLeaderCandidacySubmitted ||
+      isLeaderCandidacyActionCompleted(latestLeaderNominationMessage)
+    : false;
+  const shouldRequestLeaderRecommendation =
+    !leaderRecommendationQuery.data || leaderRecommendationStatus === "FAILED";
+  const isLeaderNominationBannerDisabled =
+    createLeaderRecommendationMutation.isPending ||
+    leaderRecommendationStatus === "PENDING" ||
+    leaderRecommendationStatus === "PROCESSING" ||
+    isLeaderNominationActionCompleted;
   const electedLeader = getLeaderResultMember(latestLeaderResultMessage, chatMembers);
   const activeContestCandidates = activeContestCandidateIds?.length
     ? contestCandidates.filter((contest) => activeContestCandidateIds.includes(contest.id))
@@ -956,12 +971,26 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         title={roomTitle || undefined}
       />
 
+      {latestLeaderNominationMessage && !isLeaderNominationActionCompleted ? (
+        <LeaderVoteNoticeBanner
+          body={latestLeaderNominationMessage.body}
+          isActionDisabled={isLeaderNominationBannerDisabled}
+          onAction={
+            shouldRequestLeaderRecommendation
+              ? requestLeaderRecommendation
+              : () => {
+                  setLeaderActionError(null);
+                  setSheetState("willingness");
+                }
+          }
+        />
+      ) : null}
+
       {latestContestVoteReminderMessage && !hasContestResultMessage && !isContestResultShown ? (
         <ContestVoteNoticeBanner
           body={latestContestVoteReminderMessage.body}
           isActionDisabled={isContestVoteClosed}
-          isVoteSubmitted={hasMyVoted}
-          onAction={() => openContestVoteEntry(latestContestVoteReminderCandidateIds)}
+          onAction={() => showContestVoteStatus(latestContestVoteReminderCandidateIds)}
         />
       ) : null}
 

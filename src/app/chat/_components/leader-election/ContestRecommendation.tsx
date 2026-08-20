@@ -473,12 +473,10 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 export function ContestVoteNoticeBanner({
   body,
   isActionDisabled = false,
-  isVoteSubmitted,
   onAction,
 }: {
   body?: string;
   isActionDisabled?: boolean;
-  isVoteSubmitted: boolean;
   onAction: () => void;
 }) {
   const isButtonDisabled = isActionDisabled;
@@ -514,7 +512,46 @@ export function ContestVoteNoticeBanner({
           onClick={onAction}
           type="button"
         >
-          {isVoteSubmitted ? "다시 투표하기" : "투표하기"}
+          투표 현황 확인하기
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function LeaderVoteNoticeBanner({
+  body,
+  isActionDisabled = false,
+  onAction,
+}: {
+  body?: string;
+  isActionDisabled?: boolean;
+  onAction: () => void;
+}) {
+  return (
+    <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
+      <div className="relative shrink-0">
+        <span className="relative flex size-[46px] overflow-hidden rounded-full bg-color-blue-50">
+          <Image src="/icons/chat/chat_bot.svg" alt="" fill sizes="46px" className="object-cover" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute top-[-2px] right-[-6px] flex size-5 items-center justify-center"
+        >
+          <Image src="/icons/chat/chat_bot_2.svg" alt="" width={20} height={20} />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="whitespace-pre-line text-center text-[15px] leading-[1.35] text-color-gray-750">
+          {body ?? "팀장 투표 완료하셨나요? 투표마감까지 얼마 안 남았어요!"}
+        </p>
+        <button
+          className="mt-2 flex h-9 w-full items-center justify-center rounded-[10px] bg-color-gray-650 text-[13px] leading-[1.25] font-semibold text-white disabled:border disabled:border-[rgba(97,97,97,0.10)] disabled:bg-[rgba(97,97,97,0.06)] disabled:text-color-gray-350 disabled:shadow-none"
+          disabled={isActionDisabled}
+          onClick={onAction}
+          type="button"
+        >
+          투표하기
         </button>
       </div>
     </section>
