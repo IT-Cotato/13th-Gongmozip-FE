@@ -6,11 +6,11 @@ export type MemberGender = "MALE" | "FEMALE";
 
 export type MemberProfile = {
   email: string;
-  // 이름을 아직 입력하지 않은 회원(주로 SNS 간편가입 직후)은 null로 내려옴
-  name: string | null;
+  // 카카오/구글 등 SNS 간편가입 시에도 백엔드가 SNS 제공자로부터 받아온 이름을
+  // 함께 저장해 내려주므로 항상 채워져 있다.
+  name: string;
   gender: MemberGender;
-  // SNS 간편가입 직후에는 아직 입력받지 않아 null로 내려올 수 있음
-  // (이름을 아직 입력하지 않은 경우와 동일한 케이스).
+  // SNS 간편가입 직후에는 아직 입력받지 않아 null로 내려올 수 있음.
   birthDate: string | null;
   snsType: "KAKAO" | "GOOGLE" | null;
   snsLinked: boolean;
