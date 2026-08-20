@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
 import TeamMatchingAlreadyAppliedModal from "@/components/team-matching/TeamMatchingAlreadyAppliedModal";
@@ -38,6 +39,45 @@ export default function TeamMatchingApplyLink({
   const [isAlreadyAppliedModalOpen, setIsAlreadyAppliedModalOpen] = useState(false);
   const [isApplicationClosedModalOpen, setIsApplicationClosedModalOpen] = useState(false);
   const isClosedTime = useIsMatchingApplicationClosedTime();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setIsAlreadyAppliedModalOpen(false);
+    setIsApplicationClosedModalOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const closeModals = () => {
+      setIsAlreadyAppliedModalOpen(false);
+      setIsApplicationClosedModalOpen(false);
+    };
+
+    window.addEventListener("pageshow", closeModals);
+
+    return () => {
+      window.removeEventListener("pageshow", closeModals);
+    };
+  }, []);
+
+  if (href === alreadyAppliedHref) {
+    return (
+      <>
+        <button
+          className={className}
+          onClick={() => setIsAlreadyAppliedModalOpen(true)}
+          type="button"
+        >
+          {children}
+        </button>
+        {isAlreadyAppliedModalOpen ? (
+          <TeamMatchingAlreadyAppliedModal
+            onClose={() => setIsAlreadyAppliedModalOpen(false)}
+            open={isAlreadyAppliedModalOpen}
+          />
+        ) : null}
+      </>
+    );
+  }
 
   if (isClosedTime) {
     return (
@@ -49,35 +89,19 @@ export default function TeamMatchingApplyLink({
         >
           {children}
         </button>
-        <TeamMatchingApplicationClosedModal
-          onClose={() => setIsApplicationClosedModalOpen(false)}
-          open={isApplicationClosedModalOpen}
-        />
+        {isApplicationClosedModalOpen ? (
+          <TeamMatchingApplicationClosedModal
+            onClose={() => setIsApplicationClosedModalOpen(false)}
+            open={isApplicationClosedModalOpen}
+          />
+        ) : null}
       </>
     );
   }
 
-  if (href !== alreadyAppliedHref) {
-    return (
-      <Link className={className} href={href}>
-        {children}
-      </Link>
-    );
-  }
-
   return (
-    <>
-      <button
-        className={className}
-        onClick={() => setIsAlreadyAppliedModalOpen(true)}
-        type="button"
-      >
-        {children}
-      </button>
-      <TeamMatchingAlreadyAppliedModal
-        onClose={() => setIsAlreadyAppliedModalOpen(false)}
-        open={isAlreadyAppliedModalOpen}
-      />
-    </>
+    <Link className={className} href={href}>
+      {children}
+    </Link>
   );
 }
