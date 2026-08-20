@@ -23,24 +23,26 @@ type CollaborationQuestionFormProps = {
 
 function WordBreakText({ text }: { text: string }) {
   return (
-    <span aria-label={text} className="flex flex-col items-center">
-      {text.split(/\r?\n/).map((line, lineIndex) => (
-        <span
-          aria-hidden="true"
-          className="flex flex-wrap justify-center gap-x-[0.25em]"
-          key={`${line}-${lineIndex}`}
-        >
-          {line
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean)
-            .map((word, wordIndex) => (
-              <span className="whitespace-nowrap" key={`${word}-${wordIndex}`}>
-                {word}
-              </span>
-            ))}
-        </span>
-      ))}
+    <span className="flex flex-col items-center">
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true" className="flex flex-col items-center">
+        {text.split(/\r?\n/).map((line, lineIndex) => (
+          <span
+            className="flex flex-wrap justify-center gap-x-[0.25em]"
+            key={`${line}-${lineIndex}`}
+          >
+            {line
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .map((word, wordIndex) => (
+                <span className="whitespace-nowrap" key={`${word}-${wordIndex}`}>
+                  {word}
+                </span>
+              ))}
+          </span>
+        ))}
+      </span>
     </span>
   );
 }
