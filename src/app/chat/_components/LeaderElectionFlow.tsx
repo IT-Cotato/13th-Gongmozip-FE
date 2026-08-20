@@ -972,7 +972,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   }
 
   return (
-    <main className="relative flex h-full w-full flex-col overflow-y-auto bg-white text-color-gray-850">
+    <main
+      data-chat-room-shell
+      className="relative flex h-full w-full flex-col overflow-y-auto bg-white text-color-gray-850"
+    >
       <ChatTopBar
         memberCount={chatMembers.filter((member) => !member.isChatbot).length}
         roomId={roomId}
