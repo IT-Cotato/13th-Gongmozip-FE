@@ -28,7 +28,7 @@ function WordBreakText({ text }: { text: string }) {
       <span aria-hidden="true" className="flex flex-col items-center">
         {text.split(/\r?\n/).map((line, lineIndex) => (
           <span
-            className="flex flex-wrap justify-center gap-x-[0.25em]"
+            className="flex min-h-[1lh] flex-wrap justify-center gap-x-[0.25em]"
             key={`${line}-${lineIndex}`}
           >
             {line
