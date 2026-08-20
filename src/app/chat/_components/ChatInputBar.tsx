@@ -59,6 +59,23 @@ export function ChatInputBar({
     textareaRef.current?.focus({ preventScroll: true });
   }, [focusToken]);
 
+  const keepDocumentScrollLocked = () => {
+    const resetScroll = () => {
+      const chatShell = textareaRef.current?.closest("[data-chat-room-shell]");
+
+      window.scrollTo(0, 0);
+      document.scrollingElement?.scrollTo(0, 0);
+
+      if (chatShell instanceof HTMLElement) {
+        chatShell.scrollTop = 0;
+      }
+    };
+
+    window.requestAnimationFrame(resetScroll);
+    window.setTimeout(resetScroll, 50);
+    window.setTimeout(resetScroll, 250);
+  };
+
   return (
     <form
       className="flex w-full items-end justify-end gap-2 overflow-hidden px-4 py-2.5"
@@ -83,6 +100,7 @@ export function ChatInputBar({
         rows={1}
         value={message}
         onChange={(event) => setMessage(event.target.value)}
+        onFocus={keepDocumentScrollLocked}
         placeholder="메시지를 입력해주세요."
         className="max-h-32 min-h-12 min-w-0 flex-1 resize-none rounded-[16px] bg-[rgba(97,97,97,0.1)] px-4 py-3.5 text-[16px] leading-[1.35] text-color-gray-850 outline-none placeholder:text-color-gray-500"
       />
