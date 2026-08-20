@@ -58,10 +58,20 @@ export function ChatInputBar({
   }, [focusToken]);
 
   const keepDocumentScrollLocked = () => {
-    window.requestAnimationFrame(() => {
+    const resetScroll = () => {
+      const chatShell = textareaRef.current?.closest("[data-chat-room-shell]");
+
       window.scrollTo(0, 0);
       document.scrollingElement?.scrollTo(0, 0);
-    });
+
+      if (chatShell instanceof HTMLElement) {
+        chatShell.scrollTop = 0;
+      }
+    };
+
+    window.requestAnimationFrame(resetScroll);
+    window.setTimeout(resetScroll, 50);
+    window.setTimeout(resetScroll, 250);
   };
 
   return (
