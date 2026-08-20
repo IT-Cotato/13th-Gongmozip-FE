@@ -78,7 +78,13 @@ function getDisplayPenalty(penalty: number | null | undefined) {
   return penalty && penalty > 0 ? penalty : TEAM_MATCHING_PASS_DISTANCE_REDUCTION_METERS;
 }
 
-export default function TeamMatchingPassView() {
+type TeamMatchingPassViewProps = {
+  preferHistoryBack?: boolean;
+};
+
+export default function TeamMatchingPassView({
+  preferHistoryBack = false,
+}: TeamMatchingPassViewProps) {
   const lastResult = useTeamMatchingProposalStore((state) => state.lastResult);
   const pendingExpectedPenalty = useTeamMatchingProposalStore(
     (state) => state.pendingExpectedPenalty,
@@ -97,7 +103,11 @@ export default function TeamMatchingPassView() {
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
-      <TeamMatchingHeader backHref="/team-matching" title="나의 매칭현황" />
+      <TeamMatchingHeader
+        backHref="/team-matching"
+        preferHistoryBack={preferHistoryBack}
+        title="나의 매칭현황"
+      />
 
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-6">
         <section className="pt-[52px] text-center">

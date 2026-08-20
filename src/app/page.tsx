@@ -7,11 +7,16 @@ import TeamMatchingApplyLink from "@/components/team-matching/TeamMatchingApplyL
 import Image from "next/image";
 import Link from "next/link";
 import { ApiError } from "@/lib/http";
+import { formatParticipantCount, useCountdownState } from "@/lib/teamMatchingCountdown";
 import { getTeamMatchingApplyHref } from "@/lib/teamMatchingApply";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useHasAuthHydrated } from "@/stores/useHasAuthHydrated";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
+import {
+  type MatchingParticipantCount,
+  useMatchingParticipantCountQuery,
+} from "@/queries/useMatchingParticipantCountQuery";
 import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
 import { useUnreadNotificationsQuery } from "@/queries/useNotificationsQuery";
 import {
@@ -148,10 +153,17 @@ function SearchBar() {
 function MatchingCard({
   applyDisabled,
   applyHref,
+  deadlineAt,
+  participantCount,
+  participantCountData,
 }: {
   applyDisabled: boolean;
   applyHref?: string;
+  deadlineAt?: string;
+  participantCount: string;
+  participantCountData?: MatchingParticipantCount;
 }) {
+  const { digits: countdownDigits, label } = useCountdownState(participantCountData, deadlineAt);
   const applyButtonClassName =
     "flex min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold text-white disabled:opacity-60";
 
@@ -180,24 +192,30 @@ function MatchingCard({
         <div className="relative z-10 flex h-full w-[190px] flex-col justify-between">
           <div className="flex flex-col gap-1">
             <span className="w-fit rounded-[10px] bg-color-coral-500 px-2 py-[5px] text-[13px] leading-[1.25] font-semibold text-white">
-              팀원 매칭 마감까지
+              {label}
             </span>
             <p className="flex items-center gap-[3px] px-1 text-center text-color-coral-700">
-              <span className="text-[30px] leading-[1.35] font-bold">01</span>
+              <span className="text-[30px] leading-[1.35] font-bold">
+                {countdownDigits.slice(0, 2).join("")}
+              </span>
               <span className="text-[17px] leading-[1.35] font-semibold text-color-coral-600/50">
                 :
               </span>
-              <span className="text-[30px] leading-[1.35] font-bold">24</span>
+              <span className="text-[30px] leading-[1.35] font-bold">
+                {countdownDigits.slice(2, 4).join("")}
+              </span>
               <span className="text-[17px] leading-[1.35] font-semibold text-color-coral-600/50">
                 :
               </span>
-              <span className="text-[30px] leading-[1.35] font-bold">30</span>
+              <span className="text-[30px] leading-[1.35] font-bold">
+                {countdownDigits.slice(4, 6).join("")}
+              </span>
             </p>
           </div>
 
           <div className="flex w-[179px] flex-wrap gap-y-1 rounded-[10px] px-0.5 py-1 text-[15px] leading-[1.25] font-medium text-color-khaki-900">
             <span>지금&nbsp;</span>
-            <span className="rounded-[10px] bg-color-gray-650/10 px-1">000</span>
+            <span className="rounded-[10px] bg-color-gray-650/10 px-1">{participantCount}</span>
             <span>명이</span>
             <span className="w-full">함께할 팀을 찾고 있어요!</span>
           </div>
@@ -215,7 +233,7 @@ function MatchingCard({
           </TeamMatchingApplyLink>
         )}
         <Link
-          href="/team-matching"
+          href="/team-matching/status"
           className="flex w-[102px] shrink-0 items-center justify-center rounded-[14px] border border-color-gray-650/50 px-2 py-[9px] text-[15px] leading-[1.25] font-semibold text-color-gray-650"
         >
           나의 매칭현황
@@ -232,6 +250,7 @@ export default function Home() {
   const memberProfileQuery = useMemberProfileQuery();
   const recommendedContestsQuery = useRecommendedContestsQuery();
   const matchingEligibilityQuery = useMatchingEligibilityQuery();
+  const matchingParticipantCountQuery = useMatchingParticipantCountQuery();
   const todayMatchingApplicationQuery = useTodayMatchingApplicationQuery();
   const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const isUnauthorized =
@@ -244,6 +263,10 @@ export default function Home() {
   const matchingApplyHref = getTeamMatchingApplyHref(
     matchingEligibilityQuery.data,
     todayMatchingApplicationQuery.data,
+  );
+  const participantCount = formatParticipantCount(
+    matchingParticipantCountQuery.data?.participantCount ??
+      matchingEligibilityQuery.data?.participantCount,
   );
   const isMatchingApplyDisabled =
     matchingEligibilityQuery.isLoading ||
@@ -312,7 +335,13 @@ export default function Home() {
           <SearchBar />
         </div>
 
-        <MatchingCard applyDisabled={isMatchingApplyDisabled} applyHref={matchingApplyHref} />
+        <MatchingCard
+          applyDisabled={isMatchingApplyDisabled}
+          applyHref={matchingApplyHref}
+          deadlineAt={matchingEligibilityQuery.data?.applicationDeadlineAt}
+          participantCount={participantCount}
+          participantCountData={matchingParticipantCountQuery.data}
+        />
       </div>
 
       <BottomNavigation />
