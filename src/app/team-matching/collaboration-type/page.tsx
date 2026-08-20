@@ -3,14 +3,13 @@
 import Image from "next/image";
 
 import {
-  getCollaborationDisplayTraits,
   getCollaborationResultByCharacterType,
-  normalizeCollaborationCharacterType,
   type CollaborationCharacterType,
 } from "@/app/collaboration-type/_data/collaborationTest";
+import CollaborationTraitBars from "@/app/collaboration-type/_components/CollaborationTraitBars";
+import { useCollaborationDisplayTraits } from "@/app/collaboration-type/_hooks/useCollaborationDisplayTraits";
 import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
 import { useMyCharacterQuery } from "@/queries/useMyCharacterQuery";
-import { useSurveyResultQuery } from "@/queries/useSurveyResultQuery";
 
 function formatSubmittedAt(submittedAt: string) {
   const date = new Date(submittedAt);
@@ -32,18 +31,10 @@ function formatSubmittedAt(submittedAt: string) {
 
 export default function TeamMatchingCollaborationTypePage() {
   const { data: character, isError, isLoading } = useMyCharacterQuery();
-  const { data: surveyResult } = useSurveyResultQuery();
   const result = character
     ? getCollaborationResultByCharacterType(character.characterType as CollaborationCharacterType)
     : undefined;
-  const isSameCharacterType =
-    result &&
-    surveyResult?.characterType &&
-    normalizeCollaborationCharacterType(surveyResult.characterType as CollaborationCharacterType) ===
-      result.characterType;
-  const traits = result
-    ? getCollaborationDisplayTraits(result, isSameCharacterType ? surveyResult.axes : null)
-    : [];
+  const traits = useCollaborationDisplayTraits(result);
   const submittedAtText = character?.submittedAt
     ? formatSubmittedAt(character.submittedAt)
     : null;
@@ -131,41 +122,11 @@ export default function TeamMatchingCollaborationTypePage() {
                 당신의 협업스타일의 특징은?
               </h4>
 
-              <div className="flex w-full flex-col gap-[8px]">
-                {traits.map((trait) => (
-                  <div
-                    className="grid grid-cols-[40px_1fr_40px] items-center gap-[8px]"
-                    key={trait.left}
-                  >
-                    <span
-                      className="font-[Pretendard] text-[12px] font-semibold leading-[135%]"
-                      style={{ color: result.traitLabelColor }}
-                    >
-                      {trait.left}
-                    </span>
-                    <div
-                      aria-hidden="true"
-                      className="relative top-[3px] flex h-[7px] shrink-0 self-stretch overflow-hidden rounded-[90px] bg-[rgba(97,97,97,0.1)]"
-                    >
-                      {Array.from({ length: 5 }).map((_, index) => (
-                        <span
-                          className="h-full flex-1 border-r border-[#F9F8F4] last:border-r-0"
-                          key={index}
-                          style={{
-                            backgroundColor:
-                              index < trait.filledSegmentCount
-                                ? result.traitBarColor
-                                : "rgba(97, 97, 97, 0.1)",
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-right font-['42dot_Sans'] text-[13px] font-medium leading-[125%] text-[#949494]">
-                      {trait.right}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <CollaborationTraitBars
+                barColor={result.traitBarColor}
+                labelColor={result.traitLabelColor}
+                traits={traits}
+              />
 
               <ul className="w-[258px] max-w-full font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#555555]">
                 {(character.features.length > 0 ? character.features : result.descriptions).map(
