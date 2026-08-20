@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import NotificationToast from "@/components/NotificationToast";
 import { ApiError } from "@/lib/http";
 import { surveyResultQueryKey } from "@/queries/useSurveyResultQuery";
 import { surveyStatusQueryKey } from "@/queries/useSurveyStatusQuery";
@@ -43,5 +44,10 @@ export function Providers({ children }: { children: ReactNode }) {
     });
   }, [queryClient]);
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <NotificationToast />
+      {children}
+    </QueryClientProvider>
+  );
 }
