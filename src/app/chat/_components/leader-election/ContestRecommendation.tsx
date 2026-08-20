@@ -476,10 +476,12 @@ export function ContestAddedToast({ onShortcut }: { onShortcut: () => void }) {
 export function ContestVoteNoticeBanner({
   body,
   isActionDisabled = false,
+  isVoteSubmitted = false,
   onAction,
 }: {
   body?: string;
   isActionDisabled?: boolean;
+  isVoteSubmitted?: boolean;
   onAction: () => void;
 }) {
   const isButtonDisabled = isActionDisabled;

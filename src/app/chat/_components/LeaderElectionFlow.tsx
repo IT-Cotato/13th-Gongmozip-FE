@@ -998,6 +998,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         <ContestVoteNoticeBanner
           body={latestContestVoteReminderMessage.body}
           isActionDisabled={isContestVoteClosed}
+          isVoteSubmitted={hasMyVoted}
           onAction={() => showContestVoteStatus(latestContestVoteReminderCandidateIds)}
         />
       ) : null}
