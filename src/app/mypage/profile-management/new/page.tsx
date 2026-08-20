@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import TeamMatchingProgress from "@/components/team-matching/TeamMatchingProgress";
-import { EditIcon } from "../../_components/icons";
+import { CharacterAvatar } from "../../_components/CharacterAvatar";
+import { getCollaborationCharacterMeta } from "../../_lib/collaborationCharacter";
 import { CheckCircleIcon, CloseIcon } from "../_components/icons";
 import { ExitProfileWriteModal } from "../_components/ExitProfileWriteModal";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
 import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
-import { useUpdateProfileImageMutation } from "@/queries/useUpdateProfileImageMutation";
+import { useCurrentCharacterQuery } from "@/queries/useCurrentCharacterQuery";
+import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
+import {
+  useCreateBasicProfileMutation,
+  useUpdateBasicProfileMutation,
+} from "@/queries/useCreateProfileWithDetailsMutation";
+import { ApiError } from "@/lib/http";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -42,6 +48,8 @@ export default function CreateProfilePage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const isEditingExistingProfile = useProfileDraftStore((state) => state.isEditingExistingProfile);
   const nicknameError = useProfileDraftStore((state) => state.nicknameError);
   const setNicknameError = useProfileDraftStore((state) => state.setNicknameError);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -59,57 +67,23 @@ export default function CreateProfilePage() {
   const [gpaScale, setGpaScale] = useState(draftBasicInfo.gpaScale);
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const memberProfileQuery = useMemberProfileQuery();
-  const updateProfileImageMutation = useUpdateProfileImageMutation();
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const previewImageUrlRef = useRef<string | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const displayedImageUrl = previewImageUrl ?? memberProfileQuery.data?.profileImageUrl ?? null;
+  const createBasicProfileMutation = useCreateBasicProfileMutation();
+  const updateBasicProfileMutation = useUpdateBasicProfileMutation();
+  const isSubmitting = createBasicProfileMutation.isPending || updateBasicProfileMutation.isPending;
 
-  useEffect(() => {
-    return () => {
-      if (previewImageUrlRef.current) {
-        URL.revokeObjectURL(previewImageUrlRef.current);
-      }
-    };
-  }, []);
+  const characterQuery = useCurrentCharacterQuery();
+  const palettesQuery = useCharacterPalettesQuery();
+  const characterMeta = characterQuery.data
+    ? getCollaborationCharacterMeta(characterQuery.data.characterType)
+    : null;
+  const characterPalette = palettesQuery.data?.palettes.find(
+    (palette) => palette.paletteCode === characterQuery.data?.paletteCode,
+  );
 
-  function handlePhotoButtonClick() {
-    photoInputRef.current?.click();
-  }
-
-  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    if (previewImageUrlRef.current) {
-      URL.revokeObjectURL(previewImageUrlRef.current);
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    previewImageUrlRef.current = objectUrl;
-    setPreviewImageUrl(objectUrl);
-
-    updateProfileImageMutation.mutate(file, {
-      onSuccess: async () => {
-        // invalidateQueries만으로는 refetch가 끝나기 전에 onSettled가 미리보기를
-        // 지워버려서, 갱신된 이미지가 반영되기 전 잠깐 원래(구) 이미지로 되돌아가
-        // 보이는(=마치 업로드가 실패한 것처럼 보이는) 깜빡임이 있었다. 여기서
-        // refetch를 직접 기다려 새 이미지가 준비된 뒤에 미리보기를 지운다.
-        await memberProfileQuery.refetch();
-      },
-      onSettled: () => {
-        URL.revokeObjectURL(objectUrl);
-        if (previewImageUrlRef.current === objectUrl) {
-          previewImageUrlRef.current = null;
-        }
-        // 성공 시엔 위에서 기다린 갱신된 서버 이미지로, 실패 시엔 기존 프로필
-        // 이미지로 자연스럽게 되돌아간다.
-        setPreviewImageUrl(null);
-      },
-    });
+  function handleCharacterEditClick() {
+    router.push("/mypage/character-management");
   }
 
   // 새 프로필을 처음 작성하는 시점(수정 아님 + 아직 아무것도 안 입력함)에만
@@ -143,26 +117,60 @@ export default function CreateProfilePage() {
     nickname.trim().length > 0 && school.trim().length > 0 && major.trim().length > 0 && isGpaValid;
 
   function handleNext() {
-    if (!isFormValid) return;
+    if (!isFormValid || isSubmitting) return;
+    setSubmitError(null);
+    setNicknameError(null);
     const basicInfo = { nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale };
-    setDraftBasicInfo(basicInfo);
 
-    if (accessToken) {
-      if (saveAsDefault) {
-        setDefaultBasicInfo(basicInfo);
+    function proceed() {
+      setDraftBasicInfo(basicInfo);
+
+      if (accessToken) {
+        if (saveAsDefault) {
+          setDefaultBasicInfo(basicInfo);
+        } else {
+          clearDefaultBasicInfo();
+        }
+      }
+
+      router.replace("/mypage/profile-management/new/experience");
+    }
+
+    function handleError(error: unknown) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "프로필 저장에 실패했습니다. 다시 시도해주세요.";
+      if (message.includes("닉네임")) {
+        setNicknameError(message);
       } else {
-        clearDefaultBasicInfo();
+        setSubmitError(message);
       }
     }
 
-    router.replace("/mypage/profile-management/new/experience");
+    // 닉네임 중복 등 서버 검증을 여기서 바로 받아야, 뒷 단계(프로젝트/자격증)까지
+    // 다 입력한 뒤에야 실패를 알게 되는 상황과 그로 인한 프로필 중복 생성을 막을 수 있다.
+    if (editingProfileId === null) {
+      createBasicProfileMutation.mutate(basicInfo, {
+        onSuccess: (data) => {
+          setEditingProfileId(data.profileId);
+          proceed();
+        },
+        onError: handleError,
+      });
+    } else {
+      updateBasicProfileMutation.mutate(
+        { profileId: editingProfileId, basicInfo },
+        { onSuccess: proceed, onError: handleError },
+      );
+    }
   }
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
-          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+          {isEditingExistingProfile ? "프로필 수정" : "프로필 작성"}
         </h1>
         <button
           type="button"
@@ -181,34 +189,12 @@ export default function CreateProfilePage() {
           <section className="flex flex-col gap-4">
             <h2 className="px-4 text-[22px] leading-[1.35] font-bold text-[#1f1f1f]">기본 정보</h2>
             <div className="flex items-center gap-4 px-6">
-              <div className="relative shrink-0">
-                {displayedImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={displayedImageUrl}
-                    alt=""
-                    className="size-[70px] rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="size-[70px] rounded-full bg-[#efefef]" />
-                )}
-                <button
-                  type="button"
-                  onClick={handlePhotoButtonClick}
-                  disabled={updateProfileImageMutation.isPending}
-                  aria-label="프로필 사진 변경"
-                  className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border border-[rgba(97,97,97,0.22)] bg-white disabled:opacity-50"
-                >
-                  <EditIcon />
-                </button>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
-              </div>
+              <CharacterAvatar
+                imageSrc={characterMeta?.imageSrc ?? null}
+                label={characterMeta?.label}
+                palette={characterPalette}
+                onEditClick={handleCharacterEditClick}
+              />
               <div className="flex flex-1 flex-col gap-1">
                 <FieldLabel label="닉네임" htmlFor="nickname" required />
                 <input
@@ -229,15 +215,6 @@ export default function CreateProfilePage() {
                 )}
               </div>
             </div>
-            {updateProfileImageMutation.isError && (
-              <p
-                role="alert"
-                aria-live="assertive"
-                className="px-6 text-xs leading-[1.35] text-[#BB5260]"
-              >
-                프로필 사진 업로드에 실패했어요. 다시 시도해주세요.
-              </p>
-            )}
           </section>
 
           <section className="flex flex-col gap-4">
@@ -352,32 +329,37 @@ export default function CreateProfilePage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 flex gap-2.5 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161]"
-        >
-          이전
-        </button>
-        <button
-          type="button"
-          disabled={!isFormValid}
-          onClick={handleNext}
-          className={`h-12 flex-1 rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-            isFormValid
-              ? "bg-[#FF7658] text-white"
-              : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-          }`}
-        >
-          다음
-        </button>
+      <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        {submitError && <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>}
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+            className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
+          >
+            이전
+          </button>
+          <button
+            type="button"
+            disabled={!isFormValid || isSubmitting}
+            onClick={handleNext}
+            className={`h-12 flex-1 rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+              isFormValid && !isSubmitting
+                ? "bg-[#FF7658] text-white"
+                : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+            }`}
+          >
+            {isSubmitting ? "확인 중..." : "다음"}
+          </button>
+        </div>
       </div>
 
       <ExitProfileWriteModal
         onExit={() => {
-          const exitDestination =
-            editingProfileId !== null ? `/mypage/profile-management/${editingProfileId}` : null;
+          const exitDestination = isEditingExistingProfile
+            ? `/mypage/profile-management/${editingProfileId}`
+            : null;
           useProfileDraftStore.getState().resetProfileDraft();
           if (exitDestination) {
             router.replace(exitDestination);

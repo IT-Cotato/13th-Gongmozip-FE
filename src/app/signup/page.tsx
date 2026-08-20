@@ -84,7 +84,6 @@ function SignupPageInner() {
     terms: false,
     privacy: false,
     marketing: false,
-    location: false,
   });
 
   const [serverEmailDuplicate, setServerEmailDuplicate] = useState(false);
@@ -299,14 +298,12 @@ function SignupPageInner() {
   }
 
   function toggleTermsAll() {
-    const allChecked =
-      terms.age14 && terms.terms && terms.privacy && terms.marketing && terms.location;
+    const allChecked = terms.age14 && terms.terms && terms.privacy && terms.marketing;
     setTerms({
       age14: !allChecked,
       terms: !allChecked,
       privacy: !allChecked,
       marketing: !allChecked,
-      location: !allChecked,
     });
   }
 

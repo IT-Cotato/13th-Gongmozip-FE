@@ -74,8 +74,17 @@ export function ProjectExperienceSheet({
   const [awardName, setAwardName] = useState(initialProject?.awardName ?? "");
   const [activeDateField, setActiveDateField] = useState<"start" | "end" | null>(null);
 
+  const now = new Date();
+  const currentMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const isStartMonthFuture = startMonth !== "" && startMonth > currentMonthValue;
+  const isEndMonthFuture = endMonth !== "" && endMonth > currentMonthValue;
   const isPeriodValid = !startMonth || !endMonth || startMonth <= endMonth;
-  const isFormValid = name.trim().length > 0 && category !== null && isPeriodValid;
+  const isFormValid =
+    name.trim().length > 0 &&
+    category !== null &&
+    isPeriodValid &&
+    !isStartMonthFuture &&
+    !isEndMonthFuture;
 
   function handleSubmit() {
     if (!isFormValid || category === null) return;
@@ -160,6 +169,11 @@ export function ProjectExperienceSheet({
                 종료 년월은 시작 년월보다 빠를 수 없어요.
               </p>
             )}
+            {isPeriodValid && (isStartMonthFuture || isEndMonthFuture) && (
+              <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">
+                미래 날짜는 입력할 수 없어요.
+              </p>
+            )}
 
             {activeDateField && (
               <>
@@ -172,6 +186,7 @@ export function ProjectExperienceSheet({
                 <div className="absolute top-[calc(100%+4px)] left-0 z-50 w-full">
                   <MonthYearPickerPopup
                     value={activeDateField === "start" ? startMonth : endMonth}
+                    maxMonthValue={currentMonthValue}
                     onSelect={(next) => {
                       if (activeDateField === "start") {
                         setStartMonth(next);

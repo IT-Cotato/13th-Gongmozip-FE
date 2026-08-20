@@ -5,16 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomNavigation from "@/components/layout/BottomNavigation";
-import { AvatarPlaceholderIcon, EditIcon, SettingsIcon } from "./_components/icons";
+import { HeaderIconLink } from "@/components/layout/HeaderIconButton";
+import { SettingsIcon } from "./_components/icons";
+import { CharacterAvatar } from "./_components/CharacterAvatar";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
 import { CollaborationTypeTestPromptModal } from "./_components/CollaborationTypeTestPromptModal";
 import { LogoutConfirmModal } from "./_components/LogoutConfirmModal";
 import { SurveyRetakeLimitModal } from "./_components/SurveyRetakeLimitModal";
 import { useSurveyRetakeNavigation } from "./_hooks/useSurveyRetakeNavigation";
-import { getCollaborationCharacterMeta, getPaletteStyle } from "./_lib/collaborationCharacter";
+import { getCollaborationCharacterMeta } from "./_lib/collaborationCharacter";
 import { useCollaborationDistanceQuery } from "@/queries/useCollaborationDistanceQuery";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
-import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useMemberProfileQuery, getSnsLoginHint } from "@/queries/useMemberProfileQuery";
 import { useProfileListQuery } from "@/queries/useProfileListQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { useLogoutMutation } from "@/queries/useLogoutMutation";
@@ -131,7 +133,7 @@ export default function MyPage() {
         : {
             label: "비밀번호 변경",
             disabled: true,
-            hint: isSocialLogin ? "카카오톡 로그인 사용중" : undefined,
+            hint: isSocialLogin ? getSnsLoginHint(profileQuery.data?.snsType ?? null) : undefined,
           },
     ],
   };
@@ -173,15 +175,11 @@ export default function MyPage() {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="flex-1 overflow-y-auto">
-        <header className="relative flex items-center justify-center px-4 py-1">
+        <header className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
           <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111111]">마이페이지</h1>
-          <Link
-            href="/mypage/settings"
-            aria-label="설정"
-            className="absolute right-4 flex h-6 w-6 items-center justify-center text-[#1F1F1F]"
-          >
+          <HeaderIconLink href="/mypage/settings" aria-label="설정" className="absolute right-4">
             <SettingsIcon />
-          </Link>
+          </HeaderIconLink>
         </header>
 
         {isLoading && (
@@ -213,31 +211,12 @@ export default function MyPage() {
           <>
             <section className="flex flex-col items-center">
               <div className="flex w-full items-start gap-4 px-6 py-4">
-                <div className="relative size-[92px] shrink-0">
-                  <div className="absolute inset-[3%_5%]">
-                    <AvatarPlaceholderIcon />
-                  </div>
-                  {collaborationType?.imageSrc && (
-                    <div
-                      className="absolute inset-0 overflow-hidden rounded-full"
-                      style={getPaletteStyle(characterPalette)}
-                    >
-                      <img
-                        src={collaborationType.imageSrc}
-                        alt={collaborationType.label}
-                        className="absolute inset-[11.67%_11%_11.33%_11%] object-contain"
-                      />
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleCharacterManageClick}
-                    aria-label="캐릭터 관리"
-                    className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#EFEFEF] text-black"
-                  >
-                    <EditIcon />
-                  </button>
-                </div>
+                <CharacterAvatar
+                  imageSrc={collaborationType?.imageSrc ?? null}
+                  label={collaborationType?.label}
+                  palette={characterPalette}
+                  onEditClick={handleCharacterManageClick}
+                />
                 <div className="flex flex-1 flex-col items-start gap-2">
                   <div className="flex w-full items-center justify-between">
                     <span
@@ -367,9 +346,7 @@ export default function MyPage() {
           isLoggingOut={logoutMutation.isPending}
         />
       )}
-      {isRetakeLimitOpen && (
-        <SurveyRetakeLimitModal onClose={() => setIsRetakeLimitOpen(false)} />
-      )}
+      {isRetakeLimitOpen && <SurveyRetakeLimitModal onClose={() => setIsRetakeLimitOpen(false)} />}
     </div>
   );
 }

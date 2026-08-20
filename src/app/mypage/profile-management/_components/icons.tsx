@@ -131,6 +131,27 @@ export function ChevronRightSmallIcon() {
   );
 }
 
+export function RefreshIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M12.25 7A5.25 5.25 0 002.847 4.083M1.75 7A5.25 5.25 0 0011.153 9.917M1.75 1.75v2.917h2.917M12.25 12.25v-2.917H9.333"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function CalendarIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -101,6 +101,13 @@ async function createProjectsAwardsAndCertifications(
   );
 }
 
+function publishProfile(profileId: number) {
+  return apiFetch<void>(`/api/profiles/${profileId}/visibility`, {
+    method: "PATCH",
+    body: { isPublic: true },
+  });
+}
+
 async function createProfileWithDetails({
   basicInfo,
   projects,
@@ -112,12 +119,15 @@ async function createProfileWithDetails({
       ...buildProfileBody(basicInfo),
       // 관심 분야를 고르는 화면이 아직 없어 항상 빈 배열로 전송함
       interestCategories: [],
-      isPublic: true,
+      // 프로젝트/자격증을 아직 채우지 않은 상태로 공개되지 않도록 비공개로 만들고,
+      // 마법사를 끝까지 마친 뒤(publishProfile)에만 공개로 전환한다.
+      isPublic: false,
     },
   });
 
   const profileId = createdProfile.profileId;
   await createProjectsAwardsAndCertifications(profileId, projects, certificates);
+  await publishProfile(profileId);
 
   return { profileId };
 }
@@ -129,6 +139,61 @@ export function useCreateProfileWithDetailsMutation() {
     mutationFn: createProfileWithDetails,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
+    },
+  });
+}
+
+// 1단계(기본 정보) "다음"에서 호출된다. 닉네임 중복 등 서버 검증을 마지막
+// 단계까지 미루지 않고 이 시점에 바로 확인하기 위해, 프로젝트/자격증 없이
+// 프로필만 먼저 만든다. 이후 단계는 이 profileId로 계속 수정(PATCH)하므로
+// 뒷 단계에서 실패해 재시도하더라도 프로필이 중복 생성되지 않는다.
+async function createBasicProfile(basicInfo: ProfileBasicInfo) {
+  return apiFetch<{ profileId: number }>("/api/profiles", {
+    method: "POST",
+    body: {
+      ...buildProfileBody(basicInfo),
+      interestCategories: [],
+      // 이 시점엔 프로젝트/자격증이 전혀 없으므로 비공개로 만든다. 마법사를 끝까지
+      // 마쳐 프로젝트/자격증까지 채운 뒤(certificates 페이지의 최종 제출)에만 공개로
+      // 전환해, 미완성 프로필이 잠깐이라도 다른 사용자에게 노출되지 않게 한다.
+      isPublic: false,
+    },
+  });
+}
+
+export function useCreateBasicProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createBasicProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
+    },
+  });
+}
+
+export type UpdateBasicProfileInput = {
+  profileId: number;
+  basicInfo: ProfileBasicInfo;
+};
+
+async function updateBasicProfile({ profileId, basicInfo }: UpdateBasicProfileInput) {
+  await apiFetch<void>(`/api/profiles/${encodeURIComponent(String(profileId))}`, {
+    method: "PATCH",
+    body: buildProfileBody(basicInfo),
+  });
+
+  return { profileId };
+}
+
+export function useUpdateBasicProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateBasicProfile,
+    onSuccess: (_data, { profileId }) => {
+      queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
+      queryClient.invalidateQueries({ queryKey: profileDetailQueryKey(String(profileId)) });
     },
   });
 }
