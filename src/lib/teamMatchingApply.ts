@@ -32,12 +32,12 @@ export function getTeamMatchingApplyHref(
   eligibility?: MatchingEligibility,
   todayApplication?: TodayMatchingApplication,
 ) {
-  if (eligibility?.appliedToday || todayApplication?.appliedToday) {
-    return "/team-matching/modal-preview/already-applied";
+  if (!eligibility || !todayApplication) {
+    return undefined;
   }
 
-  if (!eligibility) {
-    return "/team-matching/profile";
+  if (eligibility?.appliedToday || todayApplication?.appliedToday) {
+    return "/team-matching/modal-preview/already-applied";
   }
 
   const reasons = eligibility.reasons;
