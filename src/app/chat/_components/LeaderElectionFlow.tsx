@@ -1021,7 +1021,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
       <section
         aria-label="팀장 선출 채팅"
-        className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[29px] pb-6"
+        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[29px] pb-6"
         ref={messageListRef}
         onScroll={handleMessageListScroll}
       >

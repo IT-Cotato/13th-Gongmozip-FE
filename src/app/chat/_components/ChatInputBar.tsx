@@ -82,7 +82,7 @@ export function ChatInputBar({
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         placeholder="메시지를 입력해주세요."
-        className="max-h-32 min-h-12 min-w-0 flex-1 resize-none rounded-[16px] bg-[rgba(97,97,97,0.1)] px-4 py-3.5 text-[13px] leading-[1.5] text-color-gray-850 outline-none placeholder:text-color-gray-500"
+        className="max-h-32 min-h-12 min-w-0 flex-1 resize-none rounded-[16px] bg-[rgba(97,97,97,0.1)] px-4 py-3.5 text-[16px] leading-[1.35] text-color-gray-850 outline-none placeholder:text-color-gray-500 sm:text-[13px] sm:leading-[1.5]"
       />
       <button
         type="submit"
