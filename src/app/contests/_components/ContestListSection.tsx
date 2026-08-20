@@ -65,8 +65,7 @@ export function ContestListSection() {
       [],
     [data?.pages],
   );
-  const totalElements = data?.pages.at(-1)?.totalElements ?? 0;
-  const hasMoreContests = contests.length < totalElements;
+  const hasMoreContests = Boolean(hasNextPage);
 
   return (
     <>
