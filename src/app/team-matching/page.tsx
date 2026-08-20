@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
-import TeamMatchingApplyLink from "@/components/team-matching/TeamMatchingApplyLink";
+import TeamMatchingApplyLink, {
+  useIsMatchingApplicationClosedTime,
+} from "@/components/team-matching/TeamMatchingApplyLink";
 import { ApiError } from "@/lib/http";
 import { getMatchingResultPublishAt } from "@/lib/matchingSchedule";
 import {
@@ -308,12 +310,13 @@ export default function TeamMatchingPage() {
     ? getTeamMatchingPrimaryReason(eligibility.reasons)
     : undefined;
   const canOpenApplyDestination = hasTeamMatchingActionableBlockingReason(eligibility);
+  const isApplicationClosedTime = useIsMatchingApplicationClosedTime();
   const applyLabel = isLoading
     ? "확인 중..."
     : alreadyAppliedToday
       ? "매칭 신청하기"
       : primaryReason && !eligibility?.eligible
-        ? "신청 조건 확인하기"
+        ? "매칭 신청하기"
         : "매칭 신청하기";
   const isUnauthorized = error instanceof ApiError && error.status === 401;
   const isTodayApplicationUnauthorized =
@@ -441,7 +444,11 @@ export default function TeamMatchingPage() {
           }}
         >
           <FixedApplyButton
-            disabled={isLoading || (isError && !isUnauthorized) || !canOpenApplyDestination}
+            disabled={
+              isLoading ||
+              (isError && !isUnauthorized) ||
+              (!canOpenApplyDestination && !isApplicationClosedTime)
+            }
             href={isUnauthorized ? "/login" : applyHref}
             label={isUnauthorized ? "로그인하기" : applyLabel}
           />
