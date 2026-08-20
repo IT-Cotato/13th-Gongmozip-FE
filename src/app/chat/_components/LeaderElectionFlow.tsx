@@ -1,6 +1,14 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useQueries } from "@tanstack/react-query";
 
@@ -42,6 +50,7 @@ import { ChatTopBar } from "./ChatTopBar";
 import { MemberReviewStartDialog } from "./member-review";
 import {
   BotMessage,
+  ChatbotUsageGuideMessage,
   ChatbotSystemNotice,
   ChatbotTextMessage,
 } from "./leader-election/ChatbotMessage";
@@ -188,6 +197,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [selectedContestIds, setSelectedContestIds] = useState<string[]>([]);
   const messageListRef = useRef<HTMLElement>(null);
   const lastReadMarkerRef = useRef<string | null>(null);
+  const scrollToLatestFrameRef = useRef<number | null>(null);
 
   const apiCandidates = useMemo(() => {
     if (!activeLeaderCandidateIds?.length) {
@@ -225,6 +235,42 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     lastReadMarkerRef.current = latestReadMarker;
     markAsRead();
   }, [latestReadMarker, markAsRead, messagesQuery.isSuccess, roomId]);
+
+  const scrollMessageListToLatest = useCallback(() => {
+    const messageList = messageListRef.current;
+
+    if (!messageList) {
+      return;
+    }
+
+    messageList.scrollTop = messageList.scrollHeight;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!messagesQuery.isSuccess) {
+      return;
+    }
+
+    scrollMessageListToLatest();
+
+    if (scrollToLatestFrameRef.current !== null) {
+      cancelAnimationFrame(scrollToLatestFrameRef.current);
+    }
+
+    scrollToLatestFrameRef.current = requestAnimationFrame(() => {
+      scrollMessageListToLatest();
+      scrollToLatestFrameRef.current = null;
+    });
+
+    return () => {
+      if (scrollToLatestFrameRef.current === null) {
+        return;
+      }
+
+      cancelAnimationFrame(scrollToLatestFrameRef.current);
+      scrollToLatestFrameRef.current = null;
+    };
+  }, [latestReadMarker, messagesQuery.isSuccess, scrollMessageListToLatest]);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -1351,7 +1397,7 @@ function ChatMessageRenderer({
         onStartVote={() => onOpenContestVote(displayContests.map((contest) => contest.id))}
         remainingSeconds={voteRemainingSeconds}
         sentAt={message.sentAt}
-        timerLabel="후보 마감까지"
+        timerLabel="투표 마감까지"
         title="추천 공모전 리스트"
       />
     );
@@ -1375,10 +1421,15 @@ function ChatMessageRenderer({
 
     return contest && contestId ? (
       <ContestSharedMessage
+        avatarSrc={message.avatarSrc}
+        avatarTone={message.avatarTone}
         contest={contest}
+        direction={message.direction}
         isAdded={Boolean(contestCandidates.find((candidate) => candidate.contestId === contestId))}
         onAdd={() => onAddContestCandidate(contestId, contest)}
+        senderName={message.senderName}
         sentAt={message.sentAt}
+        unreadLabel={message.unreadLabel}
       />
     ) : (
       <CardChatMessage
@@ -1444,7 +1495,6 @@ function ChatMessageRenderer({
     return contest ? (
       <ContestVoteResultMessage
         contest={contest}
-        onUseChatbot={onUseChatbot}
         sentAt={message.sentAt}
       />
     ) : (
@@ -1466,6 +1516,10 @@ function ChatMessageRenderer({
         sentAt={message.sentAt}
       />
     );
+  }
+
+  if (message.messageType === "CHATBOT_GUIDE_CARD") {
+    return <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={message.sentAt} />;
   }
 
   if (message.senderType === "CHATBOT" || message.messageType === "BOT") {

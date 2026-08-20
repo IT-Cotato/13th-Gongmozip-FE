@@ -31,6 +31,8 @@ const WS_BASE_URL = (process.env.NEXT_PUBLIC_WS_BASE_URL ?? API_BASE_URL).replac
 const HAS_TIMEZONE_REGEX = /(Z|[+-]\d{2}:?\d{2})$/;
 const CHAT_TIME_ZONE = "Asia/Seoul";
 const KOREA_TIME_ZONE_OFFSET = "+09:00";
+const LOCAL_CONTEST_SHARE_SENDER_TTL_MS = 5 * 60 * 1000;
+const localContestShareSenderByTeamId = new Map<string, { contestId: number; sharedAt: number }>();
 const DIRECT_TEAM_MEMBER_ID_KEYS = [
   "senderTeamMemberId",
   "teamMemberId",
@@ -83,6 +85,36 @@ const METADATA_SENDER_ID_KEYS = [
   "authorId",
   "sharedBy",
   "sharedById",
+];
+const SENDER_NAME_KEYS = [
+  "senderName",
+  "senderNickname",
+  "nickname",
+  "memberName",
+  "profileName",
+  "writerName",
+  "writerNickname",
+  "createdByName",
+  "createdByNickname",
+  "authorName",
+  "authorNickname",
+  "sharedByName",
+  "sharedByNickname",
+  "shareMemberName",
+  "shareMemberNickname",
+  "sharerName",
+  "sharerNickname",
+  "sharedByMemberName",
+  "sharedByMemberNickname",
+];
+const SENDER_RECORD_KEYS = [
+  "sender",
+  "member",
+  "writer",
+  "createdBy",
+  "author",
+  "sharedBy",
+  "sharer",
 ];
 
 export type ChatTeamResponse = UnknownRecord;
@@ -356,7 +388,7 @@ export function useChatTeamMessagesQuery(
       messages: data.pages
         .flatMap((page) => page.messages)
         .sort((a, b) => getMessageTime(a) - getMessageTime(b))
-        .map((message) => mapChatMessage(message, members)),
+        .map((message) => mapChatMessage(message, members, teamId)),
     }),
   });
 }
@@ -794,7 +826,8 @@ export function useShareContestToChatMutation(teamId: string) {
 
   return useMutation({
     mutationFn: (contestId: number) => shareContestToChat(teamId, contestId),
-    onSuccess: () => {
+    onSuccess: (_data, contestId) => {
+      rememberLocalContestShareSender([teamId], contestId);
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
     },
   });
@@ -808,6 +841,11 @@ export function useShareContestToChatsMutation() {
     onSuccess: (data, variables) => {
       const failedTeamIds = new Set(data.failedTeamIds);
       const successfulTeamIds = variables.teamIds.filter((teamId) => !failedTeamIds.has(teamId));
+      const contestId = Number(variables.contestId);
+
+      if (Number.isFinite(contestId)) {
+        rememberLocalContestShareSender(successfulTeamIds, contestId);
+      }
 
       successfulTeamIds.forEach((teamId) => {
         void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
@@ -1208,27 +1246,34 @@ function mapChatMember(
   };
 }
 
-function mapChatMessage(message: ChatMessageResponse, members: ChatMember[]): ChatMessage {
+function mapChatMessage(
+  message: ChatMessageResponse,
+  members: ChatMember[],
+  teamId?: string,
+): ChatMessage {
   const sentAtValue = getString(message, ["createdAt", "sentAt", "timestamp"]);
   const metadata = getMessageMetadata(message);
   const messageType = getMessageType(message);
   const isContestShareCard = messageType === "CONTEST_SHARE_CARD";
-  const sender = resolveChatMessageSender(message, members, metadata, isContestShareCard);
+  const resolvedSender = resolveChatMessageSender(message, members, metadata, isContestShareCard);
+  const localShareSender =
+    isContestShareCard && !resolvedSender
+      ? resolveLocalContestShareSender(message, members, metadata, teamId)
+      : undefined;
+  const sender = resolvedSender ?? localShareSender;
   const senderId = sender?.id ?? getRawMessageSenderId(message, metadata, isContestShareCard);
   const senderType = getSenderType(message);
   const isChatbotMessage = senderType === "CHATBOT" && !isContestShareCard;
   const isSystemMessage =
     !isContestShareCard && (senderType === "SYSTEM" || isSystemMessageType(messageType));
+  const messageSenderName = getChatMessageSenderName(message, metadata);
   const isMine =
     getBoolean(message, ["me", "isMe", "mine", "isMine"]) ??
     sender?.isMe ??
     isCurrentMemberSender(message, members, metadata, isContestShareCard);
   const senderName =
     (isContestShareCard ? sender?.name : undefined) ??
-    getString(message, ["senderName", "senderNickname", "nickname", "memberName"]) ??
-    (metadata
-      ? getString(metadata, ["senderName", "senderNickname", "nickname", "memberName"])
-      : undefined) ??
+    messageSenderName ??
     sender?.name ??
     (isChatbotMessage ? "\uCC57\uBD07" : isSystemMessage ? "\uC2DC\uC2A4\uD15C" : "\uD300\uC6D0");
 
@@ -1314,13 +1359,37 @@ function resolveChatMessageSender(
     }
   }
 
-  const senderName =
-    getString(message, ["senderName", "senderNickname", "nickname", "memberName"]) ??
-    (metadata
-      ? getString(metadata, ["senderName", "senderNickname", "nickname", "memberName"])
-      : undefined);
+  const senderName = getChatMessageSenderName(message, metadata);
 
   return senderName ? members.find((member) => member.name === senderName) : undefined;
+}
+
+function getChatMessageSenderName(
+  message: ChatMessageResponse,
+  metadata: ChatMessageMetadata | undefined,
+) {
+  return (
+    getSenderNameFromRecord(message) ?? (metadata ? getSenderNameFromRecord(metadata) : undefined)
+  );
+}
+
+function getSenderNameFromRecord(record: UnknownRecord) {
+  const directName = getString(record, SENDER_NAME_KEYS);
+
+  if (directName) {
+    return directName;
+  }
+
+  for (const key of SENDER_RECORD_KEYS) {
+    const nestedRecord = getRecord(record, key);
+    const nestedName = nestedRecord ? getString(nestedRecord, SENDER_NAME_KEYS) : undefined;
+
+    if (nestedName) {
+      return nestedName;
+    }
+  }
+
+  return undefined;
 }
 
 function getRawMessageSenderId(
@@ -1401,6 +1470,46 @@ function isCurrentMemberSender(
     senderId !== undefined &&
     (currentMember.id === String(senderId) || currentMember.memberId === String(senderId))
   );
+}
+
+function rememberLocalContestShareSender(teamIds: string[], contestId: number) {
+  const sharedAt = Date.now();
+
+  teamIds.forEach((teamId) => {
+    localContestShareSenderByTeamId.set(teamId, { contestId, sharedAt });
+  });
+}
+
+function resolveLocalContestShareSender(
+  message: ChatMessageResponse,
+  members: ChatMember[],
+  metadata: ChatMessageMetadata | undefined,
+  teamId: string | undefined,
+) {
+  if (!teamId) {
+    return undefined;
+  }
+
+  const localShare = localContestShareSenderByTeamId.get(teamId);
+
+  if (!localShare) {
+    return undefined;
+  }
+
+  if (Date.now() - localShare.sharedAt > LOCAL_CONTEST_SHARE_SENDER_TTL_MS) {
+    localContestShareSenderByTeamId.delete(teamId);
+    return undefined;
+  }
+
+  const contestId =
+    getNumber(message, ["contestId"]) ??
+    (metadata ? getNumber(metadata, ["contestId", "sharedContestId"]) : undefined);
+
+  if (contestId !== localShare.contestId) {
+    return undefined;
+  }
+
+  return members.find((member) => member.isMe);
 }
 
 function mapContestCandidate(candidate: ContestCandidateResponse): RecommendedContest {
@@ -1493,7 +1602,8 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     getNumber(status, ["participatedVoterCount", "participantCount", "voterCount"]) ??
     results.reduce((sum, result) => sum + result.voteCount, 0);
   const requiredVoterCount =
-    getNumber(status, ["requiredVoterCount", "totalVoteCount", "totalVotes"]) ?? participatedVoterCount;
+    getNumber(status, ["requiredVoterCount", "totalVoteCount", "totalVotes"]) ??
+    participatedVoterCount;
   const myVoted = getBoolean(status, ["myVoted", "hasVoted", "isVoted"]) ?? false;
   const explicitStatus = getString(status, ["result", "status", "voteStatus"])?.toUpperCase();
   const isTie = getBoolean(status, ["tie", "isTie"]) ?? explicitStatus === "TIE";
@@ -1598,14 +1708,18 @@ function isChatMessageMetadata(value: unknown): value is ChatMessageMetadata {
     return false;
   }
 
-  return Object.values(value).every(
-    (item) =>
-      item === null ||
-      typeof item === "string" ||
-      typeof item === "number" ||
-      typeof item === "boolean" ||
-      (Array.isArray(item) &&
-        item.every((arrayItem) => typeof arrayItem === "string" || typeof arrayItem === "number")),
+  return Object.values(value).every(isChatMessageMetadataValue);
+}
+
+function isChatMessageMetadataValue(value: unknown): boolean {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    (Array.isArray(value) &&
+      value.every((arrayItem) => typeof arrayItem === "string" || typeof arrayItem === "number")) ||
+    isChatMessageMetadata(value)
   );
 }
 

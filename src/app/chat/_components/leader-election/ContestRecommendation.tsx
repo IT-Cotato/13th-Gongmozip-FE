@@ -7,7 +7,9 @@ import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { ContestVoteResultItem } from "@/queries/useChatQueries";
 import type { ContestSummary } from "@/app/contests/_types";
 
-import { ChatbotAvatar, ChatbotUsageGuideMessage, MessageMeta } from "./ChatbotMessage";
+import type { ChatMessage } from "../../_data/chatTypes";
+import { ChatAvatar } from "../ChatAvatar";
+import { ChatbotAvatar, MessageMeta } from "./ChatbotMessage";
 import type { RecommendedContest } from "./types";
 
 const fallbackVoteRemainingSeconds = 2 * 60 * 60;
@@ -317,23 +319,51 @@ export function ContestCandidateAddListPage({
 }
 
 export function ContestSharedMessage({
+  avatarSrc,
+  avatarTone = "green",
   contest,
+  direction,
   isAdded,
   onAdd,
+  senderName,
   sentAt,
+  unreadLabel,
 }: {
+  avatarSrc?: string;
+  avatarTone?: ChatMessage["avatarTone"];
   contest: RecommendedContest;
+  direction: ChatMessage["direction"];
   isAdded: boolean;
   onAdd: () => void;
+  senderName: string;
   sentAt?: string;
+  unreadLabel?: string;
 }) {
+  if (direction === "incoming") {
+    return (
+      <article className="flex w-full items-start gap-2">
+        <ChatAvatar name={senderName} tone={avatarTone} src={avatarSrc} />
+        <div className="flex w-[304px] shrink-0 flex-col items-start gap-1">
+          <span className="text-[12px] leading-[1.35] font-medium whitespace-nowrap text-color-gray-750">
+            {senderName}
+          </span>
+          <ContestSharedCard contest={contest} isAdded={isAdded} onAdd={onAdd} />
+          <div className="flex items-end gap-2 text-[12px] leading-[1.35] whitespace-nowrap">
+            <span className="text-color-gray-650">{sentAt}</span>
+            {unreadLabel ? <span className="text-color-coral-500">{unreadLabel}</span> : null}
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="flex w-full justify-end">
       <div className="flex max-w-[304px] flex-col items-end gap-1">
         <ContestSharedCard contest={contest} isAdded={isAdded} onAdd={onAdd} />
         <div className="flex items-end gap-2 text-[12px] leading-[1.35]">
           <span className="text-color-gray-650">{sentAt ?? "오후 8:28"}</span>
-          <span className="text-color-coral-500">1</span>
+          {unreadLabel ? <span className="text-color-coral-500">{unreadLabel}</span> : null}
         </div>
       </div>
     </article>
@@ -610,52 +640,30 @@ export function ProgressCheckBanner({
 
 export function ContestVoteResultMessage({
   contest,
-  onUseChatbot,
   sentAt,
 }: {
   contest: RecommendedContest;
-  onUseChatbot?: () => void;
   sentAt?: string;
 }) {
   return (
-    <>
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
+    <article className="flex w-full items-start gap-2">
+      <ChatbotAvatar />
 
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
-            </p>
-            <MessageMeta sentAt={sentAt} />
-          </div>
-          <div className="mt-1 w-[290px]">
-            <CompactContestListItem contest={contest} highlight />
-          </div>
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
+        <div className="flex w-full items-end gap-2">
+          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+            {`여러분들이 나가게 될 공모전은 “${contest.title}” 입니다. 팀장님의 주도 하에 공모전 준비를 잘 해나가길 바라겠습니다.`}
+          </p>
+          <MessageMeta sentAt={sentAt} />
         </div>
-      </article>
-
-      <article className="flex w-full items-start gap-2">
-        <ChatbotAvatar />
-
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
-          <div className="flex w-full items-end gap-2">
-            <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
-              {`언제든 저의 도움이 필요하면
-태그해주세요.`}
-            </p>
-            <MessageMeta sentAt={sentAt} />
-          </div>
+        <div className="mt-1 w-[290px]">
+          <CompactContestListItem contest={contest} highlight />
         </div>
-      </article>
-
-      <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={sentAt} />
-    </>
+      </div>
+    </article>
   );
 }
-
 export function ContestVoteSheet({
   contests,
   disabled = false,
