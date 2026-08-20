@@ -21,6 +21,32 @@ type CollaborationQuestionFormProps = {
   title: string;
 };
 
+function WordBreakText({ text }: { text: string }) {
+  return (
+    <span className="flex flex-col items-center">
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true" className="flex flex-col items-center">
+        {text.split(/\r?\n/).map((line, lineIndex) => (
+          <span
+            className="flex min-h-[1lh] flex-wrap justify-center gap-x-[0.25em]"
+            key={`${line}-${lineIndex}`}
+          >
+            {line
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .map((word, wordIndex) => (
+                <span className="whitespace-nowrap" key={`${word}-${wordIndex}`}>
+                  {word}
+                </span>
+              ))}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
 export default function CollaborationQuestionForm({
   currentQuestionOrder,
   nextHref,
@@ -38,8 +64,8 @@ export default function CollaborationQuestionForm({
   const optionGapClassName = isLikertScaleQuestion ? "gap-5" : "gap-[21px]";
   const optionMarginClassName = isLikertScaleQuestion ? "mt-5" : "mt-[21px]";
   const optionTextClassName = isLikertScaleQuestion
-    ? "h-[60px] text-[15px] leading-[125%]"
-    : "h-[101px] text-[15px] leading-[125%]";
+    ? "min-h-[60px] text-[15px] leading-[125%]"
+    : "min-h-[101px] text-[15px] leading-[125%]";
   const nextButtonClassName = selectedOptionId
     ? "inline-flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-normal leading-[125%] text-white"
     : "flex h-8 items-center justify-center gap-[5px] rounded-[14px] bg-[#EFEFEF] px-2.5 py-[9px] font-[Pretendard] text-[17px] font-normal leading-[125%] text-[#C8C8C8]";
@@ -76,12 +102,12 @@ export default function CollaborationQuestionForm({
 
   return (
     <>
-      <div className="flex h-[531px] flex-col self-stretch rounded-2xl bg-white px-11 pb-[14px] pt-[22px]">
+      <div className="flex min-h-[531px] flex-col self-stretch rounded-2xl bg-white px-11 pb-[14px] pt-[22px]">
         <p className="h-[17px] self-stretch text-center font-[Pretendard] text-[17px] font-bold leading-[135%] text-semantic-fill-brand">
           Q{currentQuestionOrder}
         </p>
-        <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal [word-break:keep-all]">
-          {title}
+        <p className="mt-4 flex min-h-8 flex-wrap items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal">
+          <WordBreakText text={title} />
         </p>
         <div
           className={`mx-auto flex w-[250px] flex-col ${optionMarginClassName} ${optionGapClassName}`}
@@ -98,11 +124,11 @@ export default function CollaborationQuestionForm({
                 type="button"
               >
                 <span
-                  className={`flex w-[250px] items-center justify-center self-stretch whitespace-pre-line rounded-2xl border-[3px] p-3 text-center font-[Pretendard] font-semibold text-[#616161] ${
+                  className={`flex w-[250px] flex-wrap items-center justify-center self-stretch rounded-2xl border-[3px] p-3 text-center font-[Pretendard] font-semibold text-[#616161] ${
                     isSelected ? "border-[#FF7658] bg-[#FFF7EF]" : "border-transparent bg-[#F5F5F5]"
                   } ${optionTextClassName}`}
                 >
-                  {option.optionLabel}
+                  <WordBreakText text={option.optionLabel} />
                 </span>
               </button>
             );
