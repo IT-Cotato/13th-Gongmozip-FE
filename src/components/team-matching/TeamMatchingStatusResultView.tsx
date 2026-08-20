@@ -302,10 +302,12 @@ function MatchedMemberCard({
 }
 
 type TeamMatchingStatusResultViewProps = {
+  preferHistoryBack?: boolean;
   todayMatchingResult: TodayMatchingResult;
 };
 
 export default function TeamMatchingStatusResultView({
+  preferHistoryBack = false,
   todayMatchingResult,
 }: TeamMatchingStatusResultViewProps) {
   const router = useRouter();
@@ -366,7 +368,11 @@ export default function TeamMatchingStatusResultView({
 
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
-      <TeamMatchingHeader backHref="/team-matching" title="나의 매칭현황" />
+      <TeamMatchingHeader
+        backHref="/team-matching"
+        preferHistoryBack={preferHistoryBack}
+        title="나의 매칭현황"
+      />
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-4 pb-[116px]">
         <MatchingSummaryCard todayMatchingResult={todayMatchingResult} />

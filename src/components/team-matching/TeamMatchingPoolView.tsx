@@ -17,6 +17,7 @@ import {
 const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
 
 type TeamMatchingPoolViewProps = {
+  preferHistoryBack?: boolean;
   showCancelAction?: boolean;
   showCancelModal?: boolean;
   todayApplication?: TodayMatchingApplication;
@@ -221,6 +222,7 @@ function MatchingProgressBar({
 }
 
 export default function TeamMatchingPoolView({
+  preferHistoryBack = false,
   showCancelAction = true,
   showCancelModal = false,
   todayApplication,
@@ -255,7 +257,11 @@ export default function TeamMatchingPoolView({
         width={390}
       />
 
-      <TeamMatchingHeader backHref="/team-matching" className="relative z-10 bg-white" />
+      <TeamMatchingHeader
+        backHref="/team-matching"
+        className="relative z-10 bg-white"
+        preferHistoryBack={preferHistoryBack}
+      />
 
       <div className="scrollbar-hidden relative min-h-0 flex-1 overflow-y-auto px-4 pb-6">
         <section className="relative z-10 pt-[51px] text-center">

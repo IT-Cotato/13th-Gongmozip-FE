@@ -8,10 +8,20 @@ import {
   PassIllustration,
 } from "@/components/team-matching/TeamMatchingPassView";
 
-export default function TeamMatchingUnmatchedView() {
+type TeamMatchingUnmatchedViewProps = {
+  preferHistoryBack?: boolean;
+};
+
+export default function TeamMatchingUnmatchedView({
+  preferHistoryBack = false,
+}: TeamMatchingUnmatchedViewProps) {
   return (
     <main className="relative flex h-full w-full flex-col overflow-x-hidden overflow-y-auto bg-white text-[#1F1F1F]">
-      <TeamMatchingHeader backHref="/team-matching" title="나의 매칭현황" />
+      <TeamMatchingHeader
+        backHref="/team-matching"
+        preferHistoryBack={preferHistoryBack}
+        title="나의 매칭현황"
+      />
 
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-6">
         <section className="pt-[52px] text-center">

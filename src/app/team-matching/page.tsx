@@ -2,24 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import TeamMatchingApplyLink, {
   useIsMatchingApplicationClosedTime,
 } from "@/components/team-matching/TeamMatchingApplyLink";
 import { ApiError } from "@/lib/http";
-import { getMatchingResultPublishAt } from "@/lib/matchingSchedule";
+import { formatParticipantCount, useCountdownState } from "@/lib/teamMatchingCountdown";
 import {
   getTeamMatchingApplyHref,
   getTeamMatchingPrimaryReason,
   hasTeamMatchingActionableBlockingReason,
   teamMatchingBlockingReasonMessages,
 } from "@/lib/teamMatchingApply";
-import {
-  type MatchingEligibility,
-  useMatchingEligibilityQuery,
-} from "@/queries/useMatchingEligibilityQuery";
+import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
 import {
   type MatchingParticipantCount,
   useMatchingParticipantCountQuery,
@@ -29,13 +26,6 @@ import {
   type TodayMatchingApplication,
   useTodayMatchingApplicationQuery,
 } from "@/queries/useTodayMatchingApplicationQuery";
-
-const fallbackCountdownDigits = ["0", "0", "0", "0", "0", "0"];
-const countdownLabels = {
-  application: "팀원 매칭 마감까지",
-  publish: "매칭 결과 발표까지",
-  next: "다음 매칭 신청 접수 중",
-} as const;
 
 const todayApplicationStatusMessages: Record<MatchingApplicationStatus, string> = {
   NONE: "아직 오늘 신청한 매칭이 없어요.",
@@ -50,49 +40,6 @@ const todayApplicationStatusMessages: Record<MatchingApplicationStatus, string> 
   EXPIRED: "오늘 매칭 응답 시간이 종료됐어요.",
 };
 
-function formatParticipantCount(participantCount?: number) {
-  if (typeof participantCount !== "number") {
-    return "---";
-  }
-
-  return participantCount.toLocaleString("ko-KR");
-}
-
-function getTimestamp(dateTime?: string) {
-  if (!dateTime) {
-    return null;
-  }
-
-  const timestamp = new Date(dateTime).getTime();
-
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function getRemainingSeconds(deadlineAt?: string, baseTime = Date.now()) {
-  if (!deadlineAt) {
-    return 0;
-  }
-
-  const deadlineTime = getTimestamp(deadlineAt);
-
-  if (deadlineTime === null) {
-    return 0;
-  }
-
-  return Math.max(0, Math.floor((deadlineTime - baseTime) / 1000));
-}
-
-function getCountdownDigits(deadlineAt?: string, baseTime?: number) {
-  const remainingSeconds = getRemainingSeconds(deadlineAt, baseTime);
-  const hours = Math.floor(remainingSeconds / 3600);
-  const minutes = Math.floor((remainingSeconds % 3600) / 60);
-  const seconds = remainingSeconds % 60;
-
-  return `${String(hours).padStart(2, "0")}${String(minutes).padStart(2, "0")}${String(
-    seconds,
-  ).padStart(2, "0")}`.split("");
-}
-
 function getTodayApplicationStatusMessage(todayApplication?: TodayMatchingApplication) {
   if (!todayApplication) {
     return null;
@@ -103,85 +50,6 @@ function getTodayApplicationStatusMessage(todayApplication?: TodayMatchingApplic
   }
 
   return todayApplicationStatusMessages[todayApplication.status];
-}
-
-function getServerOffsetMs(serverTime?: string) {
-  const serverTimestamp = getTimestamp(serverTime);
-
-  return serverTimestamp === null ? 0 : serverTimestamp - Date.now();
-}
-
-function getCountdownState(
-  participantCountData?: MatchingParticipantCount,
-  fallbackDeadlineAt?: string,
-  nowOnServer = Date.now(),
-) {
-  if (!participantCountData) {
-    return {
-      deadlineAt: fallbackDeadlineAt,
-      label: countdownLabels.application,
-    };
-  }
-
-  const applicationDeadlineAt = participantCountData.applicationDeadlineAt;
-  const resultPublishAt =
-    getMatchingResultPublishAt(applicationDeadlineAt) ?? participantCountData.resultPublishAt;
-  const deadlineLeftMs = (getTimestamp(applicationDeadlineAt) ?? 0) - nowOnServer;
-  const publishLeftMs = (getTimestamp(resultPublishAt) ?? 0) - nowOnServer;
-
-  if (deadlineLeftMs > 0) {
-    return {
-      deadlineAt: applicationDeadlineAt,
-      label: countdownLabels.application,
-    };
-  }
-
-  if (publishLeftMs > 0) {
-    return {
-      deadlineAt: resultPublishAt,
-      label: countdownLabels.publish,
-    };
-  }
-
-  return {
-    deadlineAt: undefined,
-    label: countdownLabels.next,
-  };
-}
-
-function useCountdownState(
-  participantCountData?: MatchingParticipantCount,
-  fallbackDeadlineAt?: string,
-) {
-  const serverOffsetMs = useMemo(
-    () => getServerOffsetMs(participantCountData?.serverTime),
-    [participantCountData?.serverTime],
-  );
-  const [baseTime, setBaseTime] = useState(Date.now);
-
-  useEffect(() => {
-    if (!participantCountData && !fallbackDeadlineAt) {
-      return;
-    }
-
-    const timerId = window.setInterval(() => {
-      setBaseTime(Date.now());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timerId);
-    };
-  }, [fallbackDeadlineAt, participantCountData]);
-
-  const nowOnServer = baseTime + serverOffsetMs;
-  const countdownState = getCountdownState(participantCountData, fallbackDeadlineAt, nowOnServer);
-
-  return {
-    label: countdownState.label,
-    digits: countdownState.deadlineAt
-      ? getCountdownDigits(countdownState.deadlineAt, nowOnServer)
-      : fallbackCountdownDigits,
-  };
 }
 
 function CountdownCard({

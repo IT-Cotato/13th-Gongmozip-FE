@@ -26,16 +26,22 @@ function StatusFeedbackView({
   actionHref,
   actionLabel,
   message,
+  preferHistoryBack = false,
   title,
 }: {
   actionHref?: string;
   actionLabel?: string;
   message: string;
+  preferHistoryBack?: boolean;
   title: string;
 }) {
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
-      <TeamMatchingHeader backHref="/team-matching" title="나의 매칭현황" />
+      <TeamMatchingHeader
+        backHref="/team-matching"
+        preferHistoryBack={preferHistoryBack}
+        title="나의 매칭현황"
+      />
 
       <section className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-20 text-center">
         <h1 className="font-[Pretendard] text-[20px] font-bold leading-[135%] text-[#1F1F1F]">
@@ -80,7 +86,10 @@ function isConfirmedMatching(todayMatchingResult: TodayMatchingResult) {
   );
 }
 
-function getApplicationStatusView(todayApplication: TodayMatchingApplication | undefined) {
+function getApplicationStatusView(
+  todayApplication: TodayMatchingApplication | undefined,
+  preferHistoryBack = false,
+) {
   if (!todayApplication?.appliedToday) {
     return null;
   }
@@ -88,16 +97,23 @@ function getApplicationStatusView(todayApplication: TodayMatchingApplication | u
   switch (todayApplication.status) {
     case "WAITING":
     case "MATCHING":
-      return <TeamMatchingPoolView showCancelAction={false} todayApplication={todayApplication} />;
+      return (
+        <TeamMatchingPoolView
+          preferHistoryBack={preferHistoryBack}
+          showCancelAction={false}
+          todayApplication={todayApplication}
+        />
+      );
     case "REASSIGN_PENDING":
       return (
         <TeamMatchingAcceptWaitingView
+          preferHistoryBack={preferHistoryBack}
           showCancelAction={false}
           todayApplication={todayApplication}
         />
       );
     case "PASSED":
-      return <TeamMatchingPassView />;
+      return <TeamMatchingPassView preferHistoryBack={preferHistoryBack} />;
     default:
       return null;
   }
@@ -122,8 +138,10 @@ function useHasTeamMatchingCompletionHydrated() {
 }
 
 function ConfirmedMatchingStatusView({
+  preferHistoryBack = false,
   todayMatchingResult,
 }: {
+  preferHistoryBack?: boolean;
   todayMatchingResult: TodayMatchingResult;
 }) {
   const hasHydrated = useHasTeamMatchingCompletionHydrated();
@@ -169,34 +187,46 @@ function ConfirmedMatchingStatusView({
     return (
       <StatusFeedbackView
         message="완료된 매칭 상태를 확인하고 있어요."
+        preferHistoryBack={preferHistoryBack}
         title="잠시만 기다려주세요"
       />
     );
   }
 
   if (shouldShowCompletion) {
-    return <TeamMatchingCompleteView />;
+    return <TeamMatchingCompleteView preferHistoryBack={preferHistoryBack} />;
   }
 
-  return <TeamMatchingStatusEmptyView />;
+  return <TeamMatchingStatusEmptyView preferHistoryBack={preferHistoryBack} />;
 }
 
 function getStatusView(
   todayMatchingResult: TodayMatchingResult,
   todayApplication: TodayMatchingApplication | undefined,
+  preferHistoryBack = false,
 ) {
   if (todayMatchingResult.resultStatus === "NOT_APPLIED") {
-    return getApplicationStatusView(todayApplication) ?? <TeamMatchingStatusEmptyView />;
+    return (
+      getApplicationStatusView(todayApplication, preferHistoryBack) ?? (
+        <TeamMatchingStatusEmptyView preferHistoryBack={preferHistoryBack} />
+      )
+    );
   }
 
   if (todayMatchingResult.resultStatus === "MATCHED") {
     if (isConfirmedMatching(todayMatchingResult)) {
-      return <ConfirmedMatchingStatusView todayMatchingResult={todayMatchingResult} />;
+      return (
+        <ConfirmedMatchingStatusView
+          preferHistoryBack={preferHistoryBack}
+          todayMatchingResult={todayMatchingResult}
+        />
+      );
     }
 
     if (todayMatchingResult.myResponseStatus === "ACCEPTED") {
       return (
         <TeamMatchingAcceptWaitingView
+          preferHistoryBack={preferHistoryBack}
           showCancelAction={false}
           todayMatchingResult={todayMatchingResult}
         />
@@ -204,10 +234,15 @@ function getStatusView(
     }
 
     if (todayMatchingResult.myResponseStatus === "PASSED") {
-      return <TeamMatchingPassView />;
+      return <TeamMatchingPassView preferHistoryBack={preferHistoryBack} />;
     }
 
-    return <TeamMatchingStatusResultView todayMatchingResult={todayMatchingResult} />;
+    return (
+      <TeamMatchingStatusResultView
+        preferHistoryBack={preferHistoryBack}
+        todayMatchingResult={todayMatchingResult}
+      />
+    );
   }
 
   switch (todayMatchingResult.resultStatus) {
@@ -215,16 +250,17 @@ function getStatusView(
     case "PROCESSING":
       return (
         <TeamMatchingPoolView
+          preferHistoryBack={preferHistoryBack}
           showCancelAction={false}
           todayApplication={todayApplication}
         />
       );
     case "UNMATCHED":
-      return <TeamMatchingUnmatchedView />;
+      return <TeamMatchingUnmatchedView preferHistoryBack={preferHistoryBack} />;
     case "WITHDRAWN":
-      return <TeamMatchingPassView />;
+      return <TeamMatchingPassView preferHistoryBack={preferHistoryBack} />;
     default:
-      return <TeamMatchingStatusEmptyView />;
+      return <TeamMatchingStatusEmptyView preferHistoryBack={preferHistoryBack} />;
   }
 }
 
@@ -244,13 +280,14 @@ export default function TeamMatchingStatusRouterView() {
     return (
       <StatusFeedbackView
         message="오늘의 매칭 신청 상태를 확인하고 있어요."
+        preferHistoryBack
         title="잠시만 기다려주세요"
       />
     );
   }
 
   if (isError || !todayMatchingResult) {
-    const fallbackStatusView = getApplicationStatusView(todayApplication);
+    const fallbackStatusView = getApplicationStatusView(todayApplication, true);
 
     if (fallbackStatusView) {
       return fallbackStatusView;
@@ -265,6 +302,7 @@ export default function TeamMatchingStatusRouterView() {
             ? "로그인 후 나의 매칭현황을 확인할 수 있어요."
             : "매칭 신청 상태를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요."
         }
+        preferHistoryBack
         title="상태 확인 실패"
       />
     );
@@ -278,6 +316,7 @@ export default function TeamMatchingStatusRouterView() {
     return (
       <StatusFeedbackView
         message="오늘의 매칭 신청 상태를 확인하고 있어요."
+        preferHistoryBack
         title="잠시만 기다려주세요"
       />
     );
@@ -293,10 +332,11 @@ export default function TeamMatchingStatusRouterView() {
             ? "로그인 후 나의 매칭현황을 확인할 수 있어요."
             : "매칭 신청 상태를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요."
         }
+        preferHistoryBack
         title="상태 확인 실패"
       />
     );
   }
 
-  return getStatusView(todayMatchingResult, todayApplication);
+  return getStatusView(todayMatchingResult, todayApplication, true);
 }
