@@ -79,8 +79,10 @@ export default function CollaborationTypeResultLoadingPage() {
     retry: shouldRetrySurveyResultQuery,
     enabled: shouldLoadExistingResult,
   });
-  const existingResultHref = existingResultQuery.data
-    ? `/collaboration-type/results/${existingResultQuery.data.characterType}`
+  const loadedExistingResult =
+    shouldLoadExistingResult && submitState.status === "idle" ? existingResultQuery.data : null;
+  const existingResultHref = loadedExistingResult
+    ? `/collaboration-type/results/${loadedExistingResult.characterType}`
     : null;
   const activeResultHref = resultHref ?? existingResultHref;
   const submitError =
@@ -109,8 +111,8 @@ export default function CollaborationTypeResultLoadingPage() {
   const isSubmitted =
     submitState.status === "success" ||
     submitState.status === "existing" ||
-    Boolean(existingResultQuery.data);
-  const hasExistingResult = submitState.status === "existing" || Boolean(existingResultQuery.data);
+    Boolean(loadedExistingResult);
+  const hasExistingResult = submitState.status === "existing" || Boolean(loadedExistingResult);
   const hasSubmitError = Boolean(submitError) && !isNoExistingSurveyResult;
 
   useEffect(() => {

@@ -15,6 +15,7 @@ import {
   type BirthdateError,
 } from "./_lib/birthdate";
 import { useSignupMutation } from "@/queries/useSignupMutation";
+import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
 import { useSendVerificationCodeMutation } from "@/queries/useSendVerificationCodeMutation";
 import { useVerifyEmailCodeMutation } from "@/queries/useVerifyEmailCodeMutation";
 import { ApiError } from "@/lib/http";
@@ -88,6 +89,7 @@ function SignupPageInner() {
   const [sendCodeError, setSendCodeError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const signupMutation = useSignupMutation();
+  const resetCollaborationTest = useCollaborationTestStore((state) => state.resetCollaborationTest);
   const sendCodeMutation = useSendVerificationCodeMutation();
   const verifyCodeMutation = useVerifyEmailCodeMutation();
 
@@ -219,7 +221,10 @@ function SignupPageInner() {
           birthDate: `${birthdate.slice(0, 4)}-${birthdate.slice(4, 6)}-${birthdate.slice(6, 8)}`,
         },
         {
-          onSuccess: () => router.push("/signup/complete"),
+          onSuccess: () => {
+            resetCollaborationTest();
+            router.push("/signup/complete");
+          },
           onError: (error) => {
             if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
               setServerEmailDuplicate(true);
