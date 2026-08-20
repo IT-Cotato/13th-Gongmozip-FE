@@ -4,7 +4,15 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import type { COLLABORATION_RESULT_TYPES } from "../../_data/collaborationTest";
+import { useSurveyResultQuery } from "@/queries/useSurveyResultQuery";
+
+import {
+  getCollaborationDisplayTraits,
+  normalizeCollaborationCharacterType,
+  type COLLABORATION_RESULT_TYPES,
+  type CollaborationCharacterType,
+  type CollaborationDisplayTrait,
+} from "../../_data/collaborationTest";
 
 type CollaborationResult = (typeof COLLABORATION_RESULT_TYPES)[number];
 
@@ -70,7 +78,10 @@ async function loadImage(src: string) {
   return image;
 }
 
-async function saveResultImage(result: CollaborationResult) {
+async function saveResultImage(
+  result: CollaborationResult,
+  traits: readonly CollaborationDisplayTrait[],
+) {
   await document.fonts.ready;
 
   const pixelRatio = Math.max(window.devicePixelRatio || 1, 2);
@@ -131,7 +142,7 @@ async function saveResultImage(result: CollaborationResult) {
   context.font = "600 13px Pretendard, sans-serif";
   context.fillText("당신의 협업스타일의 특징은?", featureBoxX + 14, featureBoxY + 18);
 
-  result.traits.forEach((trait, traitIndex) => {
+  traits.forEach((trait, traitIndex) => {
     const y = featureBoxY + 45 + traitIndex * 23;
     const barX = featureBoxX + 62;
     const barY = y - 3;
@@ -147,7 +158,7 @@ async function saveResultImage(result: CollaborationResult) {
     context.fillStyle = "rgba(97, 97, 97, 0.1)";
     context.fill();
 
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < trait.filledSegmentCount; index += 1) {
       const segmentX = barX + index * segmentWidth;
 
       context.fillStyle = result.traitBarColor;
@@ -181,6 +192,15 @@ export default function CollaborationTypeResultPageContent({
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const { data: surveyResult } = useSurveyResultQuery();
+  const isSameCharacterType =
+    surveyResult?.characterType &&
+    normalizeCollaborationCharacterType(surveyResult.characterType as CollaborationCharacterType) ===
+      result.characterType;
+  const traits = getCollaborationDisplayTraits(
+    result,
+    isSameCharacterType ? surveyResult.axes : null,
+  );
 
   const handleLeave = () => {
     const returnTo = window.sessionStorage.getItem(COLLABORATION_TYPE_RETURN_TO_STORAGE_KEY);
@@ -214,7 +234,7 @@ export default function CollaborationTypeResultPageContent({
     setSaveError(null);
 
     try {
-      await saveResultImage(result);
+      await saveResultImage(result, traits);
     } catch {
       setSaveError("결과 이미지를 저장하지 못했어요. 다시 시도해 주세요.");
     } finally {
@@ -285,7 +305,7 @@ export default function CollaborationTypeResultPageContent({
             </h3>
 
             <div className="flex w-full flex-col gap-[8px]">
-              {result.traits.map((trait) => (
+              {traits.map((trait) => (
                 <div
                   className="grid grid-cols-[40px_1fr_40px] items-center gap-[8px]"
                   key={trait.left}
@@ -306,7 +326,9 @@ export default function CollaborationTypeResultPageContent({
                         key={index}
                         style={{
                           backgroundColor:
-                            index < 4 ? result.traitBarColor : "rgba(97, 97, 97, 0.1)",
+                            index < trait.filledSegmentCount
+                              ? result.traitBarColor
+                              : "rgba(97, 97, 97, 0.1)",
                         }}
                       />
                     ))}

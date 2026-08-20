@@ -2,12 +2,15 @@
 
 import Image from "next/image";
 
-import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
-import { useMyCharacterQuery } from "@/queries/useMyCharacterQuery";
 import {
+  getCollaborationDisplayTraits,
   getCollaborationResultByCharacterType,
+  normalizeCollaborationCharacterType,
   type CollaborationCharacterType,
 } from "@/app/collaboration-type/_data/collaborationTest";
+import TeamMatchingStepLayout from "@/components/team-matching/TeamMatchingStepLayout";
+import { useMyCharacterQuery } from "@/queries/useMyCharacterQuery";
+import { useSurveyResultQuery } from "@/queries/useSurveyResultQuery";
 
 function formatSubmittedAt(submittedAt: string) {
   const date = new Date(submittedAt);
@@ -29,9 +32,18 @@ function formatSubmittedAt(submittedAt: string) {
 
 export default function TeamMatchingCollaborationTypePage() {
   const { data: character, isError, isLoading } = useMyCharacterQuery();
+  const { data: surveyResult } = useSurveyResultQuery();
   const result = character
     ? getCollaborationResultByCharacterType(character.characterType as CollaborationCharacterType)
     : undefined;
+  const isSameCharacterType =
+    result &&
+    surveyResult?.characterType &&
+    normalizeCollaborationCharacterType(surveyResult.characterType as CollaborationCharacterType) ===
+      result.characterType;
+  const traits = result
+    ? getCollaborationDisplayTraits(result, isSameCharacterType ? surveyResult.axes : null)
+    : [];
   const submittedAtText = character?.submittedAt
     ? formatSubmittedAt(character.submittedAt)
     : null;
@@ -120,7 +132,7 @@ export default function TeamMatchingCollaborationTypePage() {
               </h4>
 
               <div className="flex w-full flex-col gap-[8px]">
-                {result.traits.map((trait) => (
+                {traits.map((trait) => (
                   <div
                     className="grid grid-cols-[40px_1fr_40px] items-center gap-[8px]"
                     key={trait.left}
@@ -141,7 +153,9 @@ export default function TeamMatchingCollaborationTypePage() {
                           key={index}
                           style={{
                             backgroundColor:
-                              index < 4 ? result.traitBarColor : "rgba(97, 97, 97, 0.1)",
+                              index < trait.filledSegmentCount
+                                ? result.traitBarColor
+                                : "rgba(97, 97, 97, 0.1)",
                           }}
                         />
                       ))}

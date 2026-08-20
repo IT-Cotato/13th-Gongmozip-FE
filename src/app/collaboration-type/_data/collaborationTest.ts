@@ -222,6 +222,47 @@ export const COLLABORATION_RESULT_TYPES = [
 
 export type CollaborationResultType = (typeof COLLABORATION_RESULT_TYPES)[number]["id"];
 
+type CollaborationAxis = {
+  leftLabel: string;
+  rightLabel: string;
+  score: number;
+};
+
+export type CollaborationDisplayTrait = {
+  left: string;
+  right: string;
+  filledSegmentCount: number;
+};
+
+export function getTraitFilledSegmentCount(score: number) {
+  if (!Number.isFinite(score)) {
+    return 0;
+  }
+
+  const segmentCount = score <= 5 ? Math.round(score) : Math.round(score / 20);
+
+  return Math.min(5, Math.max(0, segmentCount));
+}
+
+export function getCollaborationDisplayTraits(
+  result: (typeof COLLABORATION_RESULT_TYPES)[number],
+  axes?: readonly CollaborationAxis[] | null,
+): CollaborationDisplayTrait[] {
+  if (axes && axes.length > 0) {
+    return axes.slice(0, result.traits.length).map((axis) => ({
+      left: axis.leftLabel,
+      right: axis.rightLabel,
+      filledSegmentCount: getTraitFilledSegmentCount(axis.score),
+    }));
+  }
+
+  return result.traits.map((trait) => ({
+    left: trait.left,
+    right: trait.right,
+    filledSegmentCount: getTraitFilledSegmentCount(trait.percentage),
+  }));
+}
+
 export function normalizeCollaborationCharacterType(characterType: CollaborationCharacterType) {
   return characterType === "BOOSTER_RUNNER" ? "BOOST_RUNNER" : characterType;
 }
