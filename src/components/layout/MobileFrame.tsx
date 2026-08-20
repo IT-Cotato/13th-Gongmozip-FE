@@ -27,7 +27,6 @@ export default function MobileFrame({ children }: MobileFrameProps) {
 
     updateViewportHeight();
     viewport?.addEventListener("resize", updateViewportHeight);
-    viewport?.addEventListener("scroll", updateViewportHeight);
     window.addEventListener("resize", updateViewportHeight);
     window.addEventListener("orientationchange", updateViewportHeight);
 
@@ -37,7 +36,6 @@ export default function MobileFrame({ children }: MobileFrameProps) {
       }
 
       viewport?.removeEventListener("resize", updateViewportHeight);
-      viewport?.removeEventListener("scroll", updateViewportHeight);
       window.removeEventListener("resize", updateViewportHeight);
       window.removeEventListener("orientationchange", updateViewportHeight);
     };
