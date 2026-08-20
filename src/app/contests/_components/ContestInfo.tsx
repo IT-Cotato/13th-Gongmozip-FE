@@ -260,7 +260,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
         </div>
       </div>
 
-      <div className="mt-[27px] flex flex-1 flex-col items-start gap-2 self-stretch bg-white px-6 py-4">
+      <div className="mt-[27px] flex flex-1 flex-col items-start gap-2 self-stretch bg-white px-6 pt-4 pb-[122px]">
         <div className="flex w-full items-start justify-between">
           <span className="inline-flex items-center justify-center rounded bg-color-coral-500 px-4 py-1 text-[15px] leading-[125%] font-semibold text-white">
             {contest.dDay}
@@ -403,32 +403,33 @@ export function ContestInfo({ contest }: ContestInfoProps) {
           )}
         </div>
 
-        <div className="mt-[18px] flex w-full items-start gap-[13px] self-stretch bg-white">
-          <button
-            type="button"
-            aria-label="공모전 공유하기"
-            className="relative flex h-[47px] w-12 shrink-0 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)] aspect-[48/47]"
-            disabled={isWebSharePending}
-            onClick={() => {
-              void handleWebShareClick();
-            }}
-          >
-            <Image
-              src="/icons/contests/Button/Button/Button/_Asset/share.svg"
-              alt=""
-              width={24}
-              height={24}
-              className="absolute left-3 top-[11.75px] h-[23.5px] w-6 shrink-0"
-            />
-          </button>
-          <button
-            type="button"
-            className="flex h-[50px] min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-center text-[17px] leading-[125%] font-semibold whitespace-nowrap text-white"
-            onClick={() => setIsShareModalOpen(true)}
-          >
-            채팅방에 공유하기
-          </button>
-        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-1/2 z-20 flex w-full max-w-[390px] -translate-x-1/2 items-start gap-[13px] bg-white px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+        <button
+          type="button"
+          aria-label="공모전 공유하기"
+          className="relative flex h-[47px] w-12 shrink-0 flex-col items-start justify-center gap-2.5 rounded-2xl bg-[rgba(97,97,97,0.10)] aspect-[48/47]"
+          disabled={isWebSharePending}
+          onClick={() => {
+            void handleWebShareClick();
+          }}
+        >
+          <Image
+            src="/icons/contests/Button/Button/Button/_Asset/share.svg"
+            alt=""
+            width={24}
+            height={24}
+            className="absolute left-3 top-[11.75px] h-[23.5px] w-6 shrink-0"
+          />
+        </button>
+        <button
+          type="button"
+          className="flex h-[50px] min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-2.5 py-[9px] text-center text-[17px] leading-[125%] font-semibold whitespace-nowrap text-white"
+          onClick={() => setIsShareModalOpen(true)}
+        >
+          채팅방에 공유하기
+        </button>
       </div>
 
       <ShareContestModal
