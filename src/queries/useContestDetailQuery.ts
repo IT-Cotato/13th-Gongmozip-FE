@@ -58,6 +58,8 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     organizer: contest.hostName,
     category: getContestCategoryLabel(contest.category),
     dDay: formatDday(contest.daysRemaining),
+    daysRemaining: contest.daysRemaining,
+    status: normalizeContestStatus(contest.status),
     viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",
     isScrapped: contest.isScrapped ?? false,
@@ -75,6 +77,14 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     websiteUrl: contest.sourceUrl ?? "",
     detailImageUrls: contest.detailImageUrls ?? [],
   };
+}
+
+function normalizeContestStatus(status: ContestStatus | string): ContestStatus {
+  if (status === "UPCOMING" || status === "OPEN" || status === "CLOSED") {
+    return status;
+  }
+
+  return "OPEN";
 }
 
 function formatDday(daysRemaining: number) {

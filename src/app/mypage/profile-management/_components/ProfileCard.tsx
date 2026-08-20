@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Toggle } from "@/app/mypage/settings/_components/Toggle";
 import type { ProfilePreview } from "@/queries/useProfilePreviewQuery";
+import { fetchProfileDetail, profileDetailQueryKey } from "@/queries/useProfileDetailQuery";
+import { useProfileDraftStore } from "@/stores/profileDraftStore";
+import { buildProfileDraftFromDetail } from "../_lib/profileDraft";
 
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
@@ -26,15 +31,46 @@ export function ProfileCard({
   onDelete,
 }: ProfileCardProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const setBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
+  const setProjects = useProfileDraftStore((state) => state.setProjects);
+  const setCertificates = useProfileDraftStore((state) => state.setCertificates);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const setEditingExistingProfile = useProfileDraftStore(
+    (state) => state.setEditingExistingProfile,
+  );
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  const [editError, setEditError] = useState(false);
   const projectNames = preview.projectSummaries.map((project) => project.projectName);
 
   function handleCardClick() {
     router.push(`/mypage/profile-management/${preview.profileId}`);
   }
 
-  function handleEditClick(event: React.MouseEvent) {
+  async function handleEditClick(event: React.MouseEvent) {
     event.stopPropagation();
-    router.push(`/mypage/profile-management/${preview.profileId}`);
+    if (isLoadingEdit) return;
+
+    const profileId = String(preview.profileId);
+    setIsLoadingEdit(true);
+    setEditError(false);
+
+    try {
+      const profile = await queryClient.fetchQuery({
+        queryKey: profileDetailQueryKey(profileId),
+        queryFn: () => fetchProfileDetail(profileId),
+      });
+      const draft = buildProfileDraftFromDetail(profile);
+      setBasicInfo(draft.basicInfo);
+      setProjects(() => draft.projects);
+      setCertificates(() => draft.certificates);
+      setEditingProfileId(profile.profileId);
+      setEditingExistingProfile(true);
+      router.push("/mypage/profile-management/new");
+    } catch {
+      setEditError(true);
+      setIsLoadingEdit(false);
+    }
   }
 
   return (
@@ -95,11 +131,17 @@ export function ProfileCard({
         <button
           type="button"
           onClick={handleEditClick}
-          className="flex h-full flex-1 items-center justify-center p-[10px] text-[15px] font-medium text-[#616161]"
+          disabled={isLoadingEdit}
+          className="flex h-full flex-1 items-center justify-center p-[10px] text-[15px] font-medium text-[#616161] disabled:opacity-50"
         >
-          수정
+          {isLoadingEdit ? "불러오는 중..." : "수정"}
         </button>
       </div>
+      {editError && (
+        <p role="alert" className="w-full px-5 pb-3 text-xs text-[#BB5260]">
+          프로필 정보를 불러오지 못했어요. 다시 시도해주세요.
+        </p>
+      )}
     </div>
   );
 }

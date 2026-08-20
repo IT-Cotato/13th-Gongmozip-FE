@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { HeaderIconButton } from "@/components/layout/HeaderIconButton";
 import { ChevronLeftIcon } from "./_components/icons";
 import { SuccessModal } from "./_components/SuccessModal";
 import { LeaveConfirmModal } from "./_components/LeaveConfirmModal";
@@ -148,7 +149,9 @@ function ContactPageInner() {
         onSuccess: () => setShowSuccessModal(true),
         onError: (error) => {
           setSubmitError(
-            error instanceof ApiError ? error.message : "문의 접수에 실패했어요. 다시 시도해주세요.",
+            error instanceof ApiError
+              ? error.message
+              : "문의 접수에 실패했어요. 다시 시도해주세요.",
           );
         },
       },
@@ -241,15 +244,10 @@ function ContactPageInner() {
 
   return (
     <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
-      <div className="relative flex items-center justify-center px-4 py-1">
-        <button
-          type="button"
-          onClick={handleBack}
-          aria-label="뒤로가기"
-          className="absolute left-4 flex h-6 w-6 items-center justify-center"
-        >
+      <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
+        <HeaderIconButton onClick={handleBack} aria-label="뒤로가기" className="absolute left-4">
           <ChevronLeftIcon />
-        </button>
+        </HeaderIconButton>
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111111]">문의하기</h1>
       </div>
 

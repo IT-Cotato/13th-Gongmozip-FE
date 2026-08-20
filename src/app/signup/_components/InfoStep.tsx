@@ -57,15 +57,16 @@ export function InfoStep({
         />
       </div>
 
-      <label className="mb-2 block text-sm font-medium text-gray-800">
+      <label htmlFor="birthdate" className="mb-2 block text-sm font-medium text-gray-800">
         생년월일<span className="text-[#FF7658]">*</span>
       </label>
       <input
+        id="birthdate"
         inputMode="numeric"
         value={birthdateDisplay}
         onChange={(e) => onChangeBirthdate(e.target.value.replace(/\D/g, "").slice(0, 8))}
         placeholder="YYYY/MM/DD"
-        className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${
+        className={`w-full rounded-xl border px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 ${
           birthdateError ? "border-[#FF5A5A] bg-white" : "border-transparent bg-gray-100"
         }`}
       />

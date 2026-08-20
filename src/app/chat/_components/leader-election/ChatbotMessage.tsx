@@ -210,16 +210,10 @@ export function ChatbotAvatar() {
   );
 }
 
-export function MessageMeta({
-  sentAt = "오후 8:28",
-  unreadLabel = "1",
-}: {
-  sentAt?: string;
-  unreadLabel?: string;
-}) {
+export function MessageMeta({ sentAt, unreadLabel }: { sentAt?: string; unreadLabel?: string }) {
   return (
     <span className="flex shrink-0 items-end gap-2 text-[12px] leading-[1.35]">
-      <span className="text-color-gray-650">{sentAt}</span>
+      {sentAt ? <span className="text-color-gray-650">{sentAt}</span> : null}
       {unreadLabel ? <span className="text-color-coral-500">{unreadLabel}</span> : null}
     </span>
   );

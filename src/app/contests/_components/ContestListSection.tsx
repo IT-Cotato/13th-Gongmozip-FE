@@ -38,6 +38,7 @@ export function ContestListSection() {
     () => ({
       keyword: deferredSearchKeyword.trim() || undefined,
       category: contestCategoryApiValues[selectedCategory],
+      status: "OPEN" as const,
       sort: sortApiValues[selectedSort],
       page: 0,
       size: 20,
@@ -57,11 +58,19 @@ export function ContestListSection() {
     enabled: isAuthenticated,
   });
   const contests = useMemo(
-    () => data?.pages.flatMap((pageData) => pageData.contests) ?? [],
+    () =>
+      data?.pages
+        .flatMap((pageData) => pageData.contests)
+        .filter(
+          (contest) =>
+            contest.status !== "CLOSED" &&
+            Number.isFinite(contest.daysRemaining) &&
+            contest.daysRemaining >= 0,
+        ) ??
+      [],
     [data?.pages],
   );
-  const totalElements = data?.pages.at(-1)?.totalElements ?? 0;
-  const hasMoreContests = contests.length < totalElements;
+  const hasMoreContests = Boolean(hasNextPage);
 
   return (
     <>

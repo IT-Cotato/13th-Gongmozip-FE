@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import TeamMatchingAcceptWaitingView from "@/components/team-matching/TeamMatchingAcceptWaitingView";
 import TeamMatchingCompleteView from "@/components/team-matching/TeamMatchingCompleteView";
@@ -12,6 +12,10 @@ import TeamMatchingStatusEmptyView from "@/components/team-matching/TeamMatching
 import TeamMatchingStatusResultView from "@/components/team-matching/TeamMatchingStatusResultView";
 import TeamMatchingUnmatchedView from "@/components/team-matching/TeamMatchingUnmatchedView";
 import { ApiError } from "@/lib/http";
+import {
+  type TodayMatchingApplication,
+  useTodayMatchingApplicationQuery,
+} from "@/queries/useTodayMatchingApplicationQuery";
 import {
   type TodayMatchingResult,
   useTodayMatchingResultQuery,
@@ -76,6 +80,29 @@ function isConfirmedMatching(todayMatchingResult: TodayMatchingResult) {
   );
 }
 
+function getApplicationStatusView(todayApplication: TodayMatchingApplication | undefined) {
+  if (!todayApplication?.appliedToday) {
+    return null;
+  }
+
+  switch (todayApplication.status) {
+    case "WAITING":
+    case "MATCHING":
+      return <TeamMatchingPoolView showCancelAction={false} todayApplication={todayApplication} />;
+    case "REASSIGN_PENDING":
+      return (
+        <TeamMatchingAcceptWaitingView
+          showCancelAction={false}
+          todayApplication={todayApplication}
+        />
+      );
+    case "PASSED":
+      return <TeamMatchingPassView />;
+    default:
+      return null;
+  }
+}
+
 function useHasTeamMatchingCompletionHydrated() {
   return useSyncExternalStore(
     (onStoreChange) => {
@@ -104,22 +131,39 @@ function ConfirmedMatchingStatusView({
   const markCompletionAsSeen = useTeamMatchingCompletionStore(
     (state) => state.markCompletionAsSeen,
   );
-  const visibleCompletionIdRef = useRef<string | null>(null);
+  const preserveVisibleCompletion = useTeamMatchingCompletionStore(
+    (state) => state.preserveVisibleCompletion,
+  );
+  const clearVisibleCompletion = useTeamMatchingCompletionStore(
+    (state) => state.clearVisibleCompletion,
+  );
+  const visibleCompletionId = useTeamMatchingCompletionStore((state) => state.visibleCompletionId);
   const completionId = getMatchingCompletionId(todayMatchingResult);
   const hasSeenCurrentCompletion = completionId ? hasSeenCompletion(completionId) : false;
   const shouldShowCompletion =
     Boolean(completionId) &&
     hasHydrated &&
-    (!hasSeenCurrentCompletion || visibleCompletionIdRef.current === completionId);
+    (!hasSeenCurrentCompletion || visibleCompletionId === completionId);
 
   useEffect(() => {
     if (!completionId || !hasHydrated || hasSeenCompletion(completionId)) {
       return;
     }
 
-    visibleCompletionIdRef.current = completionId;
+    preserveVisibleCompletion(completionId);
     markCompletionAsSeen(completionId);
-  }, [completionId, hasHydrated, hasSeenCompletion, markCompletionAsSeen]);
+
+    return () => {
+      clearVisibleCompletion(completionId);
+    };
+  }, [
+    clearVisibleCompletion,
+    completionId,
+    hasHydrated,
+    hasSeenCompletion,
+    markCompletionAsSeen,
+    preserveVisibleCompletion,
+  ]);
 
   if (!hasHydrated) {
     return (
@@ -137,9 +181,12 @@ function ConfirmedMatchingStatusView({
   return <TeamMatchingStatusEmptyView />;
 }
 
-function getStatusView(todayMatchingResult: TodayMatchingResult) {
+function getStatusView(
+  todayMatchingResult: TodayMatchingResult,
+  todayApplication: TodayMatchingApplication | undefined,
+) {
   if (todayMatchingResult.resultStatus === "NOT_APPLIED") {
-    return <TeamMatchingStatusEmptyView />;
+    return getApplicationStatusView(todayApplication) ?? <TeamMatchingStatusEmptyView />;
   }
 
   if (todayMatchingResult.resultStatus === "MATCHED") {
@@ -148,7 +195,12 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
     }
 
     if (todayMatchingResult.myResponseStatus === "ACCEPTED") {
-      return <TeamMatchingAcceptWaitingView todayMatchingResult={todayMatchingResult} />;
+      return (
+        <TeamMatchingAcceptWaitingView
+          showCancelAction={false}
+          todayMatchingResult={todayMatchingResult}
+        />
+      );
     }
 
     if (todayMatchingResult.myResponseStatus === "PASSED") {
@@ -161,7 +213,12 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
   switch (todayMatchingResult.resultStatus) {
     case "NOT_PUBLISHED":
     case "PROCESSING":
-      return <TeamMatchingPoolView />;
+      return (
+        <TeamMatchingPoolView
+          showCancelAction={false}
+          todayApplication={todayApplication}
+        />
+      );
     case "UNMATCHED":
       return <TeamMatchingUnmatchedView />;
     case "WITHDRAWN":
@@ -173,9 +230,17 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
 
 export default function TeamMatchingStatusRouterView() {
   const { data: todayMatchingResult, error, isError, isLoading } = useTodayMatchingResultQuery();
+  const {
+    data: todayApplication,
+    error: todayApplicationError,
+    isError: isTodayApplicationError,
+    isLoading: isTodayApplicationLoading,
+  } = useTodayMatchingApplicationQuery();
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const isTodayApplicationUnauthorized =
+    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
 
-  if (isLoading) {
+  if (isLoading || (isTodayApplicationLoading && !todayMatchingResult)) {
     return (
       <StatusFeedbackView
         message="오늘의 매칭 신청 상태를 확인하고 있어요."
@@ -185,12 +250,18 @@ export default function TeamMatchingStatusRouterView() {
   }
 
   if (isError || !todayMatchingResult) {
+    const fallbackStatusView = getApplicationStatusView(todayApplication);
+
+    if (fallbackStatusView) {
+      return fallbackStatusView;
+    }
+
     return (
       <StatusFeedbackView
-        actionHref={isUnauthorized ? "/login" : undefined}
-        actionLabel={isUnauthorized ? "로그인하기" : undefined}
+        actionHref={isUnauthorized || isTodayApplicationUnauthorized ? "/login" : undefined}
+        actionLabel={isUnauthorized || isTodayApplicationUnauthorized ? "로그인하기" : undefined}
         message={
-          isUnauthorized
+          isUnauthorized || isTodayApplicationUnauthorized
             ? "로그인 후 나의 매칭현황을 확인할 수 있어요."
             : "매칭 신청 상태를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요."
         }
@@ -199,5 +270,33 @@ export default function TeamMatchingStatusRouterView() {
     );
   }
 
-  return getStatusView(todayMatchingResult);
+  if (
+    todayMatchingResult.resultStatus === "NOT_APPLIED" &&
+    isTodayApplicationLoading &&
+    !isTodayApplicationError
+  ) {
+    return (
+      <StatusFeedbackView
+        message="오늘의 매칭 신청 상태를 확인하고 있어요."
+        title="잠시만 기다려주세요"
+      />
+    );
+  }
+
+  if (todayMatchingResult.resultStatus === "NOT_APPLIED" && isTodayApplicationError) {
+    return (
+      <StatusFeedbackView
+        actionHref={isTodayApplicationUnauthorized ? "/login" : undefined}
+        actionLabel={isTodayApplicationUnauthorized ? "로그인하기" : undefined}
+        message={
+          isTodayApplicationUnauthorized
+            ? "로그인 후 나의 매칭현황을 확인할 수 있어요."
+            : "매칭 신청 상태를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요."
+        }
+        title="상태 확인 실패"
+      />
+    );
+  }
+
+  return getStatusView(todayMatchingResult, todayApplication);
 }

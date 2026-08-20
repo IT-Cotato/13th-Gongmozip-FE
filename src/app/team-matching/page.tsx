@@ -5,11 +5,19 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import BottomNavigation from "@/components/layout/BottomNavigation";
+import TeamMatchingApplyLink, {
+  useIsMatchingApplicationClosedTime,
+} from "@/components/team-matching/TeamMatchingApplyLink";
 import { ApiError } from "@/lib/http";
 import { getMatchingResultPublishAt } from "@/lib/matchingSchedule";
 import {
+  getTeamMatchingApplyHref,
+  getTeamMatchingPrimaryReason,
+  hasTeamMatchingActionableBlockingReason,
+  teamMatchingBlockingReasonMessages,
+} from "@/lib/teamMatchingApply";
+import {
   type MatchingEligibility,
-  type MatchingEligibilityReason,
   useMatchingEligibilityQuery,
 } from "@/queries/useMatchingEligibilityQuery";
 import {
@@ -28,26 +36,6 @@ const countdownLabels = {
   publish: "매칭 결과 발표까지",
   next: "다음 매칭 신청 접수 중",
 } as const;
-
-const reasonPriority: MatchingEligibilityReason[] = [
-  "PROFILE_REQUIRED",
-  "SURVEY_REQUIRED",
-  "ALREADY_APPLIED_TODAY",
-  "MATCHING_RESTRICTED",
-  "APPLICATION_DEADLINE_PASSED",
-  "PROJECT_EVALUATION_NOT_READY",
-  "REASSIGNMENT_PENDING",
-];
-
-const blockingReasonMessages: Record<MatchingEligibilityReason, string> = {
-  PROFILE_REQUIRED: "프로필 작성 후 신청할 수 있어요.",
-  SURVEY_REQUIRED: "협업 유형 검사 후 신청할 수 있어요.",
-  APPLICATION_DEADLINE_PASSED: "오늘 매칭 신청이 마감됐어요.",
-  ALREADY_APPLIED_TODAY: "오늘은 이미 매칭을 신청했어요.",
-  MATCHING_RESTRICTED: "매칭 참여 제한 기간이에요.",
-  PROJECT_EVALUATION_NOT_READY: "프로젝트 AI 평가 완료 후 신청할 수 있어요.",
-  REASSIGNMENT_PENDING: "이전 매칭 응답 완료 후 신청할 수 있어요.",
-};
 
 const todayApplicationStatusMessages: Record<MatchingApplicationStatus, string> = {
   NONE: "아직 오늘 신청한 매칭이 없어요.",
@@ -103,59 +91,6 @@ function getCountdownDigits(deadlineAt?: string, baseTime?: number) {
   return `${String(hours).padStart(2, "0")}${String(minutes).padStart(2, "0")}${String(
     seconds,
   ).padStart(2, "0")}`.split("");
-}
-
-function getPrimaryReason(reasons: MatchingEligibilityReason[]) {
-  return reasonPriority.find((reason) => reasons.includes(reason));
-}
-
-function getApplyHref(eligibility?: MatchingEligibility) {
-  if (!eligibility) {
-    return "/team-matching/profile";
-  }
-
-  const reasons = eligibility.reasons;
-
-  if (eligibility.eligible || reasons.length === 0) {
-    return "/team-matching/profile";
-  }
-
-  if (reasons.includes("PROFILE_REQUIRED") && reasons.includes("SURVEY_REQUIRED")) {
-    return "/team-matching/modal-preview/all-required";
-  }
-
-  if (reasons.includes("PROFILE_REQUIRED")) {
-    return "/team-matching/modal-preview/profile-required";
-  }
-
-  if (reasons.includes("SURVEY_REQUIRED")) {
-    return "/team-matching/modal-preview/collaboration-test-required";
-  }
-
-  if (reasons.includes("ALREADY_APPLIED_TODAY")) {
-    return "/team-matching/modal-preview/already-applied";
-  }
-
-  if (reasons.includes("MATCHING_RESTRICTED")) {
-    return "/team-matching/modal-preview/weekly-limit";
-  }
-
-  return "/team-matching";
-}
-
-function hasActionableBlockingReason(eligibility?: MatchingEligibility) {
-  if (!eligibility || eligibility.eligible) {
-    return true;
-  }
-
-  return eligibility.reasons.some((reason) =>
-    [
-      "PROFILE_REQUIRED",
-      "SURVEY_REQUIRED",
-      "ALREADY_APPLIED_TODAY",
-      "MATCHING_RESTRICTED",
-    ].includes(reason),
-  );
 }
 
 function getTodayApplicationStatusMessage(todayApplication?: TodayMatchingApplication) {
@@ -332,10 +267,12 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
 function FixedApplyButton({
   disabled,
   href,
+  isLoginLink,
   label,
 }: {
   disabled?: boolean;
   href: string;
+  isLoginLink?: boolean;
   label: string;
 }) {
   const className = disabled
@@ -350,10 +287,18 @@ function FixedApplyButton({
     );
   }
 
+  if (isLoginLink) {
+    return (
+      <Link className={className} href={href}>
+        {label}
+      </Link>
+    );
+  }
+
   return (
-    <Link className={className} href={href}>
+    <TeamMatchingApplyLink className={className} href={href}>
       {label}
-    </Link>
+    </TeamMatchingApplyLink>
   );
 }
 
@@ -370,21 +315,27 @@ export default function TeamMatchingPage() {
     participantCountData?.participantCount ?? eligibility?.participantCount,
   );
   const alreadyAppliedToday = eligibility?.appliedToday || todayApplication?.appliedToday;
-  const applyHref = alreadyAppliedToday
-    ? "/team-matching/modal-preview/already-applied"
-    : getApplyHref(eligibility);
-  const primaryReason = eligibility ? getPrimaryReason(eligibility.reasons) : undefined;
-  const canOpenApplyDestination = hasActionableBlockingReason(eligibility);
-  const applyLabel = isLoading
+  const applyHref = getTeamMatchingApplyHref(eligibility, todayApplication);
+  const primaryReason = eligibility
+    ? getTeamMatchingPrimaryReason(eligibility.reasons)
+    : undefined;
+  const canOpenApplyDestination = hasTeamMatchingActionableBlockingReason(eligibility);
+  const isEligibilityUnauthorized = error instanceof ApiError && error.status === 401;
+  const isTodayApplicationUnauthorized =
+    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
+  const isUnauthorized = isEligibilityUnauthorized || isTodayApplicationUnauthorized;
+  const isApplyStatePending = isLoading || isTodayApplicationLoading;
+  const hasApplyStateError =
+    (isError && !isEligibilityUnauthorized) ||
+    (isTodayApplicationError && !isTodayApplicationUnauthorized);
+  const isApplicationClosedTime = useIsMatchingApplicationClosedTime();
+  const applyLabel = isApplyStatePending
     ? "확인 중..."
     : alreadyAppliedToday
       ? "매칭 신청하기"
       : primaryReason && !eligibility?.eligible
-        ? "신청 조건 확인하기"
+        ? "매칭 신청하기"
         : "매칭 신청하기";
-  const isUnauthorized = error instanceof ApiError && error.status === 401;
-  const isTodayApplicationUnauthorized =
-    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
   const helperMessage = useMemo(() => {
     if (isTodayApplicationLoading) {
       return "매칭 신청 상태를 확인하고 있어요.";
@@ -398,6 +349,10 @@ export default function TeamMatchingPage() {
 
     if (isTodayApplicationError && !isTodayApplicationUnauthorized) {
       return "매칭 신청 상태를 불러오지 못했어요.";
+    }
+
+    if (isTodayApplicationUnauthorized) {
+      return "로그인 후 매칭 신청 상태를 확인할 수 있어요.";
     }
 
     if (isLoading) {
@@ -415,7 +370,7 @@ export default function TeamMatchingPage() {
     }
 
     return primaryReason
-      ? blockingReasonMessages[primaryReason]
+      ? teamMatchingBlockingReasonMessages[primaryReason]
       : "매칭 신청 상태를 확인해 주세요.";
   }, [
     eligibility?.eligible,
@@ -508,8 +463,15 @@ export default function TeamMatchingPage() {
           }}
         >
           <FixedApplyButton
-            disabled={isLoading || (isError && !isUnauthorized) || !canOpenApplyDestination}
-            href={isUnauthorized ? "/login" : applyHref}
+            disabled={
+              !isUnauthorized &&
+              (isApplyStatePending ||
+                hasApplyStateError ||
+                !applyHref ||
+                (!canOpenApplyDestination && !isApplicationClosedTime))
+            }
+            href={isUnauthorized ? "/login" : (applyHref ?? "/team-matching")}
+            isLoginLink={isUnauthorized}
             label={isUnauthorized ? "로그인하기" : applyLabel}
           />
         </div>

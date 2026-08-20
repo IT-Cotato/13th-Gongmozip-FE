@@ -12,6 +12,7 @@ import {
   useCreateProfileWithDetailsMutation,
   useUpdateProfileWithDetailsMutation,
 } from "@/queries/useCreateProfileWithDetailsMutation";
+import { useUpdateProfileVisibilityMutation } from "@/queries/useUpdateProfileVisibilityMutation";
 import { ApiError } from "@/lib/http";
 
 export default function CertificatesPage() {
@@ -22,10 +23,15 @@ export default function CertificatesPage() {
   const setDraftCertificates = useProfileDraftStore((state) => state.setCertificates);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
   const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const isEditingExistingProfile = useProfileDraftStore((state) => state.isEditingExistingProfile);
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
   const updateProfileMutation = useUpdateProfileWithDetailsMutation();
-  const isSubmitting = createProfileMutation.isPending || updateProfileMutation.isPending;
+  const visibilityMutation = useUpdateProfileVisibilityMutation();
+  const isSubmitting =
+    createProfileMutation.isPending ||
+    updateProfileMutation.isPending ||
+    visibilityMutation.isPending;
   const [certificates, setCertificates] = useState<Certificate[]>(draftCertificates);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -67,11 +73,13 @@ export default function CertificatesPage() {
 
     const onError = (error: unknown) => {
       const message =
-        error instanceof ApiError ? error.message : "프로필 등록에 실패했습니다. 다시 시도해주세요.";
+        error instanceof ApiError
+          ? error.message
+          : "프로필 등록에 실패했습니다. 다시 시도해주세요.";
 
-      // 닉네임은 1단계 입력 항목이지만 실제 중복 검증은 이 화면(3단계) 제출 시점에야
-      // 일어난다. 그대로 여기 띄우면 자격증 문제로 오해하기 쉬우므로 1단계로 돌려보내
-      // 닉네임 입력창 옆에 에러를 보여준다.
+      // 닉네임은 1단계 입력 항목이라 정상 흐름이라면 이미 1단계에서 검증이 끝나
+      // 있지만, 만일을 대비한 방어 처리로 남겨둔다. 그대로 여기 띄우면 자격증
+      // 문제로 오해하기 쉬우므로 1단계로 돌려보내 닉네임 입력창 옆에 보여준다.
       if (message.includes("닉네임")) {
         useProfileDraftStore.getState().setNicknameError(message);
         router.replace("/mypage/profile-management/new");
@@ -81,7 +89,8 @@ export default function CertificatesPage() {
       setSubmitError(message);
     };
 
-    if (editingProfileId !== null) {
+    if (isEditingExistingProfile) {
+      if (editingProfileId === null) return;
       updateProfileMutation.mutate(
         {
           profileId: editingProfileId,
@@ -100,15 +109,43 @@ export default function CertificatesPage() {
       return;
     }
 
+    // 새 프로필 작성 흐름에서는 1단계("다음")에서 이미 프로필이 생성돼
+    // editingProfileId를 갖고 있으므로, 여기서는 그 프로필을 수정(PATCH)해
+    // 프로젝트/자격증을 마저 채운다. 완료 화면에서 "프로젝트 경험/자격증
+    // 추가"로 같은 프로필에 이어서 더 담을 수 있으므로 초안은 지우지 않는다
+    // (진짜로 나갈 때인 완료하기/이탈 시점에 지운다).
+    if (editingProfileId !== null) {
+      updateProfileMutation.mutate(
+        {
+          profileId: editingProfileId,
+          basicInfo: draftBasicInfo,
+          projects: draftProjects,
+          certificates,
+        },
+        {
+          onSuccess: () => {
+            // 1단계에서 생성될 때는 비공개(isPublic: false)였다 - 프로젝트/자격증까지
+            // 다 채운 지금에야 다른 사용자에게 보여도 되는 상태이므로 공개로 전환한다.
+            // 공개 전환이 실패해도 프로필 내용 자체는 이미 저장됐으니 완료 화면으로는
+            // 그대로 넘어간다(비공개 상태로 남을 뿐, 목록에서 다시 공개로 바꿀 수 있음).
+            visibilityMutation.mutate(
+              { profileId: String(editingProfileId), isPublic: true },
+              {
+                onSettled: () => router.replace("/mypage/profile-management/new/complete"),
+              },
+            );
+          },
+          onError,
+        },
+      );
+      return;
+    }
+
+    // 1단계를 거치지 않고 이 화면으로 바로 진입한 경우를 대비한 방어적 fallback.
     createProfileMutation.mutate(
       { basicInfo: draftBasicInfo, projects: draftProjects, certificates },
       {
         onSuccess: (data) => {
-          // 완료 화면에서 "프로젝트 경험/자격증 추가"로 같은 프로필에 이어서 더
-          // 담을 수 있으므로, 여기서 초안을 지우지 않고 방금 만든 프로필 ID만
-          // 기억해 둔다 - 그래야 다음 제출이 새 프로필을 또 만들지 않고 이
-          // 프로필을 수정하는 쪽으로 간다. 초안은 진짜로 나갈 때(완료하기/이탈)
-          // 지운다.
           setEditingProfileId(data.profileId);
           router.replace("/mypage/profile-management/new/complete");
         },
@@ -132,7 +169,7 @@ export default function CertificatesPage() {
           <ChevronLeftIcon />
         </button>
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
-          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+          {isEditingExistingProfile ? "프로필 수정" : "프로필 작성"}
         </h1>
         <button
           type="button"
@@ -201,7 +238,7 @@ export default function CertificatesPage() {
             disabled={isSubmitting}
             className="h-12 flex-1 rounded-[14px] bg-[#FF7658] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-white disabled:opacity-50"
           >
-            {editingProfileId !== null
+            {isEditingExistingProfile
               ? isSubmitting
                 ? "수정 중..."
                 : "수정 완료"

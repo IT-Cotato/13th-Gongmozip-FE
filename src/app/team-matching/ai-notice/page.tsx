@@ -1,9 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 
+import TeamMatchingApplyLink from "@/components/team-matching/TeamMatchingApplyLink";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
+import { getTeamMatchingApplyHref } from "@/lib/teamMatchingApply";
+import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
+import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
 
 const styleTags = [
   { label: "#우호성", className: "bg-[#FFF1EE] text-[#AC4A35]" },
@@ -21,6 +24,24 @@ const combinationTags = [
 ];
 
 export default function TeamMatchingAiNoticePage() {
+  const {
+    data: eligibility,
+    isError: isEligibilityError,
+    isLoading: isEligibilityLoading,
+  } = useMatchingEligibilityQuery();
+  const {
+    data: todayApplication,
+    isError: isTodayApplicationError,
+    isLoading: isTodayApplicationLoading,
+  } = useTodayMatchingApplicationQuery();
+  const applyHref = getTeamMatchingApplyHref(eligibility, todayApplication);
+  const isApplyDisabled =
+    isEligibilityLoading ||
+    isEligibilityError ||
+    isTodayApplicationLoading ||
+    isTodayApplicationError ||
+    !applyHref;
+
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <TeamMatchingHeader backHref="/team-matching" title="AI 분석 매칭 안내" />
@@ -130,12 +151,22 @@ export default function TeamMatchingAiNoticePage() {
           <p className="text-center font-[Pretendard] text-[17px] font-medium leading-[135%] text-[#1F1F1F]">
             지금 바로 팀 매칭을 시작해보세요!
           </p>
-          <Link
-            className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-            href="/team-matching/profile"
-          >
-            매칭 신청하기
-          </Link>
+          {isApplyDisabled || !applyHref ? (
+            <button
+              className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white opacity-60"
+              disabled
+              type="button"
+            >
+              매칭 신청하기
+            </button>
+          ) : (
+            <TeamMatchingApplyLink
+              className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
+              href={applyHref}
+            >
+              매칭 신청하기
+            </TeamMatchingApplyLink>
+          )}
         </section>
       </div>
     </main>

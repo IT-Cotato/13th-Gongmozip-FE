@@ -5,13 +5,14 @@ import MobileFrame from "@/components/layout/MobileFrame";
 import { PwaServiceWorker } from "./PwaServiceWorker";
 import { Providers } from "./providers";
 
+const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "https://gongmozip.site";
+const OG_IMAGE = "/images/logo.png";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_FRONTEND_URL ?? "https://gongmozip.site",
-  ),
+  metadataBase: new URL(SITE_URL),
   applicationName: "Gongmozip",
   title: "Gongmozip",
-  description: "Gongmozip frontend web application",
+  description: "여기를 눌러 링크를 확인하세요.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -24,14 +25,25 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Gongmozip",
-    description: "Gongmozip frontend web application",
-    images: ["/images/logo.png"],
+    description: "여기를 눌러 링크를 확인하세요.",
+    url: SITE_URL,
+    siteName: "Gongmozip",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 512,
+        height: 512,
+        alt: "Gongmozip",
+        type: "image/png",
+      },
+    ],
+    type: "website",
   },
   twitter: {
     card: "summary",
     title: "Gongmozip",
-    description: "Gongmozip frontend web application",
-    images: ["/images/logo.png"],
+    description: "여기를 눌러 링크를 확인하세요.",
+    images: [OG_IMAGE],
   },
 };
 

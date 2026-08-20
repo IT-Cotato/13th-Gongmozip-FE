@@ -6,29 +6,36 @@ import { ArrowUpIcon } from "./icons";
 
 const MAX_TEXTAREA_HEIGHT = 128;
 
+type ChatInputBarBaseProps = {
+  disabled?: boolean;
+  focusToken?: number;
+  onSendMessage?: (message: string) => boolean;
+};
+
+type ChatInputBarProps = ChatInputBarBaseProps &
+  (
+    | { value: string; onChange: (message: string) => void }
+    | { value?: undefined; onChange?: undefined }
+  );
+
 export function ChatInputBar({
   disabled = false,
   focusToken,
   onChange,
   onSendMessage,
   value,
-}: {
-  disabled?: boolean;
-  focusToken?: number;
-  onChange?: (message: string) => void;
-  onSendMessage?: (message: string) => boolean;
-  value?: string;
-}) {
+}: ChatInputBarProps) {
   const [internalMessage, setInternalMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const message = value ?? internalMessage;
+  const isControlled = value !== undefined;
+  const message = isControlled ? value : internalMessage;
   const canSend = message.trim().length > 0 && !disabled;
   const setMessage = (nextMessage: string) => {
-    if (value === undefined) {
+    if (isControlled) {
+      onChange(nextMessage);
+    } else {
       setInternalMessage(nextMessage);
     }
-
-    onChange?.(nextMessage);
   };
 
   useEffect(() => {
