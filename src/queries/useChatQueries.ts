@@ -172,6 +172,7 @@ export type ContestVoteResultItem = {
   voteCount: number;
   percent: number;
   isWinner: boolean;
+  isMyVote: boolean;
 };
 
 export type ContestVoteStatus = {
@@ -182,6 +183,8 @@ export type ContestVoteStatus = {
   participatedVoterCount: number;
   requiredVoterCount: number;
   myVoted: boolean;
+  myContestCandidateIds: number[];
+  myContestIds: number[];
   results: ContestVoteResultItem[];
 };
 
@@ -1665,6 +1668,8 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     (explicitStatus === "NO_VOTES" || explicitStatus === "NO_VOTE"
       ? false
       : participatedVoterCount > 0 || results.some((result) => result.voteCount > 0));
+  const { contestCandidateIds: myContestCandidateIds, contestIds: myContestIds } =
+    getMyContestVoteIds(status, results);
 
   return {
     result: !hasVotes ? "noVotes" : isTie ? "tie" : "normal",
@@ -1674,6 +1679,8 @@ function mapContestVoteStatus(status: ContestVoteStatusResponse): ContestVoteSta
     participatedVoterCount,
     requiredVoterCount,
     myVoted,
+    myContestCandidateIds,
+    myContestIds,
     results,
   };
 }
@@ -1701,7 +1708,114 @@ function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem 
     voteCount: getNumber(result, ["voteCount", "votes", "count"]) ?? 0,
     percent: getNumber(result, ["percent", "votePercent", "rate"]) ?? 0,
     isWinner: getBoolean(result, ["winner", "isWinner"]) ?? false,
+    isMyVote: getBoolean(result, ["myVoted", "isMyVote", "selected", "isSelected"]) ?? false,
   };
+}
+
+function getMyContestVoteIds(
+  status: ContestVoteStatusResponse,
+  results: ContestVoteResultItem[],
+) {
+  const contestCandidateIds = new Set<number>();
+  const contestIds = new Set<number>();
+
+  getNumberArray(status, [
+    "myContestCandidateIds",
+    "myVotedContestCandidateIds",
+    "votedContestCandidateIds",
+    "selectedContestCandidateIds",
+    "selectedCandidateIds",
+    "myCandidateIds",
+  ]).forEach((id) => contestCandidateIds.add(id));
+
+  getNumberArray(status, [
+    "myContestIds",
+    "myVotedContestIds",
+    "votedContestIds",
+    "selectedContestIds",
+  ]).forEach((id) => contestIds.add(id));
+
+  const nestedMyVote = getRecordByKeys(status, [
+    "myVote",
+    "myContestVote",
+    "currentMemberVote",
+    "currentUserVote",
+    "vote",
+  ]);
+
+  if (nestedMyVote) {
+    getMyContestVoteIdsFromRecord(nestedMyVote, contestCandidateIds, contestIds);
+  }
+
+  const myVotesValue = getValue(status, [
+    "myVotes",
+    "myVoteResults",
+    "myVotedContests",
+    "myVotedCandidates",
+    "votedCandidates",
+    "selectedCandidates",
+    "myContestCandidates",
+    "selectedContestCandidates",
+  ]);
+
+  if (Array.isArray(myVotesValue)) {
+    myVotesValue.filter(isRecord).forEach((vote) => {
+      getMyContestVoteIdsFromRecord(vote, contestCandidateIds, contestIds);
+    });
+  }
+
+  results.forEach((result) => {
+    if (!result.isMyVote) {
+      return;
+    }
+
+    if (result.contestCandidateId !== undefined) {
+      contestCandidateIds.add(result.contestCandidateId);
+    }
+
+    if (result.contestId !== undefined) {
+      contestIds.add(result.contestId);
+    }
+  });
+
+  return {
+    contestCandidateIds: Array.from(contestCandidateIds),
+    contestIds: Array.from(contestIds),
+  };
+}
+
+function getMyContestVoteIdsFromRecord(
+  vote: UnknownRecord,
+  contestCandidateIds: Set<number>,
+  contestIds: Set<number>,
+) {
+  getNumberArray(vote, [
+    "contestCandidateIds",
+    "myContestCandidateIds",
+    "selectedContestCandidateIds",
+    "candidateIds",
+  ]).forEach((id) => contestCandidateIds.add(id));
+  getNumberArray(vote, ["contestIds", "myContestIds", "selectedContestIds"]).forEach((id) =>
+    contestIds.add(id),
+  );
+
+  const candidate = getRecord(vote, "candidate") ?? getRecord(vote, "contestCandidate");
+  const contest =
+    (candidate ? getRecord(candidate, "contest") : undefined) ?? getRecord(vote, "contest");
+  const contestCandidateId =
+    getNumber(vote, ["contestCandidateId", "candidateId", "id"]) ??
+    (candidate ? getNumber(candidate, ["contestCandidateId", "candidateId", "id"]) : undefined);
+  const contestId =
+    getNumber(vote, ["contestId"]) ??
+    (contest ? getNumber(contest, ["contestId", "id"]) : undefined);
+
+  if (contestCandidateId !== undefined) {
+    contestCandidateIds.add(contestCandidateId);
+  }
+
+  if (contestId !== undefined) {
+    contestIds.add(contestId);
+  }
 }
 
 function mapReviewTarget(target: ReviewTargetResponse): ReviewMember {
@@ -1799,6 +1913,12 @@ function getRecord(record: UnknownRecord, key: string): UnknownRecord | undefine
   return isRecord(value) ? value : undefined;
 }
 
+function getRecordByKeys(record: UnknownRecord, keys: string[]) {
+  const value = getValue(record, keys);
+
+  return isRecord(value) ? value : undefined;
+}
+
 function getString(record: UnknownRecord, keys: string[]) {
   const value = getValue(record, keys);
 
@@ -1819,6 +1939,18 @@ function getNumber(record: UnknownRecord, keys: string[]) {
   }
 
   return undefined;
+}
+
+function getNumberArray(record: UnknownRecord, keys: string[]) {
+  const value = getValue(record, keys);
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => (typeof item === "number" ? item : Number(item)))
+    .filter((item) => Number.isFinite(item));
 }
 
 function getBoolean(record: UnknownRecord, keys: string[]) {
