@@ -4,7 +4,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import type { COLLABORATION_RESULT_TYPES } from "../../_data/collaborationTest";
+import CollaborationTraitBars from "../../_components/CollaborationTraitBars";
+import {
+  type COLLABORATION_RESULT_TYPES,
+  type CollaborationDisplayTrait,
+} from "../../_data/collaborationTest";
+import { useCollaborationDisplayTraits } from "../../_hooks/useCollaborationDisplayTraits";
 
 type CollaborationResult = (typeof COLLABORATION_RESULT_TYPES)[number];
 
@@ -70,7 +75,10 @@ async function loadImage(src: string) {
   return image;
 }
 
-async function saveResultImage(result: CollaborationResult) {
+async function saveResultImage(
+  result: CollaborationResult,
+  traits: readonly CollaborationDisplayTrait[],
+) {
   await document.fonts.ready;
 
   const pixelRatio = Math.max(window.devicePixelRatio || 1, 2);
@@ -131,7 +139,7 @@ async function saveResultImage(result: CollaborationResult) {
   context.font = "600 13px Pretendard, sans-serif";
   context.fillText("당신의 협업스타일의 특징은?", featureBoxX + 14, featureBoxY + 18);
 
-  result.traits.forEach((trait, traitIndex) => {
+  traits.forEach((trait, traitIndex) => {
     const y = featureBoxY + 45 + traitIndex * 23;
     const barX = featureBoxX + 62;
     const barY = y - 3;
@@ -147,7 +155,7 @@ async function saveResultImage(result: CollaborationResult) {
     context.fillStyle = "rgba(97, 97, 97, 0.1)";
     context.fill();
 
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < trait.filledSegmentCount; index += 1) {
       const segmentX = barX + index * segmentWidth;
 
       context.fillStyle = result.traitBarColor;
@@ -181,6 +189,7 @@ export default function CollaborationTypeResultPageContent({
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const traits = useCollaborationDisplayTraits(result);
 
   const handleLeave = () => {
     const returnTo = window.sessionStorage.getItem(COLLABORATION_TYPE_RETURN_TO_STORAGE_KEY);
@@ -214,7 +223,7 @@ export default function CollaborationTypeResultPageContent({
     setSaveError(null);
 
     try {
-      await saveResultImage(result);
+      await saveResultImage(result, traits);
     } catch {
       setSaveError("결과 이미지를 저장하지 못했어요. 다시 시도해 주세요.");
     } finally {
@@ -284,39 +293,11 @@ export default function CollaborationTypeResultPageContent({
               당신의 협업스타일의 특징은?
             </h3>
 
-            <div className="flex w-full flex-col gap-[8px]">
-              {result.traits.map((trait) => (
-                <div
-                  className="grid grid-cols-[40px_1fr_40px] items-center gap-[8px]"
-                  key={trait.left}
-                >
-                  <span
-                    className="font-[Pretendard] text-[12px] font-semibold leading-[135%]"
-                    style={{ color: result.traitLabelColor }}
-                  >
-                    {trait.left}
-                  </span>
-                  <div
-                    aria-hidden="true"
-                    className="relative top-[3px] flex h-[7px] shrink-0 self-stretch overflow-hidden rounded-[90px] bg-[rgba(97,97,97,0.1)]"
-                  >
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <span
-                        className="h-full flex-1 border-r border-[#F9F8F4] last:border-r-0"
-                        key={index}
-                        style={{
-                          backgroundColor:
-                            index < 4 ? result.traitBarColor : "rgba(97, 97, 97, 0.1)",
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-right font-['42dot_Sans'] text-[13px] font-medium leading-[125%] text-[#949494]">
-                    {trait.right}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <CollaborationTraitBars
+              barColor={result.traitBarColor}
+              labelColor={result.traitLabelColor}
+              traits={traits}
+            />
 
             <ul className="w-[258px] max-w-full font-[Pretendard] text-[13px] font-normal leading-[150%] text-[#555555]">
               {result.descriptions.map((description) => (

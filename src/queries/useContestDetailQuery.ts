@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ContestDetail } from "@/app/contests/_types";
 import { apiFetch } from "@/lib/http";
 import {
-  contestCategoryLabels,
+  getContestCategoryLabel,
   getContestViewCount,
   type ContestStatus,
   type ContestViewCountFields,
@@ -56,8 +56,10 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     id: String(contest.contestId),
     title: contest.title,
     organizer: contest.hostName,
-    category: contestCategoryLabels[contest.category] ?? contest.category,
+    category: getContestCategoryLabel(contest.category),
     dDay: formatDday(contest.daysRemaining),
+    daysRemaining: contest.daysRemaining,
+    status: normalizeContestStatus(contest.status),
     viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",
     isScrapped: contest.isScrapped ?? false,
@@ -75,6 +77,14 @@ function mapContestDetail(contest: ContestDetailResponse): ContestDetail {
     websiteUrl: contest.sourceUrl ?? "",
     detailImageUrls: contest.detailImageUrls ?? [],
   };
+}
+
+function normalizeContestStatus(status: ContestStatus | string): ContestStatus {
+  if (status === "UPCOMING" || status === "OPEN" || status === "CLOSED") {
+    return status;
+  }
+
+  return "OPEN";
 }
 
 function formatDday(daysRemaining: number) {

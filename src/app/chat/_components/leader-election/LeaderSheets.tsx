@@ -64,7 +64,7 @@ export function LeaderCandidateVoteSheet({
           <MedalIcon size="small" />
           <h2 className="text-[20px] leading-[1.35] font-bold text-color-gray-850">팀장 투표</h2>
         </div>
-        <CountdownPill label="투표 마감까지" time="01 : 24 : 30" />
+        <CountdownPill label="후보 등록 마감까지" time="01 : 24 : 30" />
       </div>
 
       <p className="mt-2 px-6 text-[13px] leading-[1.35] text-color-gray-650">
@@ -94,9 +94,11 @@ export function LeaderCandidateVoteSheet({
 export function VoteCompleteSheet({
   isResultReady,
   onShowResult,
+  remainingSeconds,
 }: {
   isResultReady: boolean;
   onShowResult: () => void;
+  remainingSeconds: number;
 }) {
   return (
     <BottomSheet className="h-[475px] justify-between">
@@ -108,7 +110,11 @@ export function VoteCompleteSheet({
         <p className="mt-2 text-center text-[13px] leading-[1.25] font-medium text-color-gray-650/60">
           {isResultReady ? "투표 결과를 확인할 수 있습니다." : "투표 결과를 확인하고 있습니다."}
         </p>
-        <CountdownPill className="mt-3" label="투표 마감까지" time="01 : 24 : 30" />
+        <CountdownPill
+          className="mt-3"
+          label="투표 마감까지"
+          time={formatCountdownTime(remainingSeconds)}
+        />
       </div>
 
       <SheetButton
@@ -169,7 +175,7 @@ function CandidateProfileCard({
   return (
     <button
       aria-checked={isSelected}
-      className={`flex size-[100px] shrink-0 flex-col items-center justify-center gap-2.5 rounded-[16px] px-[22px] pb-1.5 pt-3 ${
+      className={`flex size-[100px] shrink-0 flex-col items-center justify-center gap-2.5 rounded-[16px] px-[22px] pb-1.5 pt-3 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
         isSelected
           ? "bg-[linear-gradient(45deg,#FF7658_0%,#FFAD62_100%)] text-white"
           : "border border-[rgba(97,97,97,0.16)] bg-white text-color-gray-650"
@@ -276,4 +282,13 @@ function CountdownPill({
       <span className="ml-1">{time}</span>
     </span>
   );
+}
+
+function formatCountdownTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(" : ");
 }

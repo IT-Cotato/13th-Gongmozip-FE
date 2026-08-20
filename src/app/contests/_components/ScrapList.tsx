@@ -2,11 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useQueries } from "@tanstack/react-query";
-import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { usePathname } from "next/navigation";
+import { useState, type ReactNode } from "react";
 
-import { contestDetailQueryKey, fetchContestDetail } from "@/queries/useContestDetailQuery";
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
 import { useContestScrapStore } from "@/stores/contestScrapStore";
 import type { ContestSummary } from "../_types";
@@ -20,27 +18,13 @@ export function ScrapList({
   contests,
   scrappedContestIds: scrappedContestIdsProp,
 }: ScrapListProps) {
+  // 이 컴포넌트는 /contests/scraps와 /mypage/scrap 양쪽에서 재사용되므로, 상세
+  // 화면의 뒤로가기가 실제로 들어온 화면으로 돌아가도록 현재 경로를 returnTo로 넘긴다.
+  const pathname = usePathname();
   const storeScrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const contestScrapMutation = useContestScrapMutation();
   const scrappedContestIds = scrappedContestIdsProp ?? storeScrappedContestIds;
   const scrappedContests = contests.filter((contest) => scrappedContestIds.includes(contest.id));
-  const contestDetailQueries = useQueries({
-    queries: scrappedContests.map((contest) => ({
-      queryKey: contestDetailQueryKey(contest.id),
-      queryFn: () => fetchContestDetail(contest.id),
-      enabled: contest.id.length > 0,
-      staleTime: 1000 * 60,
-    })),
-  });
-  const detailViewCountByContestId = useMemo(
-    () =>
-      new Map(
-        contestDetailQueries.flatMap((query) =>
-          query.data ? [[query.data.id, query.data.viewCount] as const] : [],
-        ),
-      ),
-    [contestDetailQueries],
-  );
 
   if (scrappedContests.length === 0) {
     return (
@@ -87,9 +71,7 @@ export function ScrapList({
       </ScrapListHeader>
 
       <div className="-mx-4 mt-[25px] flex flex-col">
-        {scrappedContests.map((contest, index) => {
-          const viewCount = detailViewCountByContestId.get(contest.id) ?? contest.viewCount;
-
+        {scrappedContests.map((contest) => {
           return (
             <article
               key={contest.id}
@@ -97,7 +79,7 @@ export function ScrapList({
             >
               <div className="grid w-full min-h-[113px] grid-cols-[85px_minmax(0,1fr)_24px] gap-x-[14px]">
                 <Link
-                  href={`/contests/${contest.id}`}
+                  href={`/contests/${contest.id}?returnTo=${encodeURIComponent(pathname)}`}
                   aria-label={`${contest.title} 상세정보 보기`}
                   className="contents"
                 >
@@ -107,9 +89,7 @@ export function ScrapList({
                       alt={`${contest.title} 포스터`}
                     />
                   ) : (
-                    <div className="flex h-[113px] w-[85px] items-center justify-center bg-color-gray-300 text-sm font-semibold text-color-gray-650">
-                      이미지 {index + 1}
-                    </div>
+                    <div aria-hidden="true" className="h-[113px] w-[85px] bg-white" />
                   )}
 
                   <div className="min-w-0">
@@ -128,7 +108,7 @@ export function ScrapList({
                       </span>
                       <span className="flex items-center gap-1 text-xs leading-[135%] font-semibold text-color-gray-350">
                         <Image src="/icons/contests/tabler-eye.svg" alt="" width={16} height={16} />
-                        {viewCount.toLocaleString("ko-KR")}
+                        {contest.viewCount.toLocaleString("ko-KR")}
                       </span>
                     </div>
                   </div>
@@ -164,9 +144,22 @@ export function ScrapList({
 }
 
 function ScrapContestPosterImage({ alt, src }: { alt: string; src: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <div aria-hidden="true" className="h-[113px] w-[85px] bg-white" />;
+  }
+
   if (isExternalUrl(src)) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} className="h-[113px] w-[85px] object-cover" />;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={alt}
+        className="h-[113px] w-[85px] object-cover"
+        onError={() => setHasError(true)}
+      />
+    );
   }
 
   return (
@@ -176,6 +169,7 @@ function ScrapContestPosterImage({ alt, src }: { alt: string; src: string }) {
       width={85}
       height={113}
       className="h-[113px] w-[85px] object-cover"
+      onError={() => setHasError(true)}
     />
   );
 }

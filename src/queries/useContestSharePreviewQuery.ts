@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiError, apiFetch } from "@/lib/http";
-import { contestCategoryLabels } from "./useContestsQuery";
+import { getContestCategoryLabel } from "./useContestsQuery";
 
 type ContestSharePreviewResponse = {
   contestId: string | number;
@@ -37,7 +37,7 @@ export async function fetchContestSharePreview(contestId: string) {
     contestId: String(data.contestId),
     title: data.title,
     thumbnailUrl: data.thumbnailUrl,
-    category: contestCategoryLabels[data.category] ?? data.category,
+    category: getContestCategoryLabel(data.category),
     hostName: data.hostName,
     applyEndAt: data.applyEndAt,
     dDay: formatDday(data.daysRemaining),

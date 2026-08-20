@@ -15,6 +15,9 @@ import {
   type BirthdateError,
 } from "./_lib/birthdate";
 import { useSignupMutation } from "@/queries/useSignupMutation";
+import { useLoginMutation } from "@/queries/useLoginMutation";
+import { useCollaborationTestStore } from "@/stores/collaborationTestStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useSendVerificationCodeMutation } from "@/queries/useSendVerificationCodeMutation";
 import { useVerifyEmailCodeMutation } from "@/queries/useVerifyEmailCodeMutation";
 import { ApiError } from "@/lib/http";
@@ -87,6 +90,9 @@ function SignupPageInner() {
   const [sendCodeError, setSendCodeError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const signupMutation = useSignupMutation();
+  const loginMutation = useLoginMutation();
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+  const resetCollaborationTest = useCollaborationTestStore((state) => state.resetCollaborationTest);
   const sendCodeMutation = useSendVerificationCodeMutation();
   const verifyCodeMutation = useVerifyEmailCodeMutation();
 
@@ -208,7 +214,7 @@ function SignupPageInner() {
     }
 
     if (step === TOTAL_STEPS) {
-      if (signupMutation.isPending) return;
+      if (signupMutation.isPending || loginMutation.isPending) return;
       setSubmitError(null);
       signupMutation.mutate(
         {
@@ -218,7 +224,25 @@ function SignupPageInner() {
           birthDate: `${birthdate.slice(0, 4)}-${birthdate.slice(4, 6)}-${birthdate.slice(6, 8)}`,
         },
         {
-          onSuccess: () => router.push("/signup/complete"),
+          onSuccess: () => {
+            loginMutation.mutate(
+              { email, password },
+              {
+                onSuccess: (data) => {
+                  setAccessToken(data.accessToken);
+                  resetCollaborationTest();
+                  router.push("/signup/complete");
+                },
+                onError: (error) => {
+                  setSubmitError(
+                    error instanceof ApiError
+                      ? error.message
+                      : "회원가입은 완료되었지만 자동 로그인에 실패했습니다. 다시 로그인해주세요.",
+                  );
+                },
+              },
+            );
+          },
           onError: (error) => {
             if (error instanceof ApiError && error.code === EMAIL_DUPLICATE_CODE) {
               setServerEmailDuplicate(true);
@@ -468,6 +492,7 @@ function SignupPageInner() {
           disabled={
             !isCurrentStepValid ||
             signupMutation.isPending ||
+            loginMutation.isPending ||
             sendCodeMutation.isPending ||
             verifyCodeMutation.isPending
           }
@@ -475,6 +500,7 @@ function SignupPageInner() {
           className={`w-full rounded-xl py-3.5 text-sm font-medium transition-colors ${
             isCurrentStepValid &&
             !signupMutation.isPending &&
+            !loginMutation.isPending &&
             !sendCodeMutation.isPending &&
             !verifyCodeMutation.isPending
               ? "bg-[#FF7658] text-white"
@@ -492,6 +518,8 @@ function SignupPageInner() {
               : step === TOTAL_STEPS
                 ? signupMutation.isPending
                   ? "가입 처리 중..."
+                  : loginMutation.isPending
+                    ? "로그인 중..."
                   : "동의하고 가입 완료하기"
                 : "다음"}
         </button>

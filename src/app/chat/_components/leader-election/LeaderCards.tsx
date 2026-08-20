@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { ChatMember } from "../../_data/mockMessages";
+import type { ChatMember } from "../../_data/chatTypes";
 import { ChatbotAvatar, MessageMeta } from "./ChatbotMessage";
 import type { LeaderCandidate } from "./types";
 

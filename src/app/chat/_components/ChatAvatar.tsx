@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { ChatMessage } from "../_data/mockMessages";
+import type { ChatMessage } from "../_data/chatTypes";
 
 type ChatAvatarProps = {
   name: string;

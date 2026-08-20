@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNavigation from "@/components/layout/BottomNavigation";
+import TeamMatchingApplyLink from "@/components/team-matching/TeamMatchingApplyLink";
 import Image from "next/image";
 import Link from "next/link";
 import { ApiError } from "@/lib/http";
+import { getTeamMatchingApplyHref } from "@/lib/teamMatchingApply";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useHasAuthHydrated } from "@/stores/useHasAuthHydrated";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
+import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
+import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
 import {
   type RecommendedContest,
   useRecommendedContestsQuery,
@@ -135,7 +139,16 @@ function SearchBar() {
   );
 }
 
-function MatchingCard() {
+function MatchingCard({
+  applyDisabled,
+  applyHref,
+}: {
+  applyDisabled: boolean;
+  applyHref?: string;
+}) {
+  const applyButtonClassName =
+    "flex min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold text-white disabled:opacity-60";
+
   return (
     <section className="flex flex-col gap-[10px] px-4 py-2">
       <h2 className="px-2 text-[20px] leading-[1.35] font-medium text-black">
@@ -186,12 +199,15 @@ function MatchingCard() {
       </div>
 
       <div className="flex h-[50px] gap-[7px]">
-        <Link
-          href="/team-matching/profile"
-          className="flex min-w-0 flex-1 items-center justify-center rounded-[14px] bg-color-coral-500 px-[10px] py-[9px] text-[17px] leading-[1.25] font-semibold text-white"
-        >
-          매칭 신청하기
-        </Link>
+        {applyDisabled || !applyHref ? (
+          <button className={applyButtonClassName} disabled type="button">
+            매칭 신청하기
+          </button>
+        ) : (
+          <TeamMatchingApplyLink href={applyHref} className={applyButtonClassName}>
+            매칭 신청하기
+          </TeamMatchingApplyLink>
+        )}
         <Link
           href="/team-matching"
           className="flex w-[102px] shrink-0 items-center justify-center rounded-[14px] border border-color-gray-650/50 px-2 py-[9px] text-[15px] leading-[1.25] font-semibold text-color-gray-650"
@@ -209,6 +225,8 @@ export default function Home() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const memberProfileQuery = useMemberProfileQuery();
   const recommendedContestsQuery = useRecommendedContestsQuery();
+  const matchingEligibilityQuery = useMatchingEligibilityQuery();
+  const todayMatchingApplicationQuery = useTodayMatchingApplicationQuery();
   const [activeHeroIndex, setActiveHeroIndex] = useState(0);
   const isUnauthorized =
     memberProfileQuery.error instanceof ApiError && memberProfileQuery.error.status === 401;
@@ -217,6 +235,16 @@ export default function Home() {
   }, [recommendedContestsQuery.data]);
   const safeActiveHeroIndex = heroContests.length > 0 ? activeHeroIndex % heroContests.length : 0;
   const heroContest = heroContests[safeActiveHeroIndex];
+  const matchingApplyHref = getTeamMatchingApplyHref(
+    matchingEligibilityQuery.data,
+    todayMatchingApplicationQuery.data,
+  );
+  const isMatchingApplyDisabled =
+    matchingEligibilityQuery.isLoading ||
+    matchingEligibilityQuery.isError ||
+    todayMatchingApplicationQuery.isLoading ||
+    todayMatchingApplicationQuery.isError ||
+    !matchingApplyHref;
 
   // 홈화면은 "1. 회원가입/로그인"을 마친 사용자가 도착하는 화면이라
   // (기능명세서 1.7 앱 시작하기 참고), 토큰이 없거나 만료된 경우 로그인
@@ -278,7 +306,7 @@ export default function Home() {
           <SearchBar />
         </div>
 
-        <MatchingCard />
+        <MatchingCard applyDisabled={isMatchingApplyDisabled} applyHref={matchingApplyHref} />
       </div>
 
       <BottomNavigation />

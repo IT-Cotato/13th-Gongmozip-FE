@@ -34,7 +34,12 @@ export default function TeamMatchingContestFieldPage() {
   };
 
   return (
-    <TeamMatchingStepLayout actionHref="/team-matching/leader" actionLabel="다음" currentStep={3}>
+    <TeamMatchingStepLayout
+      actionHref="/team-matching/leader"
+      actionLabel="다음"
+      currentStep={3}
+      previousHref="/team-matching/collaboration-type"
+    >
       <section>
         <h2 className="-mt-px font-[Roboto] text-[22px] font-bold leading-[135%] text-[#1F1F1F]">
           관심있는 공모전 분야를 선택해주세요.

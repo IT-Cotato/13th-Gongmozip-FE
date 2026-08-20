@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { ApiError } from "@/lib/http";
 import { useContestDetailQuery } from "@/queries/useContestDetailQuery";
@@ -13,7 +13,7 @@ type ContestDetailContentProps = {
 };
 
 export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const accessToken = useAuthStore((state) => state.accessToken);
   const isAuthenticated = Boolean(accessToken);
   const {
@@ -25,18 +25,19 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
     enabled: isAuthenticated,
   });
   const isNotFound = error instanceof ApiError && error.status === 404;
+  const rawReturnTo = searchParams.get("returnTo");
+  const backHref = rawReturnTo && isSafeReturnPath(rawReturnTo) ? rawReturnTo : "/contests";
 
   return (
     <main className="flex h-full w-full flex-col bg-white text-color-gray-850">
       <header className="flex w-full max-w-[390px] shrink-0 items-center justify-between bg-white px-4 py-1">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label="뒤로가기"
+        <Link
+          href={backHref}
+          aria-label="공모전 목록으로 돌아가기"
           className="flex size-8 items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color-gray-900"
         >
           <span className="block h-2.5 w-2.5 rotate-45 border-b-2 border-l-2 border-color-gray-850" />
-        </button>
+        </Link>
         <h1 className="flex h-[38px] items-center justify-center text-center text-[17px] leading-[135%] font-semibold text-color-gray-900">
           상세정보
         </h1>
@@ -84,12 +85,14 @@ export function ContestDetailContent({ contestId }: ContestDetailContentProps) {
           />
         ) : null}
 
-        {isAuthenticated && !isError && contest ? (
-          <ContestInfo contest={contest} posterIndex={1} />
-        ) : null}
+        {isAuthenticated && !isError && contest ? <ContestInfo contest={contest} /> : null}
       </div>
     </main>
   );
+}
+
+function isSafeReturnPath(path: string) {
+  return path.startsWith("/") && !path.startsWith("//");
 }
 
 function ContestDetailStatus({

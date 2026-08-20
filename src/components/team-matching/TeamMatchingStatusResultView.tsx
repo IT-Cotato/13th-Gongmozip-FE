@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,6 +9,10 @@ import { ChatProfilePreview } from "@/app/chat/_components/ChatProfilePreview";
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 import { ApiError } from "@/lib/http";
 import { useAcceptMatchingGroupMutation } from "@/queries/useAcceptMatchingGroupMutation";
+import {
+  fetchTodayMatchingApplication,
+  todayMatchingApplicationQueryKey,
+} from "@/queries/useTodayMatchingApplicationQuery";
 import type {
   MatchingCharacterType,
   TodayMatchingResult,
@@ -154,7 +159,11 @@ function getMatchedMembers(members: TodayMatchingResultMember[]): MatchedMember[
   });
 }
 
-function MatchingSummaryCard({ todayMatchingResult }: { todayMatchingResult: TodayMatchingResult }) {
+function MatchingSummaryCard({
+  todayMatchingResult,
+}: {
+  todayMatchingResult: TodayMatchingResult;
+}) {
   const matchingReasons = getMatchingReasons(todayMatchingResult);
 
   return (
@@ -300,9 +309,10 @@ export default function TeamMatchingStatusResultView({
   todayMatchingResult,
 }: TeamMatchingStatusResultViewProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedMember, setSelectedMember] = useState<MatchedMember | null>(null);
   const acceptMatchingGroupMutation = useAcceptMatchingGroupMutation();
-  const setPendingProposalId = useTeamMatchingProposalStore((state) => state.setPendingProposalId);
+  const setPendingProposal = useTeamMatchingProposalStore((state) => state.setPendingProposal);
   const canPass =
     typeof todayMatchingResult.applicationId === "number" &&
     Number.isSafeInteger(todayMatchingResult.applicationId) &&
@@ -314,8 +324,25 @@ export default function TeamMatchingStatusResultView({
       return;
     }
 
-    setPendingProposalId(String(todayMatchingResult.applicationId));
+    const applicationId = String(todayMatchingResult.applicationId);
+    setPendingProposal(applicationId, null);
     router.push("/team-matching/status/pass/leave");
+
+    void fetchTodayMatchingApplication()
+      .then((todayApplication) => {
+        if (
+          useTeamMatchingProposalStore.getState().pendingProposalId !== applicationId ||
+          String(todayApplication.applicationId) !== applicationId
+        ) {
+          return;
+        }
+
+        queryClient.setQueryData(todayMatchingApplicationQueryKey, todayApplication);
+        setPendingProposal(applicationId, todayApplication.withdrawal.expectedPenalty);
+      })
+      .catch(() => {
+        // 패널티 사전 조회가 실패해도 패스 확인 화면에서는 기본값으로 안내할 수 있다.
+      });
   }
 
   function handleAcceptClick() {
@@ -368,7 +395,9 @@ export default function TeamMatchingStatusResultView({
           <button
             className="flex h-[50px] min-w-0 flex-1 items-center justify-center self-stretch rounded-[14px] border border-[rgba(97,97,97,0.50)] bg-white px-[10px] py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-[#616161] disabled:opacity-50"
             disabled={acceptMatchingGroupMutation.isPending || !canPass}
-            onClick={handlePassClick}
+            onClick={() => {
+              void handlePassClick();
+            }}
             type="button"
           >
             패스
@@ -388,10 +417,7 @@ export default function TeamMatchingStatusResultView({
       </div>
 
       {selectedMember ? (
-        <ChatProfilePreview
-          member={selectedMember}
-          onClose={() => setSelectedMember(null)}
-        />
+        <ChatProfilePreview member={selectedMember} onClose={() => setSelectedMember(null)} />
       ) : null}
     </main>
   );

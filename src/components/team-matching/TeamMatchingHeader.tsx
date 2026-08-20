@@ -40,7 +40,7 @@ export default function TeamMatchingHeader({
           {backIcon}
         </Link>
       )}
-      <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center font-[Roboto] text-[17px] font-semibold not-italic leading-[135%] text-[#111111]">
+      <h1 className="flex h-[38px] flex-col justify-center self-stretch text-center font-[Pretendard] text-[17px] font-semibold not-italic leading-[135%] text-[var(--Semantic-Fill-Strong,var(--Primitive-Gray-Gray-900,#111))]">
         {title}
       </h1>
       <span className="h-6 w-6" aria-hidden="true" />
