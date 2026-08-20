@@ -12,8 +12,8 @@ export type PrivacySection = {
   groups?: { label: string; items: string[] }[];
 };
 
-export const EFFECTIVE_DATE_LABEL = "2026년 00월 00일 시행안";
-export const PAST_EFFECTIVE_DATE_LABELS = ["2026년 00월 00일 시행안", "2026년 00월 00일 시행안"];
+export const EFFECTIVE_DATE_LABEL = "2026년 7월 17일 시행안";
+export const PAST_EFFECTIVE_DATE_LABELS = ["2026년 6월 15일 시행안", "2026년 6월 1일 시행안"];
 
 export const TERMS_ARTICLES: TermsArticle[] = [
   {

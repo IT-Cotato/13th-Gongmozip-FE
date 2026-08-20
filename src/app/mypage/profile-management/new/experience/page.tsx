@@ -18,7 +18,7 @@ export default function ProjectExperiencePage() {
   const router = useRouter();
   const draftProjects = useProfileDraftStore((state) => state.projects);
   const setDraftProjects = useProfileDraftStore((state) => state.setProjects);
-  const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const isEditingExistingProfile = useProfileDraftStore((state) => state.isEditingExistingProfile);
   const [hasNoExperience, setHasNoExperience] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -75,7 +75,7 @@ export default function ProjectExperiencePage() {
           <ChevronLeftIcon />
         </button>
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
-          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+          {isEditingExistingProfile ? "프로필 수정" : "프로필 작성"}
         </h1>
         <button
           type="button"

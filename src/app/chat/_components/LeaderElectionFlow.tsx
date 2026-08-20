@@ -200,8 +200,16 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const selectedCandidate =
     safeCandidates.find((candidate) => candidate.id === selectedCandidateId) ?? safeCandidates[0];
   const currentMember = chatMembers.find((member) => member.isMe);
+  const latestLeaderResultMessage = useMemo(
+    () =>
+      [...serverMessages].reverse().find((message) => message.messageType === "LEADER_RESULT_CARD"),
+    [serverMessages],
+  );
+  const electedLeaderId = latestLeaderResultMessage
+    ? String(getMetadataNumber(latestLeaderResultMessage.metadata, "leaderTeamMemberId"))
+    : null;
   const isCurrentMemberLeader = currentMember
-    ? currentMember.isLeader === true || selectedCandidate?.id === currentMember.id
+    ? currentMember.isLeader === true || electedLeaderId === currentMember.id
     : false;
   const hasCompletedMemberReviews = hasCompletedAllMemberReviews(reviewTargetsQuery.data);
   const hasConfirmedCompletedMemberReviews =
@@ -628,7 +636,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   );
   const latestContestResultMessage = useMemo(
     () =>
-      [...serverMessages].reverse().find((message) => message.messageType === "CONTEST_RESULT_CARD"),
+      [...serverMessages]
+        .reverse()
+        .find((message) => message.messageType === "CONTEST_RESULT_CARD"),
     [serverMessages],
   );
   const hasContestResultMessage = serverMessages.some(
@@ -640,11 +650,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const latestLeaderVoteMessage = useMemo(
     () =>
       [...serverMessages].reverse().find((message) => message.messageType === "LEADER_VOTE_CARD"),
-    [serverMessages],
-  );
-  const latestLeaderResultMessage = useMemo(
-    () =>
-      [...serverMessages].reverse().find((message) => message.messageType === "LEADER_RESULT_CARD"),
     [serverMessages],
   );
   const latestContestVoteReminderCandidateIds = useMemo(
@@ -708,18 +713,22 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     ) ??
     getRemainingSecondsFromMetadata(
       latestContestVoteReminderMessage?.metadata,
-      ["voteDeadlineAt", "voteEndsAt", "voteClosedAt", "deadlineAt", "expiresAt"],
-      [],
+      [
+        "candidateDeadlineAt",
+        "candidateEndsAt",
+        "candidateClosedAt",
+        "voteDeadlineAt",
+        "voteEndsAt",
+        "voteClosedAt",
+        "deadlineAt",
+        "expiresAt",
+      ],
+      ["candidateRemainingSeconds", "voteRemainingSeconds", "remainingSeconds"],
       now,
+      latestContestVoteReminderMessage?.sentAt,
     ) ??
     getRemainingSecondsFromContests(contestCandidates, "voteDeadlineAt", now) ??
     getRemainingSeconds(contestCandidateDeadlineAt ?? undefined, now) ??
-    getRemainingSecondsFromMetadata(
-      latestContestVoteReminderMessage?.metadata,
-      [],
-      ["voteRemainingSeconds", "remainingSeconds"],
-      now,
-    ) ??
     DEFAULT_CONTEST_VOTE_SECONDS;
   const isContestVoteClosed = voteCountdownSeconds <= 0 || hasContestResultMessage;
   const isContestVoteInProgress = !isContestVoteClosed;
@@ -727,8 +736,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const projectRemainingSeconds = getProjectEndRemainingSeconds(projectEndedAt ?? undefined, now);
   const isProjectDeadlineReached =
     projectRemainingSeconds !== undefined && projectRemainingSeconds <= 0;
-  const canShowProjectSubmissionReminder =
-    !hasConfirmedCompletedMemberReviews;
+  const canShowProjectSubmissionReminder = !hasConfirmedCompletedMemberReviews;
   const leaderVoteCountdownSeconds =
     getRemainingSecondsFromMetadata(
       latestLeaderVoteMessage?.metadata,
@@ -1987,8 +1995,7 @@ function hasCompletedAllMemberReviews(
   const reviewableMembers = reviewTargets.filter((member) => !member.isMe);
 
   return (
-    reviewableMembers.length > 0 &&
-    reviewableMembers.every((member) => member.alreadyReviewed)
+    reviewableMembers.length > 0 && reviewableMembers.every((member) => member.alreadyReviewed)
   );
 }
 
@@ -2145,11 +2152,21 @@ function getRemainingSecondsFromMetadata(
   deadlineKeys: string[],
   remainingKeys: string[],
   now: number,
+  baseTime?: string,
 ) {
   for (const key of remainingKeys) {
     const remainingSeconds = getMetadataNumber(metadata, key);
 
     if (remainingSeconds !== undefined) {
+      const baseTimestamp = baseTime ? new Date(baseTime).getTime() : undefined;
+
+      // remainingKeys 값은 메시지를 보낸 시점 기준 "남은 초"라, 그 이후 흐른 시간만큼
+      // 빼줘야 실시간 카운트다운이 된다. baseTime이 없으면(과거 호출 호환) 고정값으로 둔다.
+      if (baseTimestamp !== undefined && Number.isFinite(baseTimestamp)) {
+        const elapsedSeconds = Math.max(0, (now - baseTimestamp) / 1000);
+        return Math.max(0, remainingSeconds - elapsedSeconds);
+      }
+
       return Math.max(0, remainingSeconds);
     }
   }

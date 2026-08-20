@@ -3,14 +3,17 @@
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon } from "../../_components/icons";
 import { EditIcon } from "@/app/mypage/_components/icons";
-import { useProfileDetailQuery, type ProfileDetail } from "@/queries/useProfileDetailQuery";
+import { useProfileDetailQuery } from "@/queries/useProfileDetailQuery";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
-import { getCollaborationCharacterMeta, getPaletteStyle } from "@/app/mypage/_lib/collaborationCharacter";
+import {
+  getCollaborationCharacterMeta,
+  getPaletteStyle,
+} from "@/app/mypage/_lib/collaborationCharacter";
 import { ApiError } from "@/lib/http";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
-import type { ProjectExperienceInput } from "../../new/experience/_components/ProjectExperienceSheet";
-import type { Certificate } from "../../new/certificates/_components/CertificateCard";
+import { buildProfileDraftFromDetail } from "../../_lib/profileDraft";
+import { ProjectSummaryCard } from "./ProjectSummaryCard";
 
 const GENDER_LABEL: Record<string, string> = {
   MALE: "남성",
@@ -23,13 +26,6 @@ function formatDate(isoDate: string) {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(
     date.getDate(),
   ).padStart(2, "0")}`;
-}
-
-function formatMonth(isoDate: string | null) {
-  if (!isoDate) return "";
-  const date = new Date(isoDate);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function EmptySectionCard() {
@@ -51,49 +47,6 @@ function EmptySectionRow() {
       <p className="text-[17px] leading-[1.5] text-[#949494]">👟 첫 레이스 준비중...</p>
     </div>
   );
-}
-
-const PROJECT_CATEGORY_FALLBACK: ProjectExperienceInput["category"] = "공모전 출품";
-
-// 백엔드는 프로젝트 카테고리를 저장하지 않고, 수상 내역도 프로젝트와 연결해
-// 저장하지 않는다. 수정 진입 시에는 카테고리를 기본값으로 채우고(재선택 필요),
-// 수상 내역은 마법사가 만들 때와 같은 순서(프로젝트당 최대 1개)로 저장됐다고
-// 가정해 배열 순서로 최대한 재연결한다.
-function buildProfileDraftFromDetail(profile: ProfileDetail) {
-  const basicInfo = {
-    nickname: profile.nickname,
-    school: profile.schoolName,
-    grade: String(profile.grade),
-    major: profile.major,
-    doubleMajor: profile.secondaryMajor ?? "",
-    minor: "",
-    gpa: String(profile.gpa),
-    gpaScale: String(profile.gpaScale),
-  };
-
-  const projects: ProjectExperienceInput[] = profile.projects.map((project, index) => {
-    const matchedAward = profile.awards[index];
-    return {
-      name: project.projectName,
-      startMonth: project.startedAt ? project.startedAt.slice(0, 7) : "",
-      endMonth: project.endedAt ? project.endedAt.slice(0, 7) : "",
-      category: PROJECT_CATEGORY_FALLBACK,
-      content: project.description,
-      hasAward: Boolean(matchedAward),
-      awardName: matchedAward?.awardName ?? "",
-    };
-  });
-
-  const certificates: Certificate[] = profile.certifications.map((certification) => ({
-    name: certification.certificateName,
-    category: certification.categoryName,
-    grade: "",
-    year: certification.acquiredAt ? String(new Date(certification.acquiredAt).getFullYear()) : "",
-    // 프로필 상세 조회 API는 certificationCode를 내려주지 않아 재저장 시 직접 입력으로 취급한다.
-    certificationCode: null,
-  }));
-
-  return { basicInfo, projects, certificates };
 }
 
 function calculateAge(birthDate: string) {
@@ -125,6 +78,9 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
   const setProjects = useProfileDraftStore((state) => state.setProjects);
   const setCertificates = useProfileDraftStore((state) => state.setCertificates);
   const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const setEditingExistingProfile = useProfileDraftStore(
+    (state) => state.setEditingExistingProfile,
+  );
 
   function handleEdit() {
     if (!profile) return;
@@ -133,6 +89,7 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
     setProjects(() => draft.projects);
     setCertificates(() => draft.certificates);
     setEditingProfileId(profile.profileId);
+    setEditingExistingProfile(true);
     router.push("/mypage/profile-management/new");
   }
 
@@ -266,26 +223,11 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
             {profile.projects.length > 0 ? (
               <div className="flex flex-col gap-4 px-5">
                 {profile.projects.map((project) => (
-                  <div
+                  <ProjectSummaryCard
                     key={project.projectId}
-                    className="flex w-full flex-col gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <p className="px-1 text-[17px] leading-[1.35] font-medium text-[#1f1f1f]">
-                        {project.projectName}
-                      </p>
-                      <div className="flex items-center gap-1 px-1 text-xs leading-[1.35] text-[#616161]">
-                        <span>{formatMonth(project.startedAt)}</span>
-                        <span>~</span>
-                        <span>{project.isOngoing ? "진행중" : formatMonth(project.endedAt)}</span>
-                      </div>
-                    </div>
-                    <div className="w-full rounded-xl bg-[#f5f5f5] px-2 py-4">
-                      <p className="px-1 text-[13px] leading-[1.5] text-[#616161]">
-                        {project.aiSummary || project.description}
-                      </p>
-                    </div>
-                  </div>
+                    profileId={profileId}
+                    project={project}
+                  />
                 ))}
               </div>
             ) : (

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { useContestScrapMutation } from "@/queries/useContestScrapMutation";
@@ -17,6 +18,9 @@ export function ScrapList({
   contests,
   scrappedContestIds: scrappedContestIdsProp,
 }: ScrapListProps) {
+  // 이 컴포넌트는 /contests/scraps와 /mypage/scrap 양쪽에서 재사용되므로, 상세
+  // 화면의 뒤로가기가 실제로 들어온 화면으로 돌아가도록 현재 경로를 returnTo로 넘긴다.
+  const pathname = usePathname();
   const storeScrappedContestIds = useContestScrapStore((state) => state.scrappedContestIds);
   const contestScrapMutation = useContestScrapMutation();
   const scrappedContestIds = scrappedContestIdsProp ?? storeScrappedContestIds;
@@ -75,7 +79,7 @@ export function ScrapList({
             >
               <div className="grid w-full min-h-[113px] grid-cols-[85px_minmax(0,1fr)_24px] gap-x-[14px]">
                 <Link
-                  href={`/contests/${contest.id}`}
+                  href={`/contests/${contest.id}?returnTo=${encodeURIComponent(pathname)}`}
                   aria-label={`${contest.title} 상세정보 보기`}
                   className="contents"
                 >

@@ -12,12 +12,22 @@ export type MemberProfile = {
   // SNS 간편가입 직후에는 아직 입력받지 않아 null로 내려올 수 있음
   // (이름을 아직 입력하지 않은 경우와 동일한 케이스).
   birthDate: string | null;
-  snsType: "KAKAO" | null;
+  snsType: "KAKAO" | "GOOGLE" | null;
   snsLinked: boolean;
   marketingConsentEmail: boolean;
   marketingConsentSms: boolean;
   profileImageUrl: string | null;
 };
+
+const SNS_LOGIN_HINT: Record<"KAKAO" | "GOOGLE", string> = {
+  KAKAO: "카카오톡 로그인 사용중",
+  GOOGLE: "구글 로그인 사용중",
+};
+
+// snsLinked가 true인데 snsType이 알 수 없는 값(백엔드 확장 등)일 때를 대비한 안전한 기본 문구.
+export function getSnsLoginHint(snsType: MemberProfile["snsType"]) {
+  return snsType ? (SNS_LOGIN_HINT[snsType] ?? "소셜 로그인 사용중") : "소셜 로그인 사용중";
+}
 
 // accessToken을 키에 포함시켜, 로그아웃 없이 다른 계정으로 로그인해도
 // 이전 계정의 캐시된 데이터가 잠깐 보이는 일이 없도록 세션별로 캐시를 분리한다.

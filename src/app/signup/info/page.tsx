@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeftIcon } from "../_components/icons";
 import { InfoStep, type Gender } from "../_components/InfoStep";
 import {
   formatBirthdate,
@@ -28,18 +27,22 @@ function toUiGender(gender: string): Gender {
 export default function SignupInfoPage() {
   const router = useRouter();
   const { data: profile, isLoading, isError, refetch } = useMemberProfileQuery();
+  // 이 화면은 방금 소셜 간편가입으로 새로 들어와 이름/생년월일이 비어 있는
+  // 회원만을 위한 것이다. 이미 가입을 마친 회원(일반 회원 포함)이 URL로
+  // 직접 들어오면 기존 정보를 덮어쓸 수 있으므로 홈으로 돌려보낸다.
+  const isEligible = profile ? profile.snsLinked && (!profile.name || !profile.birthDate) : null;
+
+  useEffect(() => {
+    if (isEligible === false) {
+      router.replace("/");
+    }
+  }, [isEligible, router]);
 
   return (
     <main className="flex h-full w-full flex-col overflow-y-auto bg-white">
+      {/* 소셜 로그인 신규가입자 전용 화면이라 가입이 이미 완료된 상태다. 뒤로가기를
+          누르면 홈으로 이동해버려 혼란을 주므로 버튼 자체를 두지 않는다. */}
       <div className="relative flex items-center justify-center px-4 py-4">
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          aria-label="뒤로가기"
-          className="absolute left-4 flex h-6 w-6 items-center justify-center"
-        >
-          <ChevronLeftIcon />
-        </button>
         <h2 className="text-base font-semibold text-gray-900">회원가입</h2>
       </div>
 
@@ -62,7 +65,7 @@ export default function SignupInfoPage() {
         </div>
       )}
 
-      {profile && <SignupInfoForm key={profile.email} profile={profile} />}
+      {profile && isEligible && <SignupInfoForm key={profile.email} profile={profile} />}
     </main>
   );
 }
