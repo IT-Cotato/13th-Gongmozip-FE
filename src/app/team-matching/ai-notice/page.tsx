@@ -24,9 +24,23 @@ const combinationTags = [
 ];
 
 export default function TeamMatchingAiNoticePage() {
-  const { data: eligibility } = useMatchingEligibilityQuery();
-  const { data: todayApplication } = useTodayMatchingApplicationQuery();
+  const {
+    data: eligibility,
+    isError: isEligibilityError,
+    isLoading: isEligibilityLoading,
+  } = useMatchingEligibilityQuery();
+  const {
+    data: todayApplication,
+    isError: isTodayApplicationError,
+    isLoading: isTodayApplicationLoading,
+  } = useTodayMatchingApplicationQuery();
   const applyHref = getTeamMatchingApplyHref(eligibility, todayApplication);
+  const isApplyDisabled =
+    isEligibilityLoading ||
+    isEligibilityError ||
+    isTodayApplicationLoading ||
+    isTodayApplicationError ||
+    !applyHref;
 
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
@@ -137,12 +151,22 @@ export default function TeamMatchingAiNoticePage() {
           <p className="text-center font-[Pretendard] text-[17px] font-medium leading-[135%] text-[#1F1F1F]">
             지금 바로 팀 매칭을 시작해보세요!
           </p>
-          <TeamMatchingApplyLink
-            className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
-            href={applyHref}
-          >
-            매칭 신청하기
-          </TeamMatchingApplyLink>
+          {isApplyDisabled || !applyHref ? (
+            <button
+              className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white opacity-60"
+              disabled
+              type="button"
+            >
+              매칭 신청하기
+            </button>
+          ) : (
+            <TeamMatchingApplyLink
+              className="flex h-12 w-full items-center justify-center rounded-[14px] bg-[#FF7658] px-8 py-[9px] text-center font-[Pretendard] text-[17px] font-semibold leading-[125%] text-white"
+              href={applyHref}
+            >
+              매칭 신청하기
+            </TeamMatchingApplyLink>
+          )}
         </section>
       </div>
     </main>
