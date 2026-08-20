@@ -101,6 +101,13 @@ async function createProjectsAwardsAndCertifications(
   );
 }
 
+function publishProfile(profileId: number) {
+  return apiFetch<void>(`/api/profiles/${profileId}/visibility`, {
+    method: "PATCH",
+    body: { isPublic: true },
+  });
+}
+
 async function createProfileWithDetails({
   basicInfo,
   projects,
@@ -112,12 +119,15 @@ async function createProfileWithDetails({
       ...buildProfileBody(basicInfo),
       // 관심 분야를 고르는 화면이 아직 없어 항상 빈 배열로 전송함
       interestCategories: [],
-      isPublic: true,
+      // 프로젝트/자격증을 아직 채우지 않은 상태로 공개되지 않도록 비공개로 만들고,
+      // 마법사를 끝까지 마친 뒤(publishProfile)에만 공개로 전환한다.
+      isPublic: false,
     },
   });
 
   const profileId = createdProfile.profileId;
   await createProjectsAwardsAndCertifications(profileId, projects, certificates);
+  await publishProfile(profileId);
 
   return { profileId };
 }
@@ -143,7 +153,10 @@ async function createBasicProfile(basicInfo: ProfileBasicInfo) {
     body: {
       ...buildProfileBody(basicInfo),
       interestCategories: [],
-      isPublic: true,
+      // 이 시점엔 프로젝트/자격증이 전혀 없으므로 비공개로 만든다. 마법사를 끝까지
+      // 마쳐 프로젝트/자격증까지 채운 뒤(certificates 페이지의 최종 제출)에만 공개로
+      // 전환해, 미완성 프로필이 잠깐이라도 다른 사용자에게 노출되지 않게 한다.
+      isPublic: false,
     },
   });
 }

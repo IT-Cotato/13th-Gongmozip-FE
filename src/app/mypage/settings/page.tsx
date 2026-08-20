@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon } from "./_components/icons";
@@ -7,23 +8,71 @@ import { Toggle } from "./_components/Toggle";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useUpdateMarketingConsentMutation } from "@/queries/useUpdateMarketingConsentMutation";
 
+const TOAST_DURATION_MS = 2000;
+
+const MARKETING_CONSENT_FIELD_LABEL = {
+  marketingConsentEmail: "이메일",
+  marketingConsentSms: "SMS",
+} as const;
+
+type MarketingConsentField = keyof typeof MARKETING_CONSENT_FIELD_LABEL;
+
+function buildMarketingConsentToastMessage(field: MarketingConsentField, nextEnabled: boolean) {
+  const label = MARKETING_CONSENT_FIELD_LABEL[field];
+  return nextEnabled
+    ? `${label} 마케팅 알림을 받도록 설정되었습니다.`
+    : `${label} 마케팅 알림을 받지 않도록 설정되었습니다.`;
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const { data: profile, isLoading, isError, refetch } = useMemberProfileQuery();
   const updateConsentMutation = useUpdateMarketingConsentMutation();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleToggle(field: "marketingConsentEmail" | "marketingConsentSms") {
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  function showToast(message: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(message);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), TOAST_DURATION_MS);
+  }
+
+  function handleToggle(field: MarketingConsentField) {
     if (!profile || updateConsentMutation.isPending) return;
 
-    updateConsentMutation.mutate({
-      marketingConsentEmail: profile.marketingConsentEmail,
-      marketingConsentSms: profile.marketingConsentSms,
-      [field]: !profile[field],
-    });
+    const nextEnabled = !profile[field];
+
+    updateConsentMutation.mutate(
+      {
+        marketingConsentEmail: profile.marketingConsentEmail,
+        marketingConsentSms: profile.marketingConsentSms,
+        [field]: nextEnabled,
+      },
+      {
+        onSuccess: () => showToast(buildMarketingConsentToastMessage(field, nextEnabled)),
+      },
+    );
   }
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-16 left-1/2 z-50 w-[calc(100%-40px)] max-w-[350px] -translate-x-1/2 rounded-full bg-[rgba(17,17,17,0.6)] px-5 py-2"
+        >
+          <p className="text-center text-[15px] leading-[1.25] font-medium break-words text-white">
+            {toastMessage}
+          </p>
+        </div>
+      )}
       <div className="relative flex items-center justify-center px-4 py-1">
         <button
           type="button"

@@ -12,6 +12,7 @@ import {
   useCreateProfileWithDetailsMutation,
   useUpdateProfileWithDetailsMutation,
 } from "@/queries/useCreateProfileWithDetailsMutation";
+import { useUpdateProfileVisibilityMutation } from "@/queries/useUpdateProfileVisibilityMutation";
 import { ApiError } from "@/lib/http";
 
 export default function CertificatesPage() {
@@ -26,7 +27,11 @@ export default function CertificatesPage() {
   const resetProfileDraft = useProfileDraftStore((state) => state.resetProfileDraft);
   const createProfileMutation = useCreateProfileWithDetailsMutation();
   const updateProfileMutation = useUpdateProfileWithDetailsMutation();
-  const isSubmitting = createProfileMutation.isPending || updateProfileMutation.isPending;
+  const visibilityMutation = useUpdateProfileVisibilityMutation();
+  const isSubmitting =
+    createProfileMutation.isPending ||
+    updateProfileMutation.isPending ||
+    visibilityMutation.isPending;
   const [certificates, setCertificates] = useState<Certificate[]>(draftCertificates);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -118,7 +123,18 @@ export default function CertificatesPage() {
           certificates,
         },
         {
-          onSuccess: () => router.replace("/mypage/profile-management/new/complete"),
+          onSuccess: () => {
+            // 1단계에서 생성될 때는 비공개(isPublic: false)였다 - 프로젝트/자격증까지
+            // 다 채운 지금에야 다른 사용자에게 보여도 되는 상태이므로 공개로 전환한다.
+            // 공개 전환이 실패해도 프로필 내용 자체는 이미 저장됐으니 완료 화면으로는
+            // 그대로 넘어간다(비공개 상태로 남을 뿐, 목록에서 다시 공개로 바꿀 수 있음).
+            visibilityMutation.mutate(
+              { profileId: String(editingProfileId), isPublic: true },
+              {
+                onSettled: () => router.replace("/mypage/profile-management/new/complete"),
+              },
+            );
+          },
           onError,
         },
       );

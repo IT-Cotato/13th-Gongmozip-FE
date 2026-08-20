@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomNavigation from "@/components/layout/BottomNavigation";
+import { HeaderIconLink } from "@/components/layout/HeaderIconButton";
 import { SettingsIcon } from "./_components/icons";
 import { CharacterAvatar } from "./_components/CharacterAvatar";
 import { OnboardingCoachmark } from "./_components/OnboardingCoachmark";
@@ -174,15 +175,11 @@ export default function MyPage() {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="flex-1 overflow-y-auto">
-        <header className="relative flex items-center justify-center px-4 py-1">
+        <header className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
           <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111111]">마이페이지</h1>
-          <Link
-            href="/mypage/settings"
-            aria-label="설정"
-            className="absolute right-4 flex h-6 w-6 items-center justify-center text-[#1F1F1F]"
-          >
+          <HeaderIconLink href="/mypage/settings" aria-label="설정" className="absolute right-4">
             <SettingsIcon />
-          </Link>
+          </HeaderIconLink>
         </header>
 
         {isLoading && (

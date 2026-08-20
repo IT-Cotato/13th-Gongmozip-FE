@@ -38,10 +38,11 @@ export function ProjectSummaryCard({ profileId, project }: ProjectSummaryCardPro
   });
 
   const isGenerating =
-    isPolling &&
-    (summaryQuery.data === undefined ||
-      summaryQuery.data.status === "PENDING" ||
-      summaryQuery.data.status === "PROCESSING");
+    generateMutation.isPending ||
+    (isPolling &&
+      (summaryQuery.data === undefined ||
+        summaryQuery.data.status === "PENDING" ||
+        summaryQuery.data.status === "PROCESSING"));
 
   const hasFailed = isPolling && summaryQuery.data?.status === "FAILED";
   const displaySummary =
@@ -64,7 +65,14 @@ export function ProjectSummaryCard({ profileId, project }: ProjectSummaryCardPro
   function handleRegenerate() {
     if (isGenerating) return;
     setIsPolling(true);
-    generateMutation.mutate({ profileId, projectId: project.projectId });
+    generateMutation.mutate(
+      { profileId, projectId: project.projectId },
+      {
+        // 생성 요청 자체가 실패하면 폴링을 시작할 근거가 없다 - isPolling을 켠 채로
+        // 두면 재산출 버튼이 영영 비활성 상태로 멈추므로, 다시 시도할 수 있게 되돌린다.
+        onError: () => setIsPolling(false),
+      },
+    );
   }
 
   return (
@@ -88,7 +96,9 @@ export function ProjectSummaryCard({ profileId, project }: ProjectSummaryCardPro
         </p>
         <div className="flex items-center justify-end gap-1 px-1">
           {errorMessage && (
-            <p className="mr-auto text-xs leading-[1.35] text-[#BB5260]">{errorMessage}</p>
+            <p role="alert" className="mr-auto text-xs leading-[1.35] text-[#BB5260]">
+              {errorMessage}
+            </p>
           )}
           <button
             type="button"

@@ -13,6 +13,7 @@ import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useMypageSummaryQuery } from "@/queries/useMypageSummaryQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
 import { getCollaborationCharacterMeta, getPaletteStyle } from "../_lib/collaborationCharacter";
+import { ApiError } from "@/lib/http";
 
 export default function ProfileManagementPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function ProfileManagementPage() {
   const deleteProfileMutation = useDeleteProfileMutation();
   const visibilityMutation = useUpdateProfileVisibilityMutation();
   const [profileIdPendingDelete, setProfileIdPendingDelete] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const isLoading = profileListQuery.isLoading;
   const isError = profileListQuery.isError;
@@ -44,8 +46,16 @@ export default function ProfileManagementPage() {
 
   function handleConfirmDelete() {
     if (!profileIdPendingDelete) return;
+    setDeleteError(null);
     deleteProfileMutation.mutate(profileIdPendingDelete, {
       onSuccess: () => setProfileIdPendingDelete(null),
+      onError: (error) => {
+        setDeleteError(
+          error instanceof ApiError
+            ? error.message
+            : "프로필 삭제에 실패했습니다. 다시 시도해주세요.",
+        );
+      },
     });
   }
 
@@ -87,15 +97,13 @@ export default function ProfileManagementPage() {
           <div className="flex items-center gap-2 bg-white px-6 py-5">
             <div
               className="flex size-[67px] shrink-0 items-center justify-center overflow-hidden rounded-full"
-              style={characterMeta ? getPaletteStyle(characterPalette) : { backgroundColor: "#fff" }}
+              style={
+                characterMeta ? getPaletteStyle(characterPalette) : { backgroundColor: "#fff" }
+              }
             >
               {characterMeta?.imageSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={characterMeta.imageSrc}
-                  alt=""
-                  className="size-[85%] object-contain"
-                />
+                <img src={characterMeta.imageSrc} alt="" className="size-[85%] object-contain" />
               ) : (
                 <ProfilePlaceholderIcon />
               )}
@@ -145,7 +153,10 @@ export default function ProfileManagementPage() {
                           isPublic: !preview.isPublic,
                         })
                       }
-                      onDelete={() => setProfileIdPendingDelete(String(profile.profileId))}
+                      onDelete={() => {
+                        setDeleteError(null);
+                        setProfileIdPendingDelete(String(profile.profileId));
+                      }}
                     />
                   );
                 })}
@@ -161,9 +172,13 @@ export default function ProfileManagementPage() {
 
       {profileIdPendingDelete && (
         <DeleteProfileConfirmModal
-          onCancel={() => setProfileIdPendingDelete(null)}
+          onCancel={() => {
+            setProfileIdPendingDelete(null);
+            setDeleteError(null);
+          }}
           onConfirm={handleConfirmDelete}
           isDeleting={deleteProfileMutation.isPending}
+          error={deleteError}
         />
       )}
     </div>

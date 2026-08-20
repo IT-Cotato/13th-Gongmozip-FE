@@ -40,11 +40,17 @@ export default function ChangePasswordPage() {
   const isNewPasswordValid = checks.every((c) => c.satisfied);
   const isConfirmMismatch = confirmPassword.length > 0 && confirmPassword !== newPassword;
   const isCurrentPasswordValid = currentPassword.length > 0;
+  // 소셜 로그인 여부를 아직 모르는(로딩/에러) 상태에서 제출이 가능하면, 소셜
+  // 계정인데도 요청이 나가버릴 수 있다 - 프로필 조회가 성공해 확실히 일반
+  // 계정임을 확인한 뒤에만 제출을 허용한다.
   const isFormValid =
-    isCurrentPasswordValid && isNewPasswordValid && confirmPassword === newPassword;
+    profileQuery.isSuccess &&
+    isCurrentPasswordValid &&
+    isNewPasswordValid &&
+    confirmPassword === newPassword;
 
   function handleSubmit() {
-    if (!isFormValid || changePasswordMutation.isPending) return;
+    if (!isFormValid || !profileQuery.isSuccess || changePasswordMutation.isPending) return;
 
     setSubmitError(null);
     changePasswordMutation.mutate(

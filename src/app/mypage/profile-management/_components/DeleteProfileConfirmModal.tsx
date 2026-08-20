@@ -6,6 +6,7 @@ type DeleteProfileConfirmModalProps = {
   onCancel: () => void;
   onConfirm: () => void;
   isDeleting: boolean;
+  error?: string | null;
 };
 
 const FOCUSABLE_SELECTOR =
@@ -15,6 +16,7 @@ export function DeleteProfileConfirmModal({
   onCancel,
   onConfirm,
   isDeleting,
+  error,
 }: DeleteProfileConfirmModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +84,11 @@ export function DeleteProfileConfirmModal({
           <p className="w-full text-[17px] leading-[1.5] text-[#616161]">
             삭제한 프로필은 되돌릴 수 없어요.
           </p>
+          {error && (
+            <p role="alert" className="w-full text-xs leading-[1.35] text-[#BB5260]">
+              {error}
+            </p>
+          )}
         </div>
         <div className="flex h-[60px] w-full items-center gap-2 px-2 py-1">
           <button

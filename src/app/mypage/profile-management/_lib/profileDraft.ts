@@ -4,10 +4,12 @@ import type { Certificate } from "../new/certificates/_components/CertificateCar
 
 const PROJECT_CATEGORY_FALLBACK: ProjectExperienceInput["category"] = "공모전 출품";
 
-// 백엔드는 프로젝트 카테고리를 저장하지 않고, 수상 내역도 프로젝트와 연결해
-// 저장하지 않는다. 수정 진입 시에는 카테고리를 기본값으로 채우고(재선택 필요),
-// 수상 내역은 마법사가 만들 때와 같은 순서(프로젝트당 최대 1개)로 저장됐다고
-// 가정해 배열 순서로 최대한 재연결한다.
+// 백엔드는 프로젝트 카테고리를 저장하지 않고, 수상 내역도 어느 프로젝트의
+// 수상인지 연결해 저장하지 않는다(awards 응답에 프로젝트 연관 키가 없음).
+// 수정 진입 시 카테고리는 기본값으로 채우고(재선택 필요), 수상 내역은 어느
+// 프로젝트 것인지 알 수 없으므로 추측해서 잘못 붙이지 않고 비워둔다 - 배열
+// 순서로 추측하면(과거 방식) 프로젝트 개수와 수상 개수가 다를 때 엉뚱한
+// 프로젝트에 수상 내역이 붙는다.
 export function buildProfileDraftFromDetail(profile: ProfileDetail) {
   const basicInfo = {
     nickname: profile.nickname,
@@ -20,18 +22,15 @@ export function buildProfileDraftFromDetail(profile: ProfileDetail) {
     gpaScale: String(profile.gpaScale),
   };
 
-  const projects: ProjectExperienceInput[] = profile.projects.map((project, index) => {
-    const matchedAward = profile.awards[index];
-    return {
-      name: project.projectName,
-      startMonth: project.startedAt ? project.startedAt.slice(0, 7) : "",
-      endMonth: project.endedAt ? project.endedAt.slice(0, 7) : "",
-      category: PROJECT_CATEGORY_FALLBACK,
-      content: project.description,
-      hasAward: Boolean(matchedAward),
-      awardName: matchedAward?.awardName ?? "",
-    };
-  });
+  const projects: ProjectExperienceInput[] = profile.projects.map((project) => ({
+    name: project.projectName,
+    startMonth: project.startedAt ? project.startedAt.slice(0, 7) : "",
+    endMonth: project.endedAt ? project.endedAt.slice(0, 7) : "",
+    category: PROJECT_CATEGORY_FALLBACK,
+    content: project.description,
+    hasAward: false,
+    awardName: "",
+  }));
 
   const certificates: Certificate[] = profile.certifications.map((certification) => ({
     name: certification.certificateName,

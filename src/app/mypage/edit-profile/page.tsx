@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { HeaderIconButton } from "@/components/layout/HeaderIconButton";
 import { ChevronLeftIcon } from "./_components/icons";
 import { ApiError } from "@/lib/http";
 import {
@@ -68,15 +69,14 @@ export default function EditProfilePage() {
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
-      <div className="relative flex items-center justify-center px-4 py-1">
-        <button
-          type="button"
+      <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
+        <HeaderIconButton
           onClick={() => router.back()}
           aria-label="뒤로가기"
-          className="absolute left-4 flex h-6 w-6 items-center justify-center"
+          className="absolute left-4"
         >
           <ChevronLeftIcon />
-        </button>
+        </HeaderIconButton>
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111111]">회원정보 수정</h1>
       </div>
 
