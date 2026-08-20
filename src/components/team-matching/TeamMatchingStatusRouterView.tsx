@@ -13,6 +13,10 @@ import TeamMatchingStatusResultView from "@/components/team-matching/TeamMatchin
 import TeamMatchingUnmatchedView from "@/components/team-matching/TeamMatchingUnmatchedView";
 import { ApiError } from "@/lib/http";
 import {
+  type TodayMatchingApplication,
+  useTodayMatchingApplicationQuery,
+} from "@/queries/useTodayMatchingApplicationQuery";
+import {
   type TodayMatchingResult,
   useTodayMatchingResultQuery,
 } from "@/queries/useTodayMatchingResultQuery";
@@ -74,6 +78,29 @@ function isConfirmedMatching(todayMatchingResult: TodayMatchingResult) {
     todayMatchingResult.resultStatus === "MATCHED" &&
     (Boolean(todayMatchingResult.teamId) || todayMatchingResult.groupStatus === "CONFIRMED")
   );
+}
+
+function getApplicationStatusView(todayApplication: TodayMatchingApplication | undefined) {
+  if (!todayApplication?.appliedToday) {
+    return null;
+  }
+
+  switch (todayApplication.status) {
+    case "WAITING":
+    case "MATCHING":
+      return <TeamMatchingPoolView showCancelAction={false} todayApplication={todayApplication} />;
+    case "REASSIGN_PENDING":
+      return (
+        <TeamMatchingAcceptWaitingView
+          showCancelAction={false}
+          todayApplication={todayApplication}
+        />
+      );
+    case "PASSED":
+      return <TeamMatchingPassView />;
+    default:
+      return null;
+  }
 }
 
 function useHasTeamMatchingCompletionHydrated() {
@@ -154,9 +181,12 @@ function ConfirmedMatchingStatusView({
   return <TeamMatchingStatusEmptyView />;
 }
 
-function getStatusView(todayMatchingResult: TodayMatchingResult) {
+function getStatusView(
+  todayMatchingResult: TodayMatchingResult,
+  todayApplication: TodayMatchingApplication | undefined,
+) {
   if (todayMatchingResult.resultStatus === "NOT_APPLIED") {
-    return <TeamMatchingStatusEmptyView />;
+    return getApplicationStatusView(todayApplication) ?? <TeamMatchingStatusEmptyView />;
   }
 
   if (todayMatchingResult.resultStatus === "MATCHED") {
@@ -183,7 +213,12 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
   switch (todayMatchingResult.resultStatus) {
     case "NOT_PUBLISHED":
     case "PROCESSING":
-      return <TeamMatchingPoolView showCancelAction={false} />;
+      return (
+        <TeamMatchingPoolView
+          showCancelAction={false}
+          todayApplication={todayApplication}
+        />
+      );
     case "UNMATCHED":
       return <TeamMatchingUnmatchedView />;
     case "WITHDRAWN":
@@ -195,9 +230,17 @@ function getStatusView(todayMatchingResult: TodayMatchingResult) {
 
 export default function TeamMatchingStatusRouterView() {
   const { data: todayMatchingResult, error, isError, isLoading } = useTodayMatchingResultQuery();
+  const {
+    data: todayApplication,
+    error: todayApplicationError,
+    isError: isTodayApplicationError,
+    isLoading: isTodayApplicationLoading,
+  } = useTodayMatchingApplicationQuery();
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+  const isTodayApplicationUnauthorized =
+    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
 
-  if (isLoading) {
+  if (isLoading || (isTodayApplicationLoading && !todayMatchingResult)) {
     return (
       <StatusFeedbackView
         message="오늘의 매칭 신청 상태를 확인하고 있어요."
@@ -207,12 +250,18 @@ export default function TeamMatchingStatusRouterView() {
   }
 
   if (isError || !todayMatchingResult) {
+    const fallbackStatusView = getApplicationStatusView(todayApplication);
+
+    if (fallbackStatusView) {
+      return fallbackStatusView;
+    }
+
     return (
       <StatusFeedbackView
-        actionHref={isUnauthorized ? "/login" : undefined}
-        actionLabel={isUnauthorized ? "로그인하기" : undefined}
+        actionHref={isUnauthorized || isTodayApplicationUnauthorized ? "/login" : undefined}
+        actionLabel={isUnauthorized || isTodayApplicationUnauthorized ? "로그인하기" : undefined}
         message={
-          isUnauthorized
+          isUnauthorized || isTodayApplicationUnauthorized
             ? "로그인 후 나의 매칭현황을 확인할 수 있어요."
             : "매칭 신청 상태를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요."
         }
@@ -221,5 +270,18 @@ export default function TeamMatchingStatusRouterView() {
     );
   }
 
-  return getStatusView(todayMatchingResult);
+  if (
+    todayMatchingResult.resultStatus === "NOT_APPLIED" &&
+    isTodayApplicationLoading &&
+    !isTodayApplicationError
+  ) {
+    return (
+      <StatusFeedbackView
+        message="오늘의 매칭 신청 상태를 확인하고 있어요."
+        title="잠시만 기다려주세요"
+      />
+    );
+  }
+
+  return getStatusView(todayMatchingResult, todayApplication);
 }
