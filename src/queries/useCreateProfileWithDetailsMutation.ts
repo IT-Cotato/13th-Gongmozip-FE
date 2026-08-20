@@ -133,6 +133,58 @@ export function useCreateProfileWithDetailsMutation() {
   });
 }
 
+// 1단계(기본 정보) "다음"에서 호출된다. 닉네임 중복 등 서버 검증을 마지막
+// 단계까지 미루지 않고 이 시점에 바로 확인하기 위해, 프로젝트/자격증 없이
+// 프로필만 먼저 만든다. 이후 단계는 이 profileId로 계속 수정(PATCH)하므로
+// 뒷 단계에서 실패해 재시도하더라도 프로필이 중복 생성되지 않는다.
+async function createBasicProfile(basicInfo: ProfileBasicInfo) {
+  return apiFetch<{ profileId: number }>("/api/profiles", {
+    method: "POST",
+    body: {
+      ...buildProfileBody(basicInfo),
+      interestCategories: [],
+      isPublic: true,
+    },
+  });
+}
+
+export function useCreateBasicProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createBasicProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
+    },
+  });
+}
+
+export type UpdateBasicProfileInput = {
+  profileId: number;
+  basicInfo: ProfileBasicInfo;
+};
+
+async function updateBasicProfile({ profileId, basicInfo }: UpdateBasicProfileInput) {
+  await apiFetch<void>(`/api/profiles/${encodeURIComponent(String(profileId))}`, {
+    method: "PATCH",
+    body: buildProfileBody(basicInfo),
+  });
+
+  return { profileId };
+}
+
+export function useUpdateBasicProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateBasicProfile,
+    onSuccess: (_data, { profileId }) => {
+      queryClient.invalidateQueries({ queryKey: ["profiles", "me"] });
+      queryClient.invalidateQueries({ queryKey: profileDetailQueryKey(String(profileId)) });
+    },
+  });
+}
+
 export type UpdateProfileWithDetailsInput = {
   profileId: number;
   basicInfo: ProfileBasicInfo;

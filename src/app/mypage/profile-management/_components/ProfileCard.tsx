@@ -36,6 +36,9 @@ export function ProfileCard({
   const setProjects = useProfileDraftStore((state) => state.setProjects);
   const setCertificates = useProfileDraftStore((state) => state.setCertificates);
   const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const setEditingExistingProfile = useProfileDraftStore(
+    (state) => state.setEditingExistingProfile,
+  );
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
   const [editError, setEditError] = useState(false);
   const projectNames = preview.projectSummaries.map((project) => project.projectName);
@@ -62,6 +65,7 @@ export function ProfileCard({
       setProjects(() => draft.projects);
       setCertificates(() => draft.certificates);
       setEditingProfileId(profile.profileId);
+      setEditingExistingProfile(true);
       router.push("/mypage/profile-management/new");
     } catch {
       setEditError(true);

@@ -13,6 +13,7 @@ import {
 import { ApiError } from "@/lib/http";
 import { useProfileDraftStore } from "@/stores/profileDraftStore";
 import { buildProfileDraftFromDetail } from "../../_lib/profileDraft";
+import { ProjectSummaryCard } from "./ProjectSummaryCard";
 
 const GENDER_LABEL: Record<string, string> = {
   MALE: "남성",
@@ -25,13 +26,6 @@ function formatDate(isoDate: string) {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(
     date.getDate(),
   ).padStart(2, "0")}`;
-}
-
-function formatMonth(isoDate: string | null) {
-  if (!isoDate) return "";
-  const date = new Date(isoDate);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function EmptySectionCard() {
@@ -84,6 +78,9 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
   const setProjects = useProfileDraftStore((state) => state.setProjects);
   const setCertificates = useProfileDraftStore((state) => state.setCertificates);
   const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const setEditingExistingProfile = useProfileDraftStore(
+    (state) => state.setEditingExistingProfile,
+  );
 
   function handleEdit() {
     if (!profile) return;
@@ -92,6 +89,7 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
     setProjects(() => draft.projects);
     setCertificates(() => draft.certificates);
     setEditingProfileId(profile.profileId);
+    setEditingExistingProfile(true);
     router.push("/mypage/profile-management/new");
   }
 
@@ -225,26 +223,11 @@ export function ProfilePreviewContent({ profileId }: { profileId: string }) {
             {profile.projects.length > 0 ? (
               <div className="flex flex-col gap-4 px-5">
                 {profile.projects.map((project) => (
-                  <div
+                  <ProjectSummaryCard
                     key={project.projectId}
-                    className="flex w-full flex-col gap-2.5 rounded-2xl border border-[rgba(97,97,97,0.16)] p-4"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <p className="px-1 text-[17px] leading-[1.35] font-medium text-[#1f1f1f]">
-                        {project.projectName}
-                      </p>
-                      <div className="flex items-center gap-1 px-1 text-xs leading-[1.35] text-[#616161]">
-                        <span>{formatMonth(project.startedAt)}</span>
-                        <span>~</span>
-                        <span>{project.isOngoing ? "진행중" : formatMonth(project.endedAt)}</span>
-                      </div>
-                    </div>
-                    <div className="w-full rounded-xl bg-[#f5f5f5] px-2 py-4">
-                      <p className="px-1 text-[13px] leading-[1.5] text-[#616161]">
-                        {project.aiSummary || project.description}
-                      </p>
-                    </div>
-                  </div>
+                    profileId={profileId}
+                    project={project}
+                  />
                 ))}
               </div>
             ) : (

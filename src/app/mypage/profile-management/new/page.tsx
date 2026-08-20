@@ -12,6 +12,11 @@ import { useProfileDefaultInfoStore } from "@/stores/profileDefaultInfoStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCurrentCharacterQuery } from "@/queries/useCurrentCharacterQuery";
 import { useCharacterPalettesQuery } from "@/queries/useCharacterPalettesQuery";
+import {
+  useCreateBasicProfileMutation,
+  useUpdateBasicProfileMutation,
+} from "@/queries/useCreateProfileWithDetailsMutation";
+import { ApiError } from "@/lib/http";
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl bg-[rgba(97,97,97,0.1)] px-5 py-3 text-[13px] leading-[1.5] text-[#1F1F1F] outline-none placeholder:text-[#949494]";
@@ -43,6 +48,8 @@ export default function CreateProfilePage() {
   const draftBasicInfo = useProfileDraftStore((state) => state.basicInfo);
   const setDraftBasicInfo = useProfileDraftStore((state) => state.setBasicInfo);
   const editingProfileId = useProfileDraftStore((state) => state.editingProfileId);
+  const setEditingProfileId = useProfileDraftStore((state) => state.setEditingProfileId);
+  const isEditingExistingProfile = useProfileDraftStore((state) => state.isEditingExistingProfile);
   const nicknameError = useProfileDraftStore((state) => state.nicknameError);
   const setNicknameError = useProfileDraftStore((state) => state.setNicknameError);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -60,6 +67,11 @@ export default function CreateProfilePage() {
   const [gpaScale, setGpaScale] = useState(draftBasicInfo.gpaScale);
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const createBasicProfileMutation = useCreateBasicProfileMutation();
+  const updateBasicProfileMutation = useUpdateBasicProfileMutation();
+  const isSubmitting = createBasicProfileMutation.isPending || updateBasicProfileMutation.isPending;
 
   const characterQuery = useCurrentCharacterQuery();
   const palettesQuery = useCharacterPalettesQuery();
@@ -105,26 +117,60 @@ export default function CreateProfilePage() {
     nickname.trim().length > 0 && school.trim().length > 0 && major.trim().length > 0 && isGpaValid;
 
   function handleNext() {
-    if (!isFormValid) return;
+    if (!isFormValid || isSubmitting) return;
+    setSubmitError(null);
+    setNicknameError(null);
     const basicInfo = { nickname, school, grade, major, doubleMajor, minor, gpa, gpaScale };
-    setDraftBasicInfo(basicInfo);
 
-    if (accessToken) {
-      if (saveAsDefault) {
-        setDefaultBasicInfo(basicInfo);
+    function proceed() {
+      setDraftBasicInfo(basicInfo);
+
+      if (accessToken) {
+        if (saveAsDefault) {
+          setDefaultBasicInfo(basicInfo);
+        } else {
+          clearDefaultBasicInfo();
+        }
+      }
+
+      router.replace("/mypage/profile-management/new/experience");
+    }
+
+    function handleError(error: unknown) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "프로필 저장에 실패했습니다. 다시 시도해주세요.";
+      if (message.includes("닉네임")) {
+        setNicknameError(message);
       } else {
-        clearDefaultBasicInfo();
+        setSubmitError(message);
       }
     }
 
-    router.replace("/mypage/profile-management/new/experience");
+    // 닉네임 중복 등 서버 검증을 여기서 바로 받아야, 뒷 단계(프로젝트/자격증)까지
+    // 다 입력한 뒤에야 실패를 알게 되는 상황과 그로 인한 프로필 중복 생성을 막을 수 있다.
+    if (editingProfileId === null) {
+      createBasicProfileMutation.mutate(basicInfo, {
+        onSuccess: (data) => {
+          setEditingProfileId(data.profileId);
+          proceed();
+        },
+        onError: handleError,
+      });
+    } else {
+      updateBasicProfileMutation.mutate(
+        { profileId: editingProfileId, basicInfo },
+        { onSuccess: proceed, onError: handleError },
+      );
+    }
   }
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="relative flex h-[46px] shrink-0 items-center justify-center px-4">
         <h1 className="text-[17px] leading-[1.35] font-semibold text-[#111827]">
-          {editingProfileId !== null ? "프로필 수정" : "프로필 작성"}
+          {isEditingExistingProfile ? "프로필 수정" : "프로필 작성"}
         </h1>
         <button
           type="button"
@@ -283,32 +329,37 @@ export default function CreateProfilePage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 flex gap-2.5 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161]"
-        >
-          이전
-        </button>
-        <button
-          type="button"
-          disabled={!isFormValid}
-          onClick={handleNext}
-          className={`h-12 flex-1 rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
-            isFormValid
-              ? "bg-[#FF7658] text-white"
-              : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
-          }`}
-        >
-          다음
-        </button>
+      <div className="sticky bottom-0 flex flex-col gap-2 bg-gradient-to-t from-white from-[38.462%] to-white/0 p-4">
+        {submitError && <p className="px-1 text-xs leading-[1.35] text-[#BB5260]">{submitError}</p>}
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+            className="h-12 flex-1 rounded-[14px] border border-[rgba(97,97,97,0.5)] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold text-[#616161] disabled:opacity-50"
+          >
+            이전
+          </button>
+          <button
+            type="button"
+            disabled={!isFormValid || isSubmitting}
+            onClick={handleNext}
+            className={`h-12 flex-1 rounded-[14px] px-2.5 py-[9px] text-[17px] leading-[1.25] font-semibold transition-colors ${
+              isFormValid && !isSubmitting
+                ? "bg-[#FF7658] text-white"
+                : "cursor-not-allowed bg-[#EFEFEF] text-[#C8C8C8]"
+            }`}
+          >
+            {isSubmitting ? "확인 중..." : "다음"}
+          </button>
+        </div>
       </div>
 
       <ExitProfileWriteModal
         onExit={() => {
-          const exitDestination =
-            editingProfileId !== null ? `/mypage/profile-management/${editingProfileId}` : null;
+          const exitDestination = isEditingExistingProfile
+            ? `/mypage/profile-management/${editingProfileId}`
+            : null;
           useProfileDraftStore.getState().resetProfileDraft();
           if (exitDestination) {
             router.replace(exitDestination);
