@@ -4,6 +4,7 @@ export type ChatMessage = {
   senderName: string;
   body: string;
   sentAt: string;
+  sentAtValue?: string;
   sentAtDateKey?: string;
   sentAtDateLabel?: string;
   direction: "incoming" | "outgoing";
@@ -33,10 +34,18 @@ export type ChatMessageType =
   | "CONTEST_RESULT_CARD"
   | (string & {});
 
-export type ChatMessageMetadata = Record<
-  string,
-  string | number | boolean | null | string[] | number[]
->;
+export type ChatMessageMetadataValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | number[]
+  | ChatMessageMetadata;
+
+export interface ChatMessageMetadata {
+  [key: string]: ChatMessageMetadataValue;
+}
 
 export type ChatRoom = {
   id: string;

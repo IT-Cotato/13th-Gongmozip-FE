@@ -12,7 +12,7 @@ import {
   MemberReviewStartDialog,
   MemberReviewStopDialog,
 } from "./MemberReviewDialog";
-import { memberReviewQuestions, memberReviewStrengths, mockReviewMembers } from "./mock";
+import { memberReviewQuestions, memberReviewStrengths } from "./constants";
 import type { MemberReviewAnswer, ReviewMember, ReviewScore } from "./types";
 
 type MemberReviewFlowProps = {
@@ -43,17 +43,17 @@ export function MemberReviewFlow({
   initialMembers,
   onComplete,
   onLeave,
-  reviewerName = "김철수",
+  reviewerName,
   roomId,
 }: MemberReviewFlowProps) {
   const router = useRouter();
   const reviewTargetsQuery = useReviewTargetsQuery(roomId, { enabled: !initialMembers });
   const submitReviewMutation = useSubmitTeamReviewMutation(roomId);
-  const sourceMembers = reviewTargetsQuery.data ?? initialMembers ?? mockReviewMembers;
-  const reviewMembers = useMemo(
-    () => sourceMembers.filter((member) => !member.isMe),
-    [sourceMembers],
-  );
+  const reviewMembers = useMemo(() => {
+    const sourceMembers = reviewTargetsQuery.data ?? initialMembers ?? [];
+
+    return sourceMembers.filter((member) => !member.isMe);
+  }, [initialMembers, reviewTargetsQuery.data]);
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [isStopOpen, setIsStopOpen] = useState(false);
   const [currentMemberIndex, setCurrentMemberIndex] = useState<number | null>(null);
@@ -149,18 +149,14 @@ export function MemberReviewFlow({
         keywords: answer.strengths.map(mapReviewKeyword).filter(Boolean),
       });
     } catch (error) {
-      setReviewError(
-        error instanceof ApiError ? error.message : "팀원 리뷰 작성에 실패했습니다.",
-      );
+      setReviewError(error instanceof ApiError ? error.message : "팀원 리뷰 작성에 실패했습니다.");
       return;
     }
 
     const nextCompletedMemberIds = completedMemberIds.includes(currentMember.id)
       ? completedMemberIds
       : [...completedMemberIds, currentMember.id];
-    const nextReviewedMemberIds = Array.from(
-      new Set([...reviewedMemberIds, currentMember.id]),
-    );
+    const nextReviewedMemberIds = Array.from(new Set([...reviewedMemberIds, currentMember.id]));
 
     setCompletedMemberIds(nextCompletedMemberIds);
 
