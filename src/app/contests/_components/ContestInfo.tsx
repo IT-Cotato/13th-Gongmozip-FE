@@ -15,6 +15,11 @@ type ContestInfoProps = {
   contest: ContestDetail;
 };
 
+type ActiveToast = {
+  href?: string;
+  message: string;
+};
+
 const detailRows = [
   { label: "접수기간", key: "applicationPeriod" },
   { label: "결과발표", key: "announcementDate" },
@@ -238,6 +243,30 @@ export function ContestInfo({ contest }: ContestInfoProps) {
     showLinkCopiedMessage();
   };
 
+  const activeToast: ActiveToast | null = (() => {
+    if (showShareToast) {
+      return { href: shareToastHref, message: "채팅방에 공유 완료했습니다." };
+    }
+
+    if (showShareErrorToast) {
+      return { message: "공유에 실패했습니다. 다시 시도해주세요." };
+    }
+
+    if (showScrapToast) {
+      return { href: "/contests/scraps", message: "이 공모전을 스크랩하였습니다." };
+    }
+
+    if (showScrapErrorToast) {
+      return { message: "스크랩 처리에 실패했습니다" };
+    }
+
+    if (showLinkCopiedToast) {
+      return { message: "링크가 복사되었습니다" };
+    }
+
+    return null;
+  })();
+
   return (
     <section aria-label="공모전 정보" className="flex min-h-full flex-col">
       <div className="px-[27px] pt-[13px]">
@@ -260,7 +289,7 @@ export function ContestInfo({ contest }: ContestInfoProps) {
         </div>
       </div>
 
-      <div className="mt-[27px] flex flex-1 flex-col items-start gap-2 self-stretch bg-white px-6 py-4">
+      <div className="mt-[27px] flex flex-1 flex-col items-start gap-2 self-stretch bg-white px-6 pt-4 pb-[172px]">
         <div className="flex w-full items-start justify-between">
           <span className="inline-flex items-center justify-center rounded bg-color-coral-500 px-4 py-1 text-[15px] leading-[125%] font-semibold text-white">
             {contest.dDay}
@@ -335,75 +364,47 @@ export function ContestInfo({ contest }: ContestInfoProps) {
           </div>
         ) : null}
 
-        <div className="relative mt-8 w-full max-w-[358px]">
-          {showShareToast ? (
-            <ContestActionToast
-              className="absolute bottom-[calc(100%+11px)]"
-              href={shareToastHref}
-              message="채팅방에 공유 완료했습니다."
+      </div>
+
+      <div className="fixed bottom-0 left-1/2 z-20 flex w-full max-w-[390px] -translate-x-1/2 flex-col gap-[18px] bg-white px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+        {activeToast ? (
+          <ContestActionToast
+            className="absolute bottom-[calc(100%+11px)]"
+            href={activeToast.href}
+            message={activeToast.message}
+          />
+        ) : null}
+
+        {contest.websiteUrl ? (
+          <Link
+            href={contest.websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={websiteLinkClassName}
+          >
+            <Image
+              src="/icons/contests/Button/tabler_external-link.svg"
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 shrink-0"
             />
-          ) : null}
-
-          {showShareErrorToast ? (
-            <ContestActionToast
-              className="absolute bottom-[calc(100%+11px)]"
-              message="공유에 실패했습니다. 다시 시도해주세요."
+            웹사이트
+          </Link>
+        ) : (
+          <span role="link" aria-disabled="true" className={websiteLinkClassName}>
+            <Image
+              src="/icons/contests/Button/tabler_external-link.svg"
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 shrink-0"
             />
-          ) : null}
+            웹사이트
+          </span>
+        )}
 
-          {showScrapToast ? (
-            <ContestActionToast
-              className="absolute bottom-[calc(100%+11px)]"
-              href="/contests/scraps"
-              message="이 공모전을 스크랩하였습니다."
-            />
-          ) : null}
-
-          {showScrapErrorToast ? (
-            <ContestActionToast
-              className="absolute bottom-[calc(100%+11px)]"
-              message="스크랩 처리에 실패했습니다"
-            />
-          ) : null}
-
-          {showLinkCopiedToast ? (
-            <ContestActionToast
-              className="absolute bottom-[calc(100%+11px)]"
-              message="링크가 복사되었습니다"
-            />
-          ) : null}
-
-          {contest.websiteUrl ? (
-            <Link
-              href={contest.websiteUrl}
-              target="_blank"
-              rel="noreferrer"
-              className={websiteLinkClassName}
-            >
-              <Image
-                src="/icons/contests/Button/tabler_external-link.svg"
-                alt=""
-                width={16}
-                height={16}
-                className="size-4 shrink-0"
-              />
-              웹사이트
-            </Link>
-          ) : (
-            <span role="link" aria-disabled="true" className={websiteLinkClassName}>
-              <Image
-                src="/icons/contests/Button/tabler_external-link.svg"
-                alt=""
-                width={16}
-                height={16}
-                className="size-4 shrink-0"
-              />
-              웹사이트
-            </span>
-          )}
-        </div>
-
-        <div className="mt-[18px] flex w-full items-start gap-[13px] self-stretch bg-white">
+        <div className="flex w-full items-start gap-[13px]">
           <button
             type="button"
             aria-label="공모전 공유하기"

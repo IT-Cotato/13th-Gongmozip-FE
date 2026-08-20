@@ -267,10 +267,12 @@ function InfoCard({ href, title, description, descriptionValue, tone }: InfoCard
 function FixedApplyButton({
   disabled,
   href,
+  isLoginLink,
   label,
 }: {
   disabled?: boolean;
   href: string;
+  isLoginLink?: boolean;
   label: string;
 }) {
   const className = disabled
@@ -282,6 +284,14 @@ function FixedApplyButton({
       <button className={className} disabled type="button">
         {label}
       </button>
+    );
+  }
+
+  if (isLoginLink) {
+    return (
+      <Link className={className} href={href}>
+        {label}
+      </Link>
     );
   }
 
@@ -310,17 +320,22 @@ export default function TeamMatchingPage() {
     ? getTeamMatchingPrimaryReason(eligibility.reasons)
     : undefined;
   const canOpenApplyDestination = hasTeamMatchingActionableBlockingReason(eligibility);
+  const isEligibilityUnauthorized = error instanceof ApiError && error.status === 401;
+  const isTodayApplicationUnauthorized =
+    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
+  const isUnauthorized = isEligibilityUnauthorized || isTodayApplicationUnauthorized;
+  const isApplyStatePending = isLoading || isTodayApplicationLoading;
+  const hasApplyStateError =
+    (isError && !isEligibilityUnauthorized) ||
+    (isTodayApplicationError && !isTodayApplicationUnauthorized);
   const isApplicationClosedTime = useIsMatchingApplicationClosedTime();
-  const applyLabel = isLoading
+  const applyLabel = isApplyStatePending
     ? "확인 중..."
     : alreadyAppliedToday
       ? "매칭 신청하기"
       : primaryReason && !eligibility?.eligible
         ? "매칭 신청하기"
         : "매칭 신청하기";
-  const isUnauthorized = error instanceof ApiError && error.status === 401;
-  const isTodayApplicationUnauthorized =
-    todayApplicationError instanceof ApiError && todayApplicationError.status === 401;
   const helperMessage = useMemo(() => {
     if (isTodayApplicationLoading) {
       return "매칭 신청 상태를 확인하고 있어요.";
@@ -334,6 +349,10 @@ export default function TeamMatchingPage() {
 
     if (isTodayApplicationError && !isTodayApplicationUnauthorized) {
       return "매칭 신청 상태를 불러오지 못했어요.";
+    }
+
+    if (isTodayApplicationUnauthorized) {
+      return "로그인 후 매칭 신청 상태를 확인할 수 있어요.";
     }
 
     if (isLoading) {
@@ -445,11 +464,14 @@ export default function TeamMatchingPage() {
         >
           <FixedApplyButton
             disabled={
-              isLoading ||
-              (isError && !isUnauthorized) ||
-              (!canOpenApplyDestination && !isApplicationClosedTime)
+              !isUnauthorized &&
+              (isApplyStatePending ||
+                hasApplyStateError ||
+                !applyHref ||
+                (!canOpenApplyDestination && !isApplicationClosedTime))
             }
-            href={isUnauthorized ? "/login" : applyHref}
+            href={isUnauthorized ? "/login" : (applyHref ?? "/team-matching")}
+            isLoginLink={isUnauthorized}
             label={isUnauthorized ? "로그인하기" : applyLabel}
           />
         </div>

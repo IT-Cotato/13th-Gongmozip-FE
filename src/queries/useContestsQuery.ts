@@ -234,6 +234,8 @@ function mapContestListItem(contest: ContestListItemResponse): ContestSummary {
     organizer: contest.hostName,
     category: getContestCategoryLabel(contest.category),
     dDay: formatDday(contest.daysRemaining),
+    daysRemaining: contest.daysRemaining,
+    status: contest.status,
     viewCount: getContestViewCount(contest),
     posterImageUrl: contest.thumbnailUrl ?? "",
     isScrapped: contest.isScrapped ?? false,
