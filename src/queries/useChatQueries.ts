@@ -1271,9 +1271,13 @@ function mapChatMessage(
     getBoolean(message, ["me", "isMe", "mine", "isMine"]) ??
     sender?.isMe ??
     isCurrentMemberSender(message, members, metadata, isContestShareCard);
+  const contestShareSenderName = isContestShareCard
+    ? getContestShareSenderNameFromContent(message)
+    : undefined;
   const senderName =
     (isContestShareCard ? sender?.name : undefined) ??
     messageSenderName ??
+    contestShareSenderName ??
     sender?.name ??
     (isChatbotMessage ? "\uCC57\uBD07" : isSystemMessage ? "\uC2DC\uC2A4\uD15C" : "\uD300\uC6D0");
 
@@ -1360,8 +1364,17 @@ function resolveChatMessageSender(
   }
 
   const senderName = getChatMessageSenderName(message, metadata);
+  const senderByName = senderName ? findChatMemberByName(members, senderName) : undefined;
 
-  return senderName ? members.find((member) => member.name === senderName) : undefined;
+  if (senderByName) {
+    return senderByName;
+  }
+
+  const contestShareSenderName = includeMetadataSender
+    ? getContestShareSenderNameFromContent(message)
+    : undefined;
+
+  return contestShareSenderName ? findChatMemberByName(members, contestShareSenderName) : undefined;
 }
 
 function getChatMessageSenderName(
@@ -1371,6 +1384,46 @@ function getChatMessageSenderName(
   return (
     getSenderNameFromRecord(message) ?? (metadata ? getSenderNameFromRecord(metadata) : undefined)
   );
+}
+
+function getContestShareSenderNameFromContent(message: ChatMessageResponse) {
+  const content = getString(message, ["content", "body", "message"]);
+
+  if (!content) {
+    return undefined;
+  }
+
+  const shareMatch = content.match(/^(.+?)님이\s+공모전을\s+공유했어요/);
+
+  return shareMatch?.[1]?.trim() || undefined;
+}
+
+function findChatMemberByName(members: ChatMember[], name: string) {
+  const normalizedName = normalizeChatMemberName(name);
+
+  if (!normalizedName) {
+    return undefined;
+  }
+
+  const exactMatch = members.find(
+    (member) => normalizeChatMemberName(member.name) === normalizedName,
+  );
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const prefixMatches = members.filter((member) => {
+    const memberName = normalizeChatMemberName(member.name);
+
+    return memberName.startsWith(normalizedName) || normalizedName.startsWith(memberName);
+  });
+
+  return prefixMatches.length === 1 ? prefixMatches[0] : undefined;
+}
+
+function normalizeChatMemberName(name: string) {
+  return name.trim().replace(/\s+/g, "").replace(/님$/, "");
 }
 
 function getSenderNameFromRecord(record: UnknownRecord) {

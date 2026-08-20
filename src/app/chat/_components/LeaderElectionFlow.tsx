@@ -1405,6 +1405,9 @@ function ChatMessageRenderer({
 
   if (message.messageType === "CONTEST_SHARE_CARD") {
     const contestId = getMetadataNumber(message.metadata, "contestId");
+    const sender = message.senderId
+      ? chatMembers.find((member) => member.id === message.senderId)
+      : undefined;
     const metadataContest = contestId
       ? createContestFromShareMetadata(contestId, message.metadata)
       : undefined;
@@ -1427,6 +1430,11 @@ function ChatMessageRenderer({
         direction={message.direction}
         isAdded={Boolean(contestCandidates.find((candidate) => candidate.contestId === contestId))}
         onAdd={() => onAddContestCandidate(contestId, contest)}
+        onOpenProfile={
+          sender && !sender.isMe && sender.profileId !== undefined
+            ? () => onOpenMemberProfile(sender)
+            : undefined
+        }
         senderName={message.senderName}
         sentAt={message.sentAt}
         unreadLabel={message.unreadLabel}

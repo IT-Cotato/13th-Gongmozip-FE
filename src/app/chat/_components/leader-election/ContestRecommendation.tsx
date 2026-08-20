@@ -325,6 +325,7 @@ export function ContestSharedMessage({
   direction,
   isAdded,
   onAdd,
+  onOpenProfile,
   senderName,
   sentAt,
   unreadLabel,
@@ -335,6 +336,7 @@ export function ContestSharedMessage({
   direction: ChatMessage["direction"];
   isAdded: boolean;
   onAdd: () => void;
+  onOpenProfile?: () => void;
   senderName: string;
   sentAt?: string;
   unreadLabel?: string;
@@ -342,11 +344,24 @@ export function ContestSharedMessage({
   if (direction === "incoming") {
     return (
       <article className="flex w-full items-start gap-2">
-        <ChatAvatar name={senderName} tone={avatarTone} src={avatarSrc} />
+        <button
+          type="button"
+          className="shrink-0 text-left disabled:cursor-default"
+          disabled={!onOpenProfile}
+          onClick={onOpenProfile}
+          aria-label={`${senderName} 프로필 보기`}
+        >
+          <ChatAvatar name={senderName} tone={avatarTone} src={avatarSrc} />
+        </button>
         <div className="flex w-[304px] shrink-0 flex-col items-start gap-1">
-          <span className="text-[12px] leading-[1.35] font-medium whitespace-nowrap text-color-gray-750">
+          <button
+            type="button"
+            className="text-[12px] leading-[1.35] font-medium whitespace-nowrap text-color-gray-750 disabled:cursor-default"
+            disabled={!onOpenProfile}
+            onClick={onOpenProfile}
+          >
             {senderName}
-          </span>
+          </button>
           <ContestSharedCard contest={contest} isAdded={isAdded} onAdd={onAdd} />
           <div className="flex items-end gap-2 text-[12px] leading-[1.35] whitespace-nowrap">
             <span className="text-color-gray-650">{sentAt}</span>
