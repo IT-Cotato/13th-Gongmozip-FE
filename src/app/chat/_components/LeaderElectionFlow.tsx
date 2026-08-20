@@ -1586,7 +1586,14 @@ function ChatMessageRenderer({
   }
 
   if (message.messageType === "CHATBOT_GUIDE_CARD") {
-    return <ChatbotUsageGuideMessage onUseChatbot={onUseChatbot} sentAt={message.sentAt} />;
+    return (
+      <ChatbotUsageGuideMessage
+        body={message.body}
+        examples={getMetadataStringArray(message.metadata, "examples")}
+        onUseChatbot={onUseChatbot}
+        sentAt={message.sentAt}
+      />
+    );
   }
 
   if (message.senderType === "CHATBOT" || message.messageType === "BOT") {
