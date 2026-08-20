@@ -90,7 +90,6 @@ import type {
 
 const DEFAULT_CONTEST_VOTE_SECONDS = 24 * 60 * 60;
 const DEFAULT_LEADER_VOTE_SECONDS = 8 * 60 * 60;
-const LEADER_CANDIDACY_SECONDS = 3 * 60 * 60;
 const LOCAL_CONTEST_VOTE_SELECTION_PREFIX = "gongmozip:contest-vote-selection:";
 const EMPTY_CHAT_MEMBERS: ChatMember[] = [];
 const EMPTY_CONTEST_CANDIDATES: RecommendedContest[] = [];
@@ -808,11 +807,6 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const canShowProjectSubmissionReminder =
     !hasConfirmedCompletedMemberReviews;
   const leaderCandidacyCountdownSeconds =
-    getRemainingSecondsFromCardStart(
-      latestLeaderNominationMessage?.sentAtValue,
-      LEADER_CANDIDACY_SECONDS,
-      now,
-    ) ??
     getRemainingSecondsFromMetadata(
       latestLeaderNominationMessage?.metadata,
       [
@@ -827,8 +821,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       [],
       now,
     ) ??
-    getRemainingSeconds(leaderCandidacyDeadlineAt ?? undefined, now) ??
-    LEADER_CANDIDACY_SECONDS;
+    getRemainingSeconds(leaderCandidacyDeadlineAt ?? undefined, now);
   const leaderVoteCountdownSeconds =
     getRemainingSecondsFromMetadata(
       latestLeaderVoteMessage?.metadata,
@@ -2124,10 +2117,6 @@ function getLeaderRecommendationMessage(body: string, leaderRecommendation?: Lea
     return leaderRecommendation.failureMessage ?? "AI 팀장 추천 결과를 생성하지 못했습니다.";
   }
 
-  if (leaderRecommendation.status === "PENDING" || leaderRecommendation.status === "PROCESSING") {
-    return "AI가 팀원의 성향과 외향성 분포를 바탕으로 팀장 추천을 생성하고 있습니다.";
-  }
-
   return body;
 }
 
@@ -2409,24 +2398,6 @@ function getRemainingSeconds(deadlineAt: string | undefined, now: number) {
   }
 
   return Math.max(0, Math.ceil((deadlineTime - now) / 1000));
-}
-
-function getRemainingSecondsFromCardStart(
-  startedAt: string | undefined,
-  durationSeconds: number,
-  now: number,
-) {
-  if (!startedAt) {
-    return undefined;
-  }
-
-  const startedTime = new Date(startedAt).getTime();
-
-  if (!Number.isFinite(startedTime)) {
-    return undefined;
-  }
-
-  return Math.max(0, Math.ceil((startedTime + durationSeconds * 1000 - now) / 1000));
 }
 
 function getProjectEndRemainingSeconds(projectEndedAt: string | undefined, now: number) {

@@ -13,7 +13,7 @@ export function LeaderWillingnessSheet({
   disabled?: boolean;
   onSelect: (choice: LeaderChoice) => void;
   onSubmit: () => void;
-  remainingSeconds: number;
+  remainingSeconds?: number;
   selectedChoice: LeaderChoice;
 }) {
   return (
@@ -25,10 +25,12 @@ export function LeaderWillingnessSheet({
             팀장 여부 투표
           </h2>
         </div>
-        <CountdownPill
-          label="후보 등록 마감까지"
-          time={formatCountdownTime(remainingSeconds)}
-        />
+        {remainingSeconds !== undefined ? (
+          <CountdownPill
+            label="후보 등록 마감까지"
+            time={formatCountdownTime(remainingSeconds)}
+          />
+        ) : null}
       </div>
 
       <div className="mt-4 flex h-[60px] gap-2 px-4">
