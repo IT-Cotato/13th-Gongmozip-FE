@@ -21,6 +21,30 @@ type CollaborationQuestionFormProps = {
   title: string;
 };
 
+function WordBreakText({ text }: { text: string }) {
+  return (
+    <span aria-label={text} className="flex flex-col items-center">
+      {text.split(/\r?\n/).map((line, lineIndex) => (
+        <span
+          aria-hidden="true"
+          className="flex flex-wrap justify-center gap-x-[0.25em]"
+          key={`${line}-${lineIndex}`}
+        >
+          {line
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((word, wordIndex) => (
+              <span className="whitespace-nowrap" key={`${word}-${wordIndex}`}>
+                {word}
+              </span>
+            ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function CollaborationQuestionForm({
   currentQuestionOrder,
   nextHref,
@@ -80,8 +104,8 @@ export default function CollaborationQuestionForm({
         <p className="h-[17px] self-stretch text-center font-[Pretendard] text-[17px] font-bold leading-[135%] text-semantic-fill-brand">
           Q{currentQuestionOrder}
         </p>
-        <p className="mt-4 flex h-8 items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal [word-break:keep-all]">
-          {title}
+        <p className="mt-4 flex min-h-8 flex-wrap items-center justify-center self-stretch text-center font-[Pretendard] text-[13px] font-semibold leading-[125%] text-semantic-label-normal">
+          <WordBreakText text={title} />
         </p>
         <div
           className={`mx-auto flex w-[250px] flex-col ${optionMarginClassName} ${optionGapClassName}`}
@@ -98,11 +122,11 @@ export default function CollaborationQuestionForm({
                 type="button"
               >
                 <span
-                  className={`flex w-[250px] items-center justify-center self-stretch whitespace-pre-line rounded-2xl border-[3px] p-3 text-center font-[Pretendard] font-semibold text-[#616161] ${
+                  className={`flex w-[250px] flex-wrap items-center justify-center self-stretch rounded-2xl border-[3px] p-3 text-center font-[Pretendard] font-semibold text-[#616161] ${
                     isSelected ? "border-[#FF7658] bg-[#FFF7EF]" : "border-transparent bg-[#F5F5F5]"
                   } ${optionTextClassName}`}
                 >
-                  {option.optionLabel}
+                  <WordBreakText text={option.optionLabel} />
                 </span>
               </button>
             );
