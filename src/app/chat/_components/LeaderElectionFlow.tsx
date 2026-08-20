@@ -34,6 +34,7 @@ import {
   useUpdateTeamProgressMutation,
   useVoteContestCandidatesMutation,
   useVoteLeaderMutation,
+  type ContestVoteStatus,
   type LeaderRecommendation,
 } from "@/queries/useChatQueries";
 import { contestCategoryLabels, useContestsQuery } from "@/queries/useContestsQuery";
@@ -90,6 +91,7 @@ import type {
 const DEFAULT_CONTEST_VOTE_SECONDS = 24 * 60 * 60;
 const DEFAULT_LEADER_VOTE_SECONDS = 8 * 60 * 60;
 const LEADER_CANDIDACY_SECONDS = 3 * 60 * 60;
+const LOCAL_CONTEST_VOTE_SELECTION_PREFIX = "gongmozip:contest-vote-selection:";
 const EMPTY_CHAT_MEMBERS: ChatMember[] = [];
 const EMPTY_CONTEST_CANDIDATES: RecommendedContest[] = [];
 const LEADER_RECOMMENDATION_ID_KEYS = [
@@ -195,6 +197,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [now, setNow] = useState(() => Date.now());
   const [activeContestCandidateIds, setActiveContestCandidateIds] = useState<string[] | null>(null);
   const [selectedContestIds, setSelectedContestIds] = useState<string[]>([]);
+  const [cachedContestVoteCandidateIds, setCachedContestVoteCandidateIds] = useState<string[]>(() =>
+    loadLocalContestVoteSelection(roomId),
+  );
   const messageListRef = useRef<HTMLElement>(null);
   const lastReadMarkerRef = useRef<string | null>(null);
   const scrollToLatestFrameRef = useRef<number | null>(null);
@@ -406,6 +411,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     [],
   );
 
+  const showContestVoteStatus = useCallback((contestCandidateIds?: string[]) => {
+    setActiveContestCandidateIds(contestCandidateIds?.length ? contestCandidateIds : null);
+    setSelectedContestIds([]);
+    setContestActionError(null);
+    setSheetState("contestComplete");
+  }, []);
+
   const openContestAddList = () => {
     router.push("/contests");
   };
@@ -514,24 +526,29 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
   const toggleContestVote = (contestId: string) => {
     setSelectedContestIds((currentIds) => {
-      if (currentIds.includes(contestId)) {
-        return currentIds.filter((id) => id !== contestId);
+      const baseIds = currentIds.length > 0 ? currentIds : restoredSelectedContestIds;
+
+      if (baseIds.includes(contestId)) {
+        return baseIds.filter((id) => id !== contestId);
       }
 
-      if (currentIds.length >= 2) {
-        return currentIds;
+      if (baseIds.length >= 2) {
+        return baseIds;
       }
 
-      return [...currentIds, contestId];
+      return [...baseIds, contestId];
     });
   };
 
   const submitContestVote = async () => {
-    if (selectedContestIds.length === 0) {
+    const nextSelectedContestIds =
+      selectedContestIds.length > 0 ? selectedContestIds : restoredSelectedContestIds;
+
+    if (nextSelectedContestIds.length === 0) {
       return;
     }
 
-    const contestCandidateIds = selectedContestIds.map(Number).filter(Number.isFinite);
+    const contestCandidateIds = nextSelectedContestIds.map(Number).filter(Number.isFinite);
 
     if (contestCandidateIds.length === 0) {
       setContestActionError("투표할 공모전 후보 정보를 확인할 수 없습니다.");
@@ -541,16 +558,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     try {
       setContestActionError(null);
       await voteContestCandidatesMutation.mutateAsync(contestCandidateIds);
+      saveLocalContestVoteSelection(roomId, contestCandidateIds);
+      setCachedContestVoteCandidateIds(contestCandidateIds.map(String));
       await contestVoteStatusQuery.refetch();
       setIsContestVoteSubmitted(true);
       setSheetState("contestComplete");
     } catch (error) {
       setContestActionError(getApiErrorMessage(error, "공모전 투표에 실패했습니다."));
     }
-  };
-
-  const showContestVoteResult = () => {
-    setSheetState("contestResult");
   };
 
   const showContestVoteDetail = () => {
@@ -779,6 +794,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const isContestVoteClosed = voteCountdownSeconds <= 0 || hasContestResultMessage;
   const isContestVoteInProgress = !isContestVoteClosed;
   const displayedVoteCountdownSeconds = isContestVoteClosed ? 0 : voteCountdownSeconds;
+  const openContestVoteEntry = (contestCandidateIds?: string[]) => {
+    if (hasMyVoted) {
+      showContestVoteStatus(contestCandidateIds);
+      return;
+    }
+
+    startContestVote(contestCandidateIds);
+  };
   const projectRemainingSeconds = getProjectEndRemainingSeconds(projectEndedAt ?? undefined, now);
   const isProjectDeadlineReached =
     projectRemainingSeconds !== undefined && projectRemainingSeconds <= 0;
@@ -847,6 +870,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
     activeContestCandidates,
     userAddedContestCandidates,
   );
+  const restoredSelectedContestIds = getVotedContestSelectionIds(
+    candidateContests,
+    contestVoteStatus,
+    cachedContestVoteCandidateIds,
+  );
+  const displayedSelectedContestIds =
+    selectedContestIds.length > 0 ? selectedContestIds : restoredSelectedContestIds;
   const addedContestIds = candidateContests.map((contest) =>
     String(contest.contestId ?? contest.id),
   );
@@ -896,12 +926,13 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       <ContestVoteCompleteSheet
         contests={candidateContests}
         onBack={() => setSheetState("closed")}
+        onOpenAdd={openContestAddList}
         onRevote={() =>
           startContestVote(activeContestCandidateIds ?? undefined, { keepSelection: true })
         }
         participantCount={contestVoteStatus?.participantCount}
         remainingSeconds={displayedVoteCountdownSeconds}
-        selectedContestIds={selectedContestIds}
+        selectedContestIds={displayedSelectedContestIds}
         voteResults={contestVoteStatus?.results}
       />
     );
@@ -917,8 +948,9 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         onOpenAdd={openContestAddList}
         onSubmit={submitContestVote}
         onToggle={toggleContestVote}
+        participantCount={contestVoteStatus?.participantCount}
         remainingSeconds={displayedVoteCountdownSeconds}
-        selectedContestIds={selectedContestIds}
+        selectedContestIds={displayedSelectedContestIds}
       />
     );
   }
@@ -936,11 +968,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
           body={latestContestVoteReminderMessage.body}
           isActionDisabled={isContestVoteClosed}
           isVoteSubmitted={hasMyVoted}
-          onAction={
-            hasMyVoted
-              ? showContestVoteResult
-              : () => startContestVote(latestContestVoteReminderCandidateIds)
-          }
+          onAction={() => openContestVoteEntry(latestContestVoteReminderCandidateIds)}
         />
       ) : null}
 
@@ -1018,7 +1046,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
                 onRemoveContestCandidate={(contest) => {
                   void removeContestCandidate(contest);
                 }}
-                onOpenContestVote={startContestVote}
+                onOpenContestVote={openContestVoteEntry}
                 onOpenContestCandidateShortcut={openContestCandidateShortcut}
                 onOpenCandidateVote={openCandidateVote}
                 onOpenMemberProfile={setProfileMember}
@@ -2126,6 +2154,71 @@ function getContestsByIds(
   const idSet = new Set(ids.map(String));
 
   return contests.filter((contest) => idSet.has(String(contest[idField] ?? contest.id)));
+}
+
+function getVotedContestSelectionIds(
+  contests: RecommendedContest[],
+  voteStatus: ContestVoteStatus | undefined,
+  cachedContestCandidateIds: string[],
+) {
+  if (!voteStatus && cachedContestCandidateIds.length === 0) {
+    return [];
+  }
+
+  const votedContestCandidateIdSet = new Set([
+    ...cachedContestCandidateIds,
+    ...(voteStatus?.myContestCandidateIds.map(String) ?? []),
+  ]);
+  const votedContestIdSet = new Set(voteStatus?.myContestIds.map(String) ?? []);
+
+  return contests
+    .filter((contest) => {
+      const contestCandidateId = contest.contestCandidateId ?? Number(contest.id);
+      const contestId = contest.contestId ?? Number(contest.id);
+
+      return (
+        (Number.isFinite(contestCandidateId) &&
+          votedContestCandidateIdSet.has(String(contestCandidateId))) ||
+        (Number.isFinite(contestId) && votedContestIdSet.has(String(contestId)))
+      );
+    })
+    .map((contest) => contest.id);
+}
+
+function getLocalContestVoteSelectionKey(roomId: string) {
+  return `${LOCAL_CONTEST_VOTE_SELECTION_PREFIX}${roomId}`;
+}
+
+function loadLocalContestVoteSelection(roomId: string) {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const value = window.localStorage.getItem(getLocalContestVoteSelectionKey(roomId));
+    const parsedValue: unknown = value ? JSON.parse(value) : [];
+
+    return Array.isArray(parsedValue)
+      ? parsedValue.map(String).filter((id) => id.length > 0)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalContestVoteSelection(roomId: string, contestCandidateIds: number[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      getLocalContestVoteSelectionKey(roomId),
+      JSON.stringify(contestCandidateIds),
+    );
+  } catch {
+    // 로컬 복원 캐시 저장 실패는 투표 API 성공 흐름을 막지 않는다.
+  }
 }
 
 function createPlaceholderContest(contestId: number): RecommendedContest {

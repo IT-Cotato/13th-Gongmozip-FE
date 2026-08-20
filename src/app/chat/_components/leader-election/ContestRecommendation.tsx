@@ -687,6 +687,7 @@ export function ContestVoteSheet({
   onOpenAdd,
   onSubmit,
   onToggle,
+  participantCount,
   remainingSeconds = fallbackVoteRemainingSeconds,
   selectedContestIds,
 }: {
@@ -697,11 +698,16 @@ export function ContestVoteSheet({
   onOpenAdd: () => void;
   onSubmit: () => void;
   onToggle: (contestId: string) => void;
+  participantCount?: number;
   remainingSeconds?: number;
   selectedContestIds: string[];
 }) {
   const isVoteEnded = remainingSeconds <= 0 || disabled;
   const timerLabel = isVoteEnded ? "투표 종료" : "투표 마감까지";
+  const participantLabel =
+    participantCount === undefined
+      ? "0명 참여"
+      : `${participantCount.toLocaleString("ko-KR")}명 참여`;
 
   return (
     <main className="flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
@@ -744,7 +750,7 @@ export function ContestVoteSheet({
 
       <section className="mx-4 mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-color-gray-250 bg-white px-5 py-5">
         <p className="text-center text-[13px] leading-[1.25] font-semibold text-color-gray-500">
-          2명 참여중..
+          {participantLabel}
         </p>
 
         <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
@@ -793,6 +799,7 @@ export function ContestVoteSheet({
 export function ContestVoteCompleteSheet({
   contests,
   onBack,
+  onOpenAdd,
   onRevote,
   participantCount,
   remainingSeconds = fallbackVoteRemainingSeconds,
@@ -801,6 +808,7 @@ export function ContestVoteCompleteSheet({
 }: {
   contests: RecommendedContest[];
   onBack: () => void;
+  onOpenAdd: () => void;
   onRevote: () => void;
   participantCount?: number;
   remainingSeconds?: number;
@@ -834,6 +842,7 @@ export function ContestVoteCompleteSheet({
         <button
           aria-label="후보 공모전 추가"
           className="flex size-[38px] items-center justify-center rounded-[14px] text-[28px] leading-none text-color-gray-850"
+          onClick={onOpenAdd}
           type="button"
         >
           +
