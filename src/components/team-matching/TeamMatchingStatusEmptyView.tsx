@@ -2,7 +2,13 @@ import Image from "next/image";
 
 import TeamMatchingHeader from "@/components/team-matching/TeamMatchingHeader";
 
-export default function TeamMatchingStatusEmptyView() {
+type TeamMatchingStatusEmptyViewProps = {
+  preferHistoryBack?: boolean;
+};
+
+export default function TeamMatchingStatusEmptyView({
+  preferHistoryBack = false,
+}: TeamMatchingStatusEmptyViewProps) {
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#1F1F1F]">
       <Image
@@ -19,6 +25,7 @@ export default function TeamMatchingStatusEmptyView() {
       <TeamMatchingHeader
         backHref="/team-matching"
         className="relative z-10 bg-white"
+        preferHistoryBack={preferHistoryBack}
         title="나의 매칭현황"
       />
 

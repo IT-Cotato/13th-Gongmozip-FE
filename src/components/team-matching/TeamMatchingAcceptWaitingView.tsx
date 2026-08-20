@@ -21,6 +21,7 @@ import {
 } from "@/queries/useTodayMatchingResultQuery";
 
 type TeamMatchingAcceptWaitingViewProps = {
+  preferHistoryBack?: boolean;
   showCancelAction?: boolean;
   todayApplication?: TodayMatchingApplication;
   todayMatchingResult?: TodayMatchingResult;
@@ -43,6 +44,7 @@ function getCompletedResponseCount(
 }
 
 export default function TeamMatchingAcceptWaitingView({
+  preferHistoryBack = false,
   showCancelAction = true,
   todayApplication,
   todayMatchingResult,
@@ -97,6 +99,7 @@ export default function TeamMatchingAcceptWaitingView({
       <TeamMatchingHeader
         backHref="/team-matching"
         className="relative z-10 bg-white"
+        preferHistoryBack={preferHistoryBack}
         title="나의 매칭현황"
       />
 
