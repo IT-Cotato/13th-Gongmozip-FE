@@ -13,8 +13,8 @@ export type ContestSummary = {
   organizer: string;
   category: string;
   dDay: string;
-  daysRemaining?: number;
-  status?: "UPCOMING" | "OPEN" | "CLOSED";
+  daysRemaining: number;
+  status: "UPCOMING" | "OPEN" | "CLOSED";
   viewCount: number;
   posterImageUrl: string;
   isScrapped: boolean;

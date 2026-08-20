@@ -61,7 +61,12 @@ export function ContestListSection() {
     () =>
       data?.pages
         .flatMap((pageData) => pageData.contests)
-        .filter((contest) => contest.status !== "CLOSED" && (contest.daysRemaining ?? 0) >= 0) ??
+        .filter(
+          (contest) =>
+            contest.status !== "CLOSED" &&
+            Number.isFinite(contest.daysRemaining) &&
+            contest.daysRemaining >= 0,
+        ) ??
       [],
     [data?.pages],
   );
