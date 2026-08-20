@@ -12,7 +12,7 @@ type MemberReviewStartDialogProps = {
   onClose: () => void;
   onStart: () => void;
   open: boolean;
-  reviewerName: string;
+  reviewerName?: string;
   totalDistance?: number;
 };
 
@@ -26,10 +26,11 @@ export function MemberReviewStartDialog({
   reviewerName,
   totalDistance = 20,
 }: MemberReviewStartDialogProps) {
+  const completionSubject = reviewerName ? `${reviewerName}님의 프로젝트` : "프로젝트";
   const completionMessage =
     completionVariant === "leader"
-      ? `${reviewerName}님의 프로젝트\n완주를 축하드려요!!\n팀을 끝까지 성공적으로 이끌어\n협업거리 ${totalDistance}m를 획득했어요.`
-      : `${reviewerName}님의 프로젝트\n완주를 축하드려요!!\n협업거리가 ${totalDistance}m 늘어났어요.`;
+      ? `${completionSubject}\n완주를 축하드려요!!\n팀을 끝까지 성공적으로 이끌어\n협업거리 ${totalDistance}m를 획득했어요.`
+      : `${completionSubject}\n완주를 축하드려요!!\n협업거리가 ${totalDistance}m 늘어났어요.`;
 
   return (
     <Dialog

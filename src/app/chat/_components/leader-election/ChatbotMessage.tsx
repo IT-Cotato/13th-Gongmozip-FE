@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 export function ChatbotTextMessage({ body, sentAt }: { body: string; sentAt?: string }) {
   return (
@@ -9,7 +9,7 @@ export function ChatbotTextMessage({ body, sentAt }: { body: string; sentAt?: st
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+          <p className="w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {body}
           </p>
           <MessageMeta sentAt={sentAt} />
@@ -34,6 +34,31 @@ export function BotMessage({
   onButtonClick: () => void;
   sentAt?: string;
 }) {
+  const bubbleRef = useRef<HTMLParagraphElement>(null);
+  const [bubbleWidth, setBubbleWidth] = useState<number>();
+  const actionWidthStyle: CSSProperties = bubbleWidth ? { width: bubbleWidth } : { width: 230 };
+
+  useEffect(() => {
+    const bubbleElement = bubbleRef.current;
+
+    if (!bubbleElement) {
+      return;
+    }
+
+    const updateBubbleWidth = () => {
+      setBubbleWidth(Math.ceil(bubbleElement.getBoundingClientRect().width));
+    };
+
+    updateBubbleWidth();
+
+    const resizeObserver = new ResizeObserver(updateBubbleWidth);
+    resizeObserver.observe(bubbleElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [body]);
+
   return (
     <article className="flex w-full items-start gap-2">
       <ChatbotAvatar />
@@ -41,20 +66,24 @@ export function BotMessage({
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+          <p
+            ref={bubbleRef}
+            className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850"
+          >
             {body}
           </p>
           <MessageMeta sentAt={sentAt} />
         </div>
-        {children}
+        {children ? <div style={actionWidthStyle}>{children}</div> : null}
         <button
-          className={`mt-1 flex h-9 w-[230px] items-center justify-center rounded-[10px] px-2 text-[13px] leading-[1.25] font-semibold ${
+          className={`mt-1 flex h-9 items-center justify-center rounded-[10px] px-2 text-[13px] leading-[1.25] font-semibold ${
             buttonDisabled
               ? "bg-[rgba(97,97,97,0.10)] text-color-gray-350"
               : "bg-color-coral-500 text-white"
           }`}
           disabled={buttonDisabled}
           onClick={onButtonClick}
+          style={actionWidthStyle}
           type="button"
         >
           {buttonLabel}
@@ -80,7 +109,7 @@ export function ContestDeadlineReminderMessage({
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <p className="max-w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
+          <p className="w-[230px] whitespace-pre-line rounded-[16px] rounded-tl-none bg-[rgba(97,97,97,0.10)] px-3 py-2 text-[13px] leading-[1.5] text-color-gray-850">
             {`공모전 마감일 하루 전입니다.
 공모전 제출을 완료했다면 '진행 완료'를, 완료하지 못했다면 '미완료'를 선택해주세요.
 해당 버튼은 팀장님만 선택할 수 있습니다. 팀장님이 '진행 완료'를 선택하면 본 공모전 프로젝트가 종료되며, 팀원 리뷰 단계로 이동합니다.`}
@@ -147,7 +176,7 @@ export function ChatbotUsageGuideMessage({
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="text-[12px] leading-[1.35] font-medium text-color-gray-750">챗봇</span>
         <div className="flex w-full items-end gap-2">
-          <div className="max-w-[230px] rounded-[16px] rounded-tl-none bg-color-gray-150 px-3 py-2 text-[13px] leading-[1.5] text-color-coral-900">
+          <div className="w-[230px] rounded-[16px] rounded-tl-none bg-color-gray-150 px-3 py-2 text-[13px] leading-[1.5] text-color-coral-900">
             <p className="font-semibold text-color-coral-700">활용 예시</p>
             <div className="mt-1 flex gap-2.5 py-1">
               <span className="w-0.5 rounded-full bg-color-coral-500" />

@@ -16,7 +16,6 @@ import {
 
 import { ChatProfilePreview } from "../../_components/ChatProfilePreview";
 import { ChevronLeftIcon } from "../../_components/icons";
-import { MOCK_CHATBOT_MEMBER } from "../../_data/mockMessages";
 import type { ChatMember } from "../../_data/chatTypes";
 
 const memberNameClass = "text-[15px] leading-[1.25] font-semibold text-color-gray-850";
@@ -47,9 +46,10 @@ export default function ChatRoomMenuPage() {
   const reportUserMutation = useReportUserMutation();
 
   const chatMembers = membersQuery.data?.chatMembers ?? [];
+  const visibleMembers = chatMembers.filter((member) => !member.isChatbot);
   const roomTitle =
     teamsQuery.data?.find((room) => room.id === params.roomId)?.title ||
-    chatMembers
+    visibleMembers
       .filter((member) => !member.isMe && !member.isChatbot)
       .map((member) => member.name)
       .join(", ") ||
@@ -57,13 +57,13 @@ export default function ChatRoomMenuPage() {
   const projectEndedAt =
     membersQuery.data?.projectEndedAt ??
     teamsQuery.data?.find((room) => room.id === params.roomId)?.projectEndedAt;
-  const isChatbotEnabled = membersQuery.data?.chatbotEnabled ?? true;
+  const isChatbotEnabled = membersQuery.data?.chatbotEnabled;
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [reportedMemberIds, setReportedMemberIds] = useState<string[]>([]);
   const [selectedMember, setSelectedMember] = useState<ChatMember | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatMember | null>(null);
   const [completedReportReason, setCompletedReportReason] = useState("");
-  const currentMember = chatMembers.find((member) => member.isMe) ?? chatMembers[0];
+  const currentMember = visibleMembers.find((member) => member.isMe) ?? visibleMembers[0];
 
   const submitReport = (member: ChatMember, reason: string) => {
     if (!membersQuery.isSuccess) {
@@ -84,7 +84,7 @@ export default function ChatRoomMenuPage() {
   };
 
   const handleChatbotToggle = () => {
-    if (!currentMember) {
+    if (!currentMember || isChatbotEnabled === undefined) {
       return;
     }
 
@@ -103,7 +103,6 @@ export default function ChatRoomMenuPage() {
     });
   };
 
-
   return (
     <main className="relative flex h-full w-full flex-col overflow-hidden bg-white">
       <header className="shrink-0 border-b border-[rgba(97,97,97,0.08)] bg-white">
@@ -117,7 +116,7 @@ export default function ChatRoomMenuPage() {
           </Link>
           <h1 className="flex max-w-[250px] items-center justify-center gap-2 truncate text-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
             <span className="truncate">{roomTitle}</span>
-            <span className="shrink-0">{chatMembers.length}</span>
+            <span className="shrink-0">{visibleMembers.length}</span>
           </h1>
         </div>
       </header>
@@ -125,7 +124,7 @@ export default function ChatRoomMenuPage() {
       <section className="flex-1 overflow-y-auto px-4 pt-4 pb-[120px]" aria-label="채팅방 메뉴">
         <h2 className="flex items-center gap-2 text-[15px] leading-[1.25] font-bold text-color-gray-850">
           <span>대화상대</span>
-          <span>{chatMembers.length}</span>
+          <span>{visibleMembers.length}</span>
         </h2>
 
         {membersQuery.isLoading ? (
@@ -142,31 +141,30 @@ export default function ChatRoomMenuPage() {
           </p>
         ) : null}
 
-        {membersQuery.isSuccess && chatMembers.length === 0 ? (
+        {membersQuery.isSuccess && visibleMembers.length === 0 ? (
           <p className="mt-6 text-[13px] leading-[1.5] text-color-gray-650">
             표시할 대화상대가 없습니다.
           </p>
         ) : null}
 
         <div className="mt-6 flex flex-col gap-4">
-          {membersQuery.isSuccess ? chatMembers.map((member) => (
-            <MemberRow
-              key={member.id}
-              member={member}
-              isReported={reportedMemberIds.includes(member.id)}
-              onOpenProfile={
-                member.profileId !== undefined && !member.isChatbot
-                  ? () => setSelectedMember(member)
-                  : undefined
-              }
-              onOpenReport={() => setReportTarget(member)}
-            />
-          )) : null}
+          {membersQuery.isSuccess
+            ? visibleMembers.map((member) => (
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  isReported={reportedMemberIds.includes(member.id)}
+                  onOpenProfile={
+                    member.profileId !== undefined ? () => setSelectedMember(member) : undefined
+                  }
+                  onOpenReport={() => setReportTarget(member)}
+                />
+              ))
+            : null}
 
-          <ChatbotRow
-            isEnabled={isChatbotEnabled}
-            onToggle={handleChatbotToggle}
-          />
+          {isChatbotEnabled !== undefined ? (
+            <ChatbotRow isEnabled={isChatbotEnabled} onToggle={handleChatbotToggle} />
+          ) : null}
         </div>
       </section>
 
@@ -448,8 +446,7 @@ function ChatbotRow({ isEnabled, onToggle }: { isEnabled: boolean; onToggle: () 
   return (
     <div className="mt-1 flex h-[76px] items-center justify-between rounded-[16px] bg-color-gray-150 px-4 py-2">
       <div className="flex min-w-0 items-center gap-4">
-        <MenuAvatar member={MOCK_CHATBOT_MEMBER} sizeClassName="size-[60px]" />
-        <span className={memberNameClass}>챗봇</span>
+        <span className={memberNameClass}>챗봇 메시지</span>
       </div>
       <button
         type="button"

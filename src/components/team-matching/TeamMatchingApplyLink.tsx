@@ -36,15 +36,27 @@ export default function TeamMatchingApplyLink({
   className,
   href,
 }: TeamMatchingApplyLinkProps) {
+  const pathname = usePathname();
+
+  return (
+    <TeamMatchingApplyLinkContent
+      key={pathname}
+      className={className}
+      href={href}
+    >
+      {children}
+    </TeamMatchingApplyLinkContent>
+  );
+}
+
+function TeamMatchingApplyLinkContent({
+  children,
+  className,
+  href,
+}: TeamMatchingApplyLinkProps) {
   const [isAlreadyAppliedModalOpen, setIsAlreadyAppliedModalOpen] = useState(false);
   const [isApplicationClosedModalOpen, setIsApplicationClosedModalOpen] = useState(false);
   const isClosedTime = useIsMatchingApplicationClosedTime();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    setIsAlreadyAppliedModalOpen(false);
-    setIsApplicationClosedModalOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     const closeModals = () => {
