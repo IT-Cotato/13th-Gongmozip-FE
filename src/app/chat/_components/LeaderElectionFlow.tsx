@@ -972,7 +972,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   }
 
   return (
-    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-color-gray-850">
+    <main className="relative flex h-full w-full flex-col overflow-y-auto bg-white text-color-gray-850">
       <ChatTopBar
         memberCount={chatMembers.filter((member) => !member.isChatbot).length}
         roomId={roomId}
@@ -1107,7 +1107,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         ) : null}
       </section>
 
-      <div className="relative flex flex-col gap-px bg-white">
+      <div className="sticky bottom-0 z-20 flex shrink-0 flex-col gap-px bg-white">
         {isMidtermToastShown ? (
           <div className="pointer-events-none absolute right-[24px] bottom-[calc(100%+18px)] left-[24px] z-50 flex h-8 items-center justify-center rounded-full bg-[rgba(17,17,17,0.6)] px-5 py-2">
             <p className="text-center text-[13px] leading-[1.25] font-medium text-white">
