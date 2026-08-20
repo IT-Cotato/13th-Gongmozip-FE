@@ -15,6 +15,11 @@ type ContestInfoProps = {
   contest: ContestDetail;
 };
 
+type ActiveToast = {
+  href?: string;
+  message: string;
+};
+
 const detailRows = [
   { label: "접수기간", key: "applicationPeriod" },
   { label: "결과발표", key: "announcementDate" },
@@ -238,6 +243,30 @@ export function ContestInfo({ contest }: ContestInfoProps) {
     showLinkCopiedMessage();
   };
 
+  const activeToast: ActiveToast | null = (() => {
+    if (showShareToast) {
+      return { href: shareToastHref, message: "채팅방에 공유 완료했습니다." };
+    }
+
+    if (showShareErrorToast) {
+      return { message: "공유에 실패했습니다. 다시 시도해주세요." };
+    }
+
+    if (showScrapToast) {
+      return { href: "/contests/scraps", message: "이 공모전을 스크랩하였습니다." };
+    }
+
+    if (showScrapErrorToast) {
+      return { message: "스크랩 처리에 실패했습니다" };
+    }
+
+    if (showLinkCopiedToast) {
+      return { message: "링크가 복사되었습니다" };
+    }
+
+    return null;
+  })();
+
   return (
     <section aria-label="공모전 정보" className="flex min-h-full flex-col">
       <div className="px-[27px] pt-[13px]">
@@ -338,40 +367,11 @@ export function ContestInfo({ contest }: ContestInfoProps) {
       </div>
 
       <div className="fixed bottom-0 left-1/2 z-20 flex w-full max-w-[390px] -translate-x-1/2 flex-col gap-[18px] bg-white px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-        {showShareToast ? (
+        {activeToast ? (
           <ContestActionToast
             className="absolute bottom-[calc(100%+11px)]"
-            href={shareToastHref}
-            message="채팅방에 공유 완료했습니다."
-          />
-        ) : null}
-
-        {showShareErrorToast ? (
-          <ContestActionToast
-            className="absolute bottom-[calc(100%+11px)]"
-            message="공유에 실패했습니다. 다시 시도해주세요."
-          />
-        ) : null}
-
-        {showScrapToast ? (
-          <ContestActionToast
-            className="absolute bottom-[calc(100%+11px)]"
-            href="/contests/scraps"
-            message="이 공모전을 스크랩하였습니다."
-          />
-        ) : null}
-
-        {showScrapErrorToast ? (
-          <ContestActionToast
-            className="absolute bottom-[calc(100%+11px)]"
-            message="스크랩 처리에 실패했습니다"
-          />
-        ) : null}
-
-        {showLinkCopiedToast ? (
-          <ContestActionToast
-            className="absolute bottom-[calc(100%+11px)]"
-            message="링크가 복사되었습니다"
+            href={activeToast.href}
+            message={activeToast.message}
           />
         ) : null}
 
