@@ -116,10 +116,49 @@ const SENDER_RECORD_KEYS = [
   "sharedBy",
   "sharer",
 ];
+const MESSAGE_ID_KEYS = ["messageId", "id", "chatMessageId"];
+const MESSAGE_UNREAD_COUNT_KEYS = [
+  "unreadCount",
+  "unreadMessageCount",
+  "unreadMembersCount",
+  "unreadMemberCount",
+  "unreadTeamMembersCount",
+  "unreadTeamMemberCount",
+  "unreadParticipantsCount",
+  "unreadParticipantCount",
+  "unreadUsersCount",
+  "unreadUserCount",
+  "notReadCount",
+  "notReadMembersCount",
+  "notReadMemberCount",
+  "notReadTeamMembersCount",
+  "notReadTeamMemberCount",
+  "notReadParticipantsCount",
+  "notReadParticipantCount",
+  "notReadUsersCount",
+  "notReadUserCount",
+  "unReadCount",
+  "unReadMembersCount",
+  "unReadMemberCount",
+  "remainingUnreadCount",
+];
+const MESSAGE_READ_COUNT_KEYS = [
+  "readCount",
+  "readMessageCount",
+  "readMembersCount",
+  "readMemberCount",
+  "readTeamMembersCount",
+  "readTeamMemberCount",
+  "readParticipantsCount",
+  "readParticipantCount",
+  "readUsersCount",
+  "readUserCount",
+];
 
 export type ChatTeamResponse = UnknownRecord;
 export type ChatTeamMemberResponse = UnknownRecord;
 export type ChatMessageResponse = UnknownRecord;
+export type MessageUnreadUpdateResponse = UnknownRecord;
 export type ContestCandidateResponse = UnknownRecord;
 export type ContestVoteStatusResponse = {
   participatedVoterCount: number;
@@ -506,6 +545,15 @@ export function useChatRealtime(teamId: string, options: { enabled?: boolean } =
           const payload = parseStompMessage(message);
 
           if (!isRecord(payload)) {
+            return;
+          }
+
+          if (isMessageUnreadUpdateEvent(payload)) {
+            queryClient.setQueryData<InfiniteData<TeamMessagesResponse>>(
+              chatTeamMessagesQueryKey(teamId),
+              (current) => updateChatMessageUnreadPages(current, payload),
+            );
+            void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
             return;
           }
 
@@ -1040,10 +1088,122 @@ function appendChatMessagePages(
   };
 }
 
+function updateChatMessageUnreadPages(
+  current: InfiniteData<TeamMessagesResponse> | undefined,
+  event: MessageUnreadUpdateResponse,
+): InfiniteData<TeamMessagesResponse> | undefined {
+  if (!current) {
+    return current;
+  }
+
+  const unreadCountsByMessageId = getMessageUnreadUpdates(event);
+
+  if (unreadCountsByMessageId.size === 0) {
+    return current;
+  }
+
+  let hasChanged = false;
+  const pages = current.pages.map((page) => {
+    let pageChanged = false;
+    const messages = page.messages.map((message) => {
+      const messageId = getMessageId(message);
+
+      if (messageId === undefined || !unreadCountsByMessageId.has(messageId)) {
+        return message;
+      }
+
+      const unreadCount = unreadCountsByMessageId.get(messageId) ?? 0;
+
+      if (getMessageUnreadCount(message) === unreadCount) {
+        return message;
+      }
+
+      pageChanged = true;
+      hasChanged = true;
+
+      return {
+        ...message,
+        unreadCount,
+        unreadMessageCount: unreadCount,
+      };
+    });
+
+    return pageChanged ? { ...page, messages } : page;
+  });
+
+  return hasChanged ? { ...current, pages } : current;
+}
+
+function isMessageUnreadUpdateEvent(value: UnknownRecord): value is MessageUnreadUpdateResponse {
+  return getMessageUnreadUpdates(value).size > 0;
+}
+
+function getMessageUnreadUpdates(event: MessageUnreadUpdateResponse) {
+  const updates = new Map<string, number>();
+
+  collectMessageUnreadUpdate(event, updates);
+
+  for (const arrayKey of [
+    "updates",
+    "messageUnreadUpdates",
+    "unreadUpdates",
+    "updatedMessages",
+    "messages",
+  ]) {
+    const value = event[arrayKey];
+
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    value.filter(isRecord).forEach((item) => collectMessageUnreadUpdate(item, updates));
+  }
+
+  for (const mapKey of ["unreadCounts", "messageUnreadCounts", "unreadCountByMessageId"]) {
+    const value = event[mapKey];
+
+    if (!isRecord(value)) {
+      continue;
+    }
+
+    Object.entries(value).forEach(([messageId, unreadCountValue]) => {
+      const unreadCount = toFiniteNumber(unreadCountValue);
+
+      if (unreadCount !== undefined) {
+        updates.set(messageId, unreadCount);
+      }
+    });
+  }
+
+  return updates;
+}
+
+function collectMessageUnreadUpdate(value: UnknownRecord, updates: Map<string, number>) {
+  const unreadCount = getNumber(value, MESSAGE_UNREAD_COUNT_KEYS);
+
+  if (unreadCount === undefined) {
+    return;
+  }
+
+  const messageId = getMessageId(value);
+
+  if (messageId !== undefined) {
+    updates.set(messageId, unreadCount);
+    return;
+  }
+
+  const messageIds = getStringArray(value, ["messageIds", "chatMessageIds"]);
+
+  messageIds.forEach((id) => updates.set(id, unreadCount));
+  getNumberArray(value, ["messageIds", "chatMessageIds"]).forEach((id) =>
+    updates.set(String(id), unreadCount),
+  );
+}
+
 function isChatMessageEvent(value: UnknownRecord): value is ChatMessageResponse {
   return (
+    getValue(value, MESSAGE_ID_KEYS) !== undefined ||
     getString(value, ["content", "body", "message"]) !== undefined ||
-    getString(value, ["messageType", "type", "senderType"]) !== undefined ||
     getString(value, ["createdAt", "sentAt", "timestamp"]) !== undefined
   );
 }
@@ -1270,6 +1430,7 @@ function mapChatMessage(
   const isSystemMessage =
     !isContestShareCard && (senderType === "SYSTEM" || isSystemMessageType(messageType));
   const messageSenderName = getChatMessageSenderName(message, metadata);
+  const unreadCount = getMessageUnreadCount(message, metadata, members.length);
   const isMine =
     getBoolean(message, ["me", "isMe", "mine", "isMine"]) ??
     sender?.isMe ??
@@ -1306,7 +1467,42 @@ function mapChatMessage(
         : (sender?.avatarSrc ??
           getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ??
           undefined),
+    unreadLabel: formatMessageUnreadLabel(unreadCount),
   };
+}
+
+function getMessageId(message: UnknownRecord) {
+  const messageId = getValue(message, MESSAGE_ID_KEYS);
+
+  return messageId === undefined ? undefined : String(messageId);
+}
+
+function getMessageUnreadCount(
+  message: UnknownRecord,
+  metadata: ChatMessageMetadata | undefined = getMessageMetadata(message),
+  memberCount = 0,
+) {
+  const unreadCount =
+    getNumber(message, MESSAGE_UNREAD_COUNT_KEYS) ??
+    (metadata ? getNumber(metadata, MESSAGE_UNREAD_COUNT_KEYS) : undefined);
+
+  if (unreadCount !== undefined) {
+    return unreadCount;
+  }
+
+  const readCount =
+    getNumber(message, MESSAGE_READ_COUNT_KEYS) ??
+    (metadata ? getNumber(metadata, MESSAGE_READ_COUNT_KEYS) : undefined);
+
+  if (readCount !== undefined && memberCount > 0) {
+    return Math.max(0, memberCount - readCount);
+  }
+
+  return 0;
+}
+
+function formatMessageUnreadLabel(unreadCount: number) {
+  return unreadCount > 0 ? String(unreadCount) : undefined;
 }
 
 function resolveChatMessageSender(
@@ -1712,10 +1908,7 @@ function mapContestVoteResultItem(result: UnknownRecord): ContestVoteResultItem 
   };
 }
 
-function getMyContestVoteIds(
-  status: ContestVoteStatusResponse,
-  results: ContestVoteResultItem[],
-) {
+function getMyContestVoteIds(status: ContestVoteStatusResponse, results: ContestVoteResultItem[]) {
   const contestCandidateIds = new Set<number>();
   const contestIds = new Set<number>();
 
@@ -1928,6 +2121,10 @@ function getString(record: UnknownRecord, keys: string[]) {
 function getNumber(record: UnknownRecord, keys: string[]) {
   const value = getValue(record, keys);
 
+  return toFiniteNumber(value);
+}
+
+function toFiniteNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }

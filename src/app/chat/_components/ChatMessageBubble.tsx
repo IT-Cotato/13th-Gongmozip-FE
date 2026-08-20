@@ -10,9 +10,12 @@ export function ChatMessageBubble({ message, onOpenProfile }: ChatMessageBubbleP
   if (message.direction === "outgoing") {
     return (
       <div className="flex w-full items-end justify-end gap-2">
-        <span className="text-[12px] leading-[1.35] whitespace-nowrap text-color-gray-650">
-          {message.sentAt}
-        </span>
+        <div className="flex items-end gap-2 text-[12px] leading-[1.35] whitespace-nowrap">
+          {message.unreadLabel && (
+            <span className="text-color-coral-500">{message.unreadLabel}</span>
+          )}
+          <span className="text-color-gray-650">{message.sentAt}</span>
+        </div>
         <div className="flex max-w-[230px] flex-col items-end justify-center rounded-tl-[16px] rounded-br-[16px] rounded-bl-[16px] bg-color-coral-100 px-3 py-2">
           <p className="max-w-[206px] text-[13px] leading-[1.5] break-words text-color-gray-850">
             {message.body}
