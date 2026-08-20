@@ -6,7 +6,7 @@ import { PwaServiceWorker } from "./PwaServiceWorker";
 import { Providers } from "./providers";
 
 const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "https://gongmozip.site";
-const OG_IMAGE = "/images/logo.png";
+const OG_IMAGE = "/images/og-image.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: OG_IMAGE,
-        width: 512,
-        height: 512,
+        width: 1200,
+        height: 630,
         alt: "Gongmozip",
         type: "image/png",
       },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Gongmozip",
     description: "여기를 눌러 링크를 확인하세요.",
     images: [OG_IMAGE],
