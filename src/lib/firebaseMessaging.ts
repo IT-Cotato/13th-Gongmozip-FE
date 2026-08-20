@@ -42,6 +42,14 @@ export function isFirebaseMessagingConfigured() {
   );
 }
 
+export function getNotificationPermission() {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return null;
+  }
+
+  return Notification.permission;
+}
+
 export async function registerGrantedNotificationToken() {
   if (!isFirebaseMessagingConfigured() || !("Notification" in window)) {
     return;
@@ -56,7 +64,7 @@ export async function registerGrantedNotificationToken() {
     return;
   }
 
-  const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+  const serviceWorkerRegistration = await getFirebaseMessagingServiceWorkerRegistration();
   const token = await getToken(messaging, {
     vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
     serviceWorkerRegistration,
@@ -64,6 +72,18 @@ export async function registerGrantedNotificationToken() {
 
   if (token) {
     await registerNotificationPushToken(token);
+  }
+}
+
+export async function requestNotificationPermissionAndRegisterToken() {
+  if (!isFirebaseMessagingConfigured() || !("Notification" in window)) {
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+
+  if (permission === "granted") {
+    await registerGrantedNotificationToken();
   }
 }
 
@@ -98,8 +118,30 @@ async function getFirebaseMessaging(): Promise<Messaging | null> {
   return getMessaging(app);
 }
 
+async function getFirebaseMessagingServiceWorkerRegistration() {
+  if (!("serviceWorker" in navigator)) {
+    return undefined;
+  }
+
+  return navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+    scope: "/firebase-cloud-messaging-push-scope",
+    updateViaCache: "none",
+  });
+}
+
 function mapMessagePayloadToNotification(payload: MessagePayload): ForegroundNotification | null {
-  const body = payload.notification?.body ?? payload.data?.body ?? payload.data?.message;
+  const relatedTeamId = parseNullableNumber(payload.data?.teamId ?? payload.data?.relatedTeamId);
+  const body =
+    payload.notification?.body ??
+    payload.data?.body ??
+    payload.data?.message ??
+    payload.data?.content ??
+    payload.data?.text ??
+    payload.data?.lastMessage ??
+    payload.data?.chatMessage ??
+    payload.data?.messageBody ??
+    payload.data?.messageContent ??
+    (relatedTeamId !== null ? "새 메시지가 도착했어요." : undefined);
 
   if (!body) {
     return null;
@@ -107,19 +149,30 @@ function mapMessagePayloadToNotification(payload: MessagePayload): ForegroundNot
 
   return {
     body,
-    category: parseNotificationCategory(payload.data?.category),
+    category: parseNotificationCategory(payload.data?.category, relatedTeamId),
     createdAt: payload.data?.createdAt ?? new Date().toISOString(),
-    relatedTeamId: parseNullableNumber(payload.data?.teamId ?? payload.data?.relatedTeamId),
-    title: payload.notification?.title ?? payload.data?.title,
+    relatedTeamId,
+    title: payload.notification?.title ?? payload.data?.title ?? getFallbackTitle(relatedTeamId),
   };
 }
 
-function parseNotificationCategory(value: string | undefined): NotificationCategory {
+function parseNotificationCategory(
+  value: string | undefined,
+  relatedTeamId: number | null,
+): NotificationCategory {
   if (value === "MATCHING" || value === "CHATROOM" || value === "OTHER") {
     return value;
   }
 
+  if (relatedTeamId !== null) {
+    return "CHATROOM";
+  }
+
   return "OTHER";
+}
+
+function getFallbackTitle(relatedTeamId: number | null) {
+  return relatedTeamId !== null ? "채팅방 알림" : undefined;
 }
 
 function parseNullableNumber(value: string | undefined) {

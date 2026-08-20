@@ -3,7 +3,6 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-  type InfiniteData,
 } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/http";
@@ -109,24 +108,7 @@ export function useReadAllNotificationsMutation() {
       queryClient.setQueryData<UnreadNotificationsResponse>(unreadNotificationsQueryKey, {
         unreadExists: false,
       });
-      queryClient.setQueriesData<InfiniteData<NotificationsResponse>>(
-        { queryKey: ["notifications", "list"] },
-        (current) =>
-          current
-            ? {
-                ...current,
-                pages: current.pages.map((page) => ({
-                  ...page,
-                  notifications: page.notifications.map((notification) => ({
-                    ...notification,
-                    isRead: true,
-                  })),
-                })),
-              }
-            : current,
-      );
       void queryClient.invalidateQueries({ queryKey: unreadNotificationsQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
