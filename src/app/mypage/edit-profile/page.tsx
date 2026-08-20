@@ -108,7 +108,7 @@ function EditProfileForm({ profile }: { profile: MemberProfile }) {
   const router = useRouter();
   const updateProfileMutation = useUpdateMemberProfileMutation();
 
-  const [name, setName] = useState(profile.name ?? "");
+  const [name, setName] = useState(profile.name);
   const [gender, setGender] = useState<MemberGender | null>(profile.gender);
   const [birthdate, setBirthdate] = useState(toDigits(profile.birthDate));
   const [submitError, setSubmitError] = useState<string | null>(null);
