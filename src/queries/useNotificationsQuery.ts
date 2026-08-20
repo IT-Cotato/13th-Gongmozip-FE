@@ -58,9 +58,23 @@ function readAllNotifications() {
   return apiFetch<void>("/api/notifications/read-all", { method: "PATCH" });
 }
 
+export function registerNotificationPushToken(token: string) {
+  return apiFetch<void>("/api/notifications/push-tokens", {
+    method: "POST",
+    body: { token },
+  });
+}
+
+export function deleteNotificationPushToken(token: string) {
+  return apiFetch<void>("/api/notifications/push-tokens", {
+    method: "DELETE",
+    body: { token },
+  });
+}
+
 export function useNotificationsQuery(
   category?: NotificationCategory,
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; refetchInterval?: number | false } = {},
 ) {
   return useInfiniteQuery({
     queryKey: notificationsQueryKey(category),
@@ -74,6 +88,7 @@ export function useNotificationsQuery(
       return lastPage.notifications[lastPage.notifications.length - 1].notificationId;
     },
     enabled: options.enabled ?? true,
+    refetchInterval: options.refetchInterval,
   });
 }
 
