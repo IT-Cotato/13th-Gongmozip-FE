@@ -49,7 +49,7 @@ export default function MobileFrame({ children }: MobileFrameProps) {
         data-mobile-frame
         className="relative h-[var(--app-viewport-height,100dvh)] w-full transform-gpu overflow-hidden overscroll-none bg-white sm:h-[844px] sm:w-[390px] sm:rounded-[40px] sm:shadow-[0_0_60px_rgba(0,0,0,0.35)]"
       >
-        <div className="relative h-full w-full overflow-hidden overscroll-none pt-[env(safe-area-inset-top)]">
+        <div className="relative h-full w-full overflow-hidden overscroll-none pt-[min(env(safe-area-inset-top),47px)]">
           {children}
         </div>
       </div>
