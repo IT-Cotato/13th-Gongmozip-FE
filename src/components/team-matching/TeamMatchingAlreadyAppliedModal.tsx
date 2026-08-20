@@ -13,10 +13,6 @@ export default function TeamMatchingAlreadyAppliedModal({
 }: TeamMatchingAlreadyAppliedModalProps) {
   const titleId = "team-matching-already-applied-modal-title";
 
-  if (!open) {
-    return null;
-  }
-
   return (
     <Dialog
       aria-labelledby={titleId}
