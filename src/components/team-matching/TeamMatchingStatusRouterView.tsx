@@ -283,5 +283,20 @@ export default function TeamMatchingStatusRouterView() {
     );
   }
 
+  if (todayMatchingResult.resultStatus === "NOT_APPLIED" && isTodayApplicationError) {
+    return (
+      <StatusFeedbackView
+        actionHref={isTodayApplicationUnauthorized ? "/login" : undefined}
+        actionLabel={isTodayApplicationUnauthorized ? "로그인하기" : undefined}
+        message={
+          isTodayApplicationUnauthorized
+            ? "로그인 후 나의 매칭현황을 확인할 수 있어요."
+            : "매칭 신청 상태를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요."
+        }
+        title="상태 확인 실패"
+      />
+    );
+  }
+
   return getStatusView(todayMatchingResult, todayApplication);
 }
