@@ -13,12 +13,16 @@ import { useHasAuthHydrated } from "@/stores/useHasAuthHydrated";
 import { useMemberProfileQuery } from "@/queries/useMemberProfileQuery";
 import { useMatchingEligibilityQuery } from "@/queries/useMatchingEligibilityQuery";
 import { useTodayMatchingApplicationQuery } from "@/queries/useTodayMatchingApplicationQuery";
+import { useUnreadNotificationsQuery } from "@/queries/useNotificationsQuery";
 import {
   type RecommendedContest,
   useRecommendedContestsQuery,
 } from "@/queries/useRecommendedContestsQuery";
 
 function Header() {
+  const unreadNotificationsQuery = useUnreadNotificationsQuery();
+  const showUnreadBadge = unreadNotificationsQuery.data?.unreadExists === true;
+
   return (
     <header className="relative flex h-[46px] shrink-0 items-center bg-white px-4 py-1">
       <h1 className="pointer-events-none absolute inset-x-4 top-1 flex h-[38px] items-center justify-center text-[17px] leading-[1.35] font-semibold text-color-gray-900">
@@ -37,7 +41,9 @@ function Header() {
             height={17}
             className="h-[16.667px] w-[15px]"
           />
-          <span className="absolute top-[7px] right-[7px] size-3 rounded-full border-2 border-white bg-color-coral-500" />
+          {showUnreadBadge ? (
+            <span className="absolute top-[7px] right-[7px] size-3 rounded-full border-2 border-white bg-color-coral-500" />
+          ) : null}
         </Link>
         <Link
           href="/contests/scraps"
