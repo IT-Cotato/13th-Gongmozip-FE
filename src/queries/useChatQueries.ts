@@ -116,6 +116,27 @@ const SENDER_RECORD_KEYS = [
   "sharedBy",
   "sharer",
 ];
+const PROFILE_IMAGE_KEYS = [
+  "profileImageUrl",
+  "memberProfileImageUrl",
+  "senderProfileImageUrl",
+  "profileImage",
+  "profilePhotoUrl",
+  "photoUrl",
+  "pictureUrl",
+];
+const AVATAR_IMAGE_KEYS = [
+  "avatarUrl",
+  "avatarSrc",
+];
+const PROFILE_IMAGE_RECORD_KEYS = [
+  "profile",
+  "memberProfile",
+  "senderProfile",
+  "userProfile",
+  "account",
+  ...SENDER_RECORD_KEYS,
+];
 const MESSAGE_ID_KEYS = ["messageId", "id", "chatMessageId"];
 const MESSAGE_UNREAD_COUNT_KEYS = [
   "unreadCount",
@@ -195,6 +216,7 @@ export type TeamMembersResponse = {
   leaderSelectionDeadlineAt: string | null;
   myTeamMemberId: number | string | null;
   projectEndedAt: string | null;
+  teamStatus: string | null;
 };
 
 export type TeamMessagesResponse = {
@@ -312,6 +334,9 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
         leaderSelectionDeadlineAt?: string | null;
         leaderVoteDeadlineAt?: string | null;
         myTeamMemberId?: number | string | null;
+        status?: string | null;
+        teamStatus?: string | null;
+        submissionStatus?: string | null;
       }
   >(`/api/teams/${encodeURIComponent(teamId)}/members`);
 
@@ -325,6 +350,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
       leaderSelectionDeadlineAt: null,
       myTeamMemberId: findMyTeamMemberId(data),
       projectEndedAt: null,
+      teamStatus: null,
     };
   }
 
@@ -340,6 +366,7 @@ export async function fetchChatTeamMembers(teamId: string): Promise<TeamMembersR
     myTeamMemberId: data.myTeamMemberId ?? findMyTeamMemberId(members),
     projectEndedAt:
       getString(data, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
+    teamStatus: getString(data, ["status", "teamStatus", "submissionStatus"]) ?? null,
   };
 }
 
@@ -926,6 +953,7 @@ export function useUpdateTeamSubmissionMutation(teamId: string) {
   return useMutation({
     mutationFn: (payload: TeamSubmissionPayload) => updateTeamSubmission(teamId, payload),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: chatTeamMembersQueryKey(teamId) });
       void queryClient.invalidateQueries({ queryKey: chatTeamMessagesQueryKey(teamId) });
       void queryClient.invalidateQueries({ queryKey: chatTeamsQueryKey });
     },
@@ -1272,6 +1300,7 @@ function mapChatTeam(team: ChatTeamResponse): ChatRoom {
         : getStringArray(team, ["avatarSrcs", "memberProfileImageUrls", "profileImageUrls"]),
     projectEndedAt:
       getString(team, ["projectEndedAt", "projectEndDate", "endedAt", "endDate"]) ?? null,
+    teamStatus: getString(team, ["status", "teamStatus", "submissionStatus"]) ?? null,
   };
 }
 
@@ -1308,6 +1337,12 @@ function getChatRoomMembers(team: ChatTeamResponse): UnknownRecord[] {
 }
 
 function getChatRoomMemberAvatarItem(member: UnknownRecord): ChatRoomAvatarItem | null {
+  const profileImageSrc = getProfileImageSrcFromRecord(member);
+
+  if (profileImageSrc) {
+    return { src: profileImageSrc };
+  }
+
   const characterMeta = getCharacterAvatarMeta(
     getString(member, ["characterType", "collaborationCharacterType"]),
   );
@@ -1316,7 +1351,7 @@ function getChatRoomMemberAvatarItem(member: UnknownRecord): ChatRoomAvatarItem 
     return characterMeta;
   }
 
-  const src = getString(member, ["characterImageUrl", "profileImageUrl", "avatarUrl"]);
+  const src = getString(member, ["characterImageUrl"]);
 
   return src ? { src } : null;
 }
@@ -1401,7 +1436,9 @@ function mapChatMember(
     isLeader: role === "LEADER" || getBoolean(member, ["leader", "isLeader"]) === true,
     avatarTone: avatarTones[index % avatarTones.length] ?? "green",
     avatarSrc:
-      getString(member, ["profileImageUrl", "avatarUrl", "characterImageUrl"]) ?? undefined,
+      getProfileImageSrcFromRecord(member) ??
+      getString(member, ["characterImageUrl"]) ??
+      undefined,
     school: getString(member, ["school", "schoolName"]) ?? undefined,
     major: getString(member, ["major", "majorName"]) ?? undefined,
     grade: getString(member, ["grade"]) ?? undefined,
@@ -1464,9 +1501,7 @@ function mapChatMessage(
     avatarSrc:
       isChatbotMessage || isSystemMessage
         ? "/icons/chat/chat_bot.svg"
-        : (sender?.avatarSrc ??
-          getString(message, ["senderProfileImageUrl", "profileImageUrl"]) ??
-          undefined),
+        : (sender?.avatarSrc ?? getProfileImageSrcFromRecord(message) ?? undefined),
     unreadLabel: formatMessageUnreadLabel(unreadCount),
   };
 }
@@ -1638,6 +1673,40 @@ function getSenderNameFromRecord(record: UnknownRecord) {
 
     if (nestedName) {
       return nestedName;
+    }
+  }
+
+  return undefined;
+}
+
+function getProfileImageSrcFromRecord(record: UnknownRecord) {
+  const directSrc = getString(record, PROFILE_IMAGE_KEYS);
+
+  if (directSrc) {
+    return directSrc;
+  }
+
+  for (const key of PROFILE_IMAGE_RECORD_KEYS) {
+    const nestedRecord = getRecord(record, key);
+    const nestedSrc = nestedRecord ? getString(nestedRecord, PROFILE_IMAGE_KEYS) : undefined;
+
+    if (nestedSrc) {
+      return nestedSrc;
+    }
+  }
+
+  const fallbackSrc = getString(record, AVATAR_IMAGE_KEYS);
+
+  if (fallbackSrc) {
+    return fallbackSrc;
+  }
+
+  for (const key of PROFILE_IMAGE_RECORD_KEYS) {
+    const nestedRecord = getRecord(record, key);
+    const nestedSrc = nestedRecord ? getString(nestedRecord, AVATAR_IMAGE_KEYS) : undefined;
+
+    if (nestedSrc) {
+      return nestedSrc;
     }
   }
 
@@ -2023,7 +2092,8 @@ function mapReviewTarget(target: ReviewTargetResponse): ReviewMember {
     alreadyReviewed: getBoolean(target, ["alreadyReviewed", "reviewed"]) ?? false,
     avatarTone: "green",
     avatarSrc:
-      getString(target, ["profileImageUrl", "avatarUrl", "characterImageUrl", "senderAvatar"]) ??
+      getProfileImageSrcFromRecord(target) ??
+      getString(target, ["characterImageUrl", "senderAvatar"]) ??
       undefined,
     isLeader: role === "LEADER" || getBoolean(target, ["leader", "isLeader"]) === true,
     isMe: getBoolean(target, ["me", "isMe"]) ?? false,

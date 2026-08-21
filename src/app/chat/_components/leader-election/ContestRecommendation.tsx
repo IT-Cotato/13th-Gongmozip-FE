@@ -564,12 +564,18 @@ export function LeaderVoteNoticeBanner({
 }
 
 export function ProjectSubmissionReminderBanner({
+  canComplete = true,
+  disabled = false,
   onComplete,
   onIncomplete,
 }: {
+  canComplete?: boolean;
+  disabled?: boolean;
   onComplete: () => void;
   onIncomplete: () => void;
 }) {
+  const isCompleteDisabled = disabled || !canComplete;
+
   return (
     <section className="flex w-full items-center gap-2 bg-color-gray-100 p-4 shadow-[0_5px_1px_rgba(0,0,0,0),0_3px_1px_rgba(0,0,0,0.01),0_2px_1px_rgba(0,0,0,0.05),0_1px_1px_rgba(0,0,0,0.09)]">
       <div className="relative shrink-0">
@@ -589,14 +595,16 @@ export function ProjectSubmissionReminderBanner({
         </p>
         <div className="flex h-9 w-full gap-2">
           <button
-            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-[rgba(97,97,97,0.10)] px-3 text-[13px] leading-[1.25] font-semibold text-color-gray-650"
+            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-[rgba(97,97,97,0.10)] px-3 text-[13px] leading-[1.25] font-semibold text-color-gray-650 disabled:text-color-gray-350"
+            disabled={disabled}
             onClick={onIncomplete}
             type="button"
           >
             미완료
           </button>
           <button
-            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-color-gray-650 px-3 text-[13px] leading-[1.25] font-semibold text-white"
+            className="flex h-full min-w-0 flex-1 items-center justify-center rounded-[10px] bg-color-gray-650 px-3 text-[13px] leading-[1.25] font-semibold text-white disabled:bg-[rgba(97,97,97,0.10)] disabled:text-color-gray-350"
+            disabled={isCompleteDisabled}
             onClick={onComplete}
             type="button"
           >

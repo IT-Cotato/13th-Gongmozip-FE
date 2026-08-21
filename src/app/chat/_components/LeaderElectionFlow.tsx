@@ -31,6 +31,7 @@ import {
   useRequestLeaderRevoteMutation,
   useReviewTargetsQuery,
   useUpdateLeaderCandidacyMutation,
+  useUpdateTeamSubmissionMutation,
   useUpdateTeamProgressMutation,
   useVoteContestCandidatesMutation,
   useVoteLeaderMutation,
@@ -147,6 +148,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const reviewTargetsQuery = useReviewTargetsQuery(roomId, {
     enabled: membersQuery.isSuccess,
   });
+  const { refetch: refetchReviewTargets } = reviewTargetsQuery;
   const { mutate: markAsRead } = useMarkChatTeamAsReadMutation(roomId);
   const updateLeaderCandidacyMutation = useUpdateLeaderCandidacyMutation(roomId);
   const voteLeaderMutation = useVoteLeaderMutation(roomId);
@@ -157,6 +159,7 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const deleteContestCandidateMutation = useDeleteContestCandidateMutation(roomId);
   const voteContestCandidatesMutation = useVoteContestCandidatesMutation(roomId);
   const updateTeamProgressMutation = useUpdateTeamProgressMutation(roomId);
+  const updateTeamSubmissionMutation = useUpdateTeamSubmissionMutation(roomId);
   const [sheetState, setSheetState] = useState<SheetState>("closed");
   const contestAddListQuery = useContestsQuery(
     {
@@ -193,6 +196,10 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const [deadlineSubmissionStatus, setDeadlineSubmissionStatus] = useState<"completed" | null>(
     null,
   );
+  const [submittedTeamRoomId, setSubmittedTeamRoomId] = useState<string | null>(null);
+  const [dismissedMemberReviewStartRoomId, setDismissedMemberReviewStartRoomId] = useState<
+    string | null
+  >(null);
   const [profileMember, setProfileMember] = useState<ChatMember | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [activeContestCandidateIds, setActiveContestCandidateIds] = useState<string[] | null>(null);
@@ -231,6 +238,19 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const hasCompletedMemberReviews = hasCompletedAllMemberReviews(reviewTargetsQuery.data);
   const hasConfirmedCompletedMemberReviews =
     reviewTargetsQuery.isSuccess && hasCompletedMemberReviews;
+  const teamStatus = membersQuery.data?.teamStatus ?? roomFromList?.teamStatus ?? null;
+  const hasSubmittedTeamStatus = isSubmittedTeamStatus(teamStatus);
+  const hasServerTeamSubmissionCompleted = useMemo(
+    () => serverMessages.some(isTeamSubmissionCompletedMessage),
+    [serverMessages],
+  );
+  const hasTeamSubmissionCompleted =
+    submittedTeamRoomId === roomId || hasSubmittedTeamStatus || hasServerTeamSubmissionCompleted;
+  const hasDismissedMemberReviewStart = dismissedMemberReviewStartRoomId === roomId;
+  const isMemberReviewStartDialogOpen =
+    !hasConfirmedCompletedMemberReviews &&
+    (isMemberReviewStartOpen ||
+      (hasTeamSubmissionCompleted && !hasDismissedMemberReviewStart));
 
   const latestReadMarker = useMemo(() => {
     const latestMessage = serverMessages.at(-1);
@@ -292,6 +312,14 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
 
     return () => window.clearInterval(timerId);
   }, []);
+
+  useEffect(() => {
+    if (!hasTeamSubmissionCompleted || hasConfirmedCompletedMemberReviews) {
+      return;
+    }
+
+    void refetchReviewTargets();
+  }, [hasConfirmedCompletedMemberReviews, hasTeamSubmissionCompleted, refetchReviewTargets]);
 
   useEffect(() => {
     if (!isContestToastShown) {
@@ -608,15 +636,30 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const completeContestSubmission = async () => {
     setContestActionError(null);
 
-    const reviewTargetsResult = await reviewTargetsQuery.refetch();
-    const nextHasCompletedMemberReviews = hasCompletedAllMemberReviews(reviewTargetsResult.data);
+    try {
+      await updateTeamSubmissionMutation.mutateAsync({ completed: true });
+      setSubmittedTeamRoomId(roomId);
 
-    setDeadlineSubmissionStatus(nextHasCompletedMemberReviews ? "completed" : null);
-    setIsMemberReviewStartOpen(!nextHasCompletedMemberReviews);
+      const reviewTargetsResult = await refetchReviewTargets();
+      const nextHasCompletedMemberReviews = hasCompletedAllMemberReviews(reviewTargetsResult.data);
+
+      setDeadlineSubmissionStatus("completed");
+      setIsMemberReviewStartOpen(!nextHasCompletedMemberReviews);
+    } catch (error) {
+      setContestActionError(getApiErrorMessage(error, "프로젝트 제출 완료 처리에 실패했습니다."));
+    }
   };
 
   const markContestSubmissionIncomplete = async () => {
     setContestActionError(null);
+
+    try {
+      await updateTeamSubmissionMutation.mutateAsync({ completed: false });
+      setSubmittedTeamRoomId(null);
+      setDeadlineSubmissionStatus(null);
+    } catch (error) {
+      setContestActionError(getApiErrorMessage(error, "프로젝트 미완료 처리에 실패했습니다."));
+    }
   };
 
   const startMemberReview = () => {
@@ -814,7 +857,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
   const projectRemainingSeconds = getProjectEndRemainingSeconds(projectEndedAt ?? undefined, now);
   const isProjectDeadlineReached =
     projectRemainingSeconds !== undefined && projectRemainingSeconds <= 0;
-  const canShowProjectSubmissionReminder = !hasConfirmedCompletedMemberReviews;
+  const canShowProjectSubmissionReminder =
+    !hasTeamSubmissionCompleted && !hasConfirmedCompletedMemberReviews;
   const leaderCandidacyCountdownSeconds =
     getRemainingSecondsFromMetadata(
       latestLeaderNominationMessage?.metadata,
@@ -1017,6 +1061,8 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
       deadlineSubmissionStatus === null &&
       canShowProjectSubmissionReminder ? (
         <ProjectSubmissionReminderBanner
+          canComplete
+          disabled={updateTeamSubmissionMutation.isPending}
           onComplete={completeContestSubmission}
           onIncomplete={markContestSubmissionIncomplete}
         />
@@ -1236,9 +1282,12 @@ export function LeaderElectionFlow({ roomId }: { roomId: string }) {
         <MemberReviewStartDialog
           completionVariant={isCurrentMemberLeader ? "leader" : "member"}
           member={currentMember}
-          onClose={() => setIsMemberReviewStartOpen(false)}
+          onClose={() => {
+            setIsMemberReviewStartOpen(false);
+            setDismissedMemberReviewStartRoomId(roomId);
+          }}
           onStart={startMemberReview}
-          open={isMemberReviewStartOpen && !hasConfirmedCompletedMemberReviews}
+          open={isMemberReviewStartDialogOpen}
           reviewerName={currentMember.name}
           totalDistance={isCurrentMemberLeader ? 35 : 20}
         />
@@ -1757,7 +1806,6 @@ function isSubmissionStatusLogMessage(message: ChatMessage) {
       messageType.includes("COMPLETED") ||
       messageType.includes("FINISH") ||
       messageType.includes("FINISHED") ||
-      messageType.includes("END") ||
       messageType.includes("ENDED"));
 
   const isProjectCompletionBody =
@@ -1768,6 +1816,62 @@ function isSubmissionStatusLogMessage(message: ChatMessage) {
       message.body.includes("종료"));
 
   return isSubmissionStatusType || isProjectCompletionType || isProjectCompletionBody;
+}
+
+function isTeamSubmissionCompletedMessage(message: ChatMessage) {
+  const messageType = message.messageType?.toUpperCase() ?? "";
+  const teamSubmitted =
+    getMetadataBoolean(message.metadata, "teamSubmitted") ??
+    getMetadataBoolean(message.metadata, "isTeamSubmitted");
+
+  if (teamSubmitted !== undefined) {
+    return teamSubmitted;
+  }
+
+  const metadataCompleted =
+    messageType.includes("SUBMISSION") || messageType.includes("PROJECT_SUBMISSION")
+      ? (getMetadataBoolean(message.metadata, "completed") ??
+        getMetadataBoolean(message.metadata, "isCompleted") ??
+        getMetadataBoolean(message.metadata, "submitted") ??
+        getMetadataBoolean(message.metadata, "isSubmitted"))
+      : undefined;
+
+  if (metadataCompleted !== undefined) {
+    return metadataCompleted;
+  }
+
+  const metadataStatus = (
+    getMetadataString(message.metadata, "submissionStatus") ??
+    getMetadataString(message.metadata, "teamStatus") ??
+    getMetadataString(message.metadata, "status") ??
+    getMetadataString(message.metadata, "state")
+  )?.toUpperCase();
+
+  if (metadataStatus) {
+    return ["SUBMITTED", "COMPLETED", "COMPLETE"].includes(metadataStatus);
+  }
+
+  const isCompletedType =
+    !messageType.includes("INCOMPLETE") &&
+    !messageType.includes("CANCEL") &&
+    !messageType.includes("FALSE") &&
+    messageType.includes("SUBMISSION") &&
+    !messageType.includes("CHECK") &&
+    (messageType.includes("SUBMITTED") ||
+      messageType.includes("COMPLETE") ||
+      messageType.includes("COMPLETED"));
+
+  if (isCompletedType) {
+    return true;
+  }
+
+  return false;
+}
+
+function isSubmittedTeamStatus(status: string | null | undefined) {
+  const normalizedStatus = status?.toUpperCase();
+
+  return normalizedStatus === "SUBMITTED";
 }
 
 function isLeaderActionCompleted(message: ChatMessage) {
