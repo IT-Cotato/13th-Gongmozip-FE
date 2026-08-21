@@ -57,6 +57,7 @@ export type ChatRoom = {
   avatarItems?: ChatRoomAvatarItem[];
   avatarSrcs: string[];
   projectEndedAt?: string | null;
+  teamStatus?: string | null;
 };
 
 export type ChatRoomAvatarItem = {
